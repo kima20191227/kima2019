@@ -46,11 +46,25 @@ export async function GET(request: NextRequest) {
       ? (type as typeof ALL_TYPES[number])
       : undefined
 
+    const session = await auth()
+    const role = session?.user?.role
+
+    const visibilityFilter = role === 'ADMIN' || role === 'OFFICER'
+      ? undefined  // 임원/관리자는 모든 visibility 조회 가능
+      : {
+          visibility: {
+            in: session?.user
+              ? (['PUBLIC', 'MEMBER'] as ['PUBLIC', 'MEMBER'])
+              : (['PUBLIC'] as ['PUBLIC']),
+          },
+        }
+
     const stories = await prisma.story.findMany({
       where: {
         isPublished: true,
         status: 'APPROVED',
         ...(validType ? { type: validType } : {}),
+        ...visibilityFilter,
       },
       include: { author: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },

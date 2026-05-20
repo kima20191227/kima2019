@@ -198,6 +198,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
       </p>
 
       {/* 테이블 */}
+      <p className="sm:hidden text-xs text-gray-400 mb-1.5 text-right">← 좌우로 스크롤하세요</p>
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
         {users.length === 0 ? (
           <p className="p-8 text-center text-sm text-gray-400">

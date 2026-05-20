@@ -35,7 +35,7 @@ export default async function PrayerPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
       <div className="bg-[#1B3A6B] text-white py-12 px-4">
-        <div className="max-w-3xl mx-auto flex items-end justify-between">
+        <div className="max-w-3xl mx-auto flex items-end justify-between flex-wrap gap-3">
           <div>
             <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">Prayer</p>
             <h1 className="text-2xl font-bold">중보기도 요청</h1>

@@ -232,7 +232,7 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 py-2 col-span-full">
+        <div className="md:hidden border-t border-gray-100 py-2 w-full">
           {NAV_ITEMS.map((item) => {
             const hasChildren = item.children && item.children.length > 1
             const expanded    = mobileExpanded === item.href

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useSession } from 'next-auth/react'
 
 const SLIDES = [
   {
@@ -39,9 +38,7 @@ const SLIDES = [
   },
 ]
 
-export function HeroCarousel() {
-  const { data: session } = useSession()
-  const isLoggedIn = !!session
+export function HeroCarousel({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
 
@@ -92,10 +89,10 @@ export function HeroCarousel() {
           <p className="text-[#C8922A] font-semibold text-sm uppercase tracking-widest mb-4">
             {slide.badge}
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 whitespace-pre-line drop-shadow-sm">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-4 sm:mb-6 whitespace-pre-line drop-shadow-sm">
             {slide.title}
           </h1>
-          <p className="text-lg text-blue-100 leading-relaxed mb-10 max-w-xl drop-shadow-sm">
+          <p className="text-base sm:text-lg text-blue-100 leading-relaxed mb-7 sm:mb-10 max-w-xl drop-shadow-sm">
             {slide.desc}
           </p>
 

@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/Card'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
-import { PopupBanner } from '@/components/home/PopupBanner'
+import { LazyPopupBanner } from '@/components/home/LazyPopupBanner'
 import { CounterSection } from '@/components/home/CounterSection'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import type { StoryType } from '@prisma/client'
 
 export const revalidate = 3600 // 1시간마다 백그라운드 재생성
@@ -22,9 +23,11 @@ function storyHref(id: string, type: StoryType) {
 
 export default async function HomePage() {
   const [
+    session,
     newsStories, fieldStories, eventMediaStories, prayerStories, eventPromoStories,
     dbEvents, orgCount, memberCount, resourceCount,
   ] = await Promise.all([
+    auth().catch(() => null),
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'NEWS'           }, orderBy: { createdAt: 'desc' }, take: 2 }).catch((e) => { console.error('[home] stories/NEWS:', e); return [] }),
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'FIELD_STORY'   }, orderBy: { createdAt: 'desc' }, take: 2 }).catch((e) => { console.error('[home] stories/FIELD_STORY:', e); return [] }),
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'EVENT_MEDIA'   }, orderBy: { createdAt: 'desc' }, take: 2 }).catch((e) => { console.error('[home] stories/EVENT_MEDIA:', e); return [] }),
@@ -56,10 +59,10 @@ export default async function HomePage() {
   return (
     <>
       {/* 팝업 배너 */}
-      <PopupBanner />
+      <LazyPopupBanner />
 
       {/* 1. 히어로 슬라이드 */}
-      <HeroCarousel />
+      <HeroCarousel isLoggedIn={!!session?.user} />
 
       {/* 2. 숫자 카운터 */}
       <CounterSection stats={stats} />
@@ -67,7 +70,7 @@ export default async function HomePage() {
       {/* 3. 최신 스토리 — 카테고리별 2개 */}
       <section className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-12">
+          <div className="flex items-end justify-between flex-wrap gap-3 mb-12">
             <div>
               <h2 className="text-3xl font-bold text-[#1B3A6B]">최신 스토리</h2>
               <p className="mt-2 text-sm text-gray-500">현장의 이야기를 카테고리별로 전합니다</p>

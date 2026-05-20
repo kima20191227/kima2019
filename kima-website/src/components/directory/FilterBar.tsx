@@ -15,6 +15,73 @@ function serializeMulti(arr: string[]): string {
   return arr.join(',')
 }
 
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`}
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+  )
+}
+
+interface FilterGroupProps {
+  label: string
+  paramKey: string
+  items: readonly string[]
+  selected: string[]
+  onToggle: (key: string, current: string[], val: string) => void
+}
+
+function FilterGroup({ label, paramKey, items, selected, onToggle }: FilterGroupProps) {
+  const [open, setOpen] = useState(false)
+  const hasSelection = selected.length > 0
+
+  return (
+    <div>
+      {/* 모바일: 접힌 헤더 */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="sm:hidden w-full flex items-center justify-between py-1.5"
+      >
+        <span className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+          {hasSelection && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#1B3A6B] text-white font-semibold">
+              {selected.length}
+            </span>
+          )}
+        </span>
+        <ChevronIcon open={open} />
+      </button>
+
+      {/* 데스크탑: 항상 표시 / 모바일: 펼쳤을 때만 */}
+      <div className={`flex flex-wrap items-start gap-x-4 gap-y-1.5 ${open ? 'block' : 'hidden'} sm:flex`}>
+        <span className="hidden sm:block text-xs font-bold text-gray-500 uppercase tracking-wider w-10 pt-0.5 shrink-0">
+          {label}
+        </span>
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1 sm:pt-0">
+          {items.map((t) => (
+            <label key={t} className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={selected.includes(t)}
+                onChange={() => onToggle(paramKey, selected, t)}
+                className="w-3.5 h-3.5 accent-[#1B3A6B]"
+              />
+              <span className={`text-sm ${selected.includes(t) ? 'font-semibold text-[#1B3A6B]' : 'text-gray-700'}`}>
+                {t}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function FilterBar({ totalCount }: FilterBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -26,6 +93,7 @@ export function FilterBar({ totalCount }: FilterBarProps) {
   const currentQ        = searchParams.get('q') ?? ''
 
   const [searchInput, setSearchInput] = useState(currentQ)
+  const [filterOpen, setFilterOpen]   = useState(false)
 
   useEffect(() => { setSearchInput(currentQ) }, [currentQ])
 
@@ -95,80 +163,61 @@ export function FilterBar({ totalCount }: FilterBarProps) {
         )}
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm space-y-2.5">
+      {/* 모바일: 필터 토글 버튼 */}
+      <div className="sm:hidden">
+        <button
+          type="button"
+          onClick={() => setFilterOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600"
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+            <span>필터</span>
+            {totalSelected > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#1B3A6B] text-white text-xs font-semibold">
+                {totalSelected}
+              </span>
+            )}
+          </span>
+          <ChevronIcon open={filterOpen} />
+        </button>
+      </div>
 
-        {/* 유형 */}
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider w-10 pt-0.5 shrink-0">유형</span>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {ORG_TYPES.map((t) => (
-              <label key={t} className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={selectedTypes.includes(t)}
-                  onChange={() => updateParam('type', selectedTypes, t)}
-                  className="w-3.5 h-3.5 accent-[#1B3A6B]"
-                />
-                <span className={`text-sm ${selectedTypes.includes(t) ? 'font-semibold text-[#1B3A6B]' : 'text-gray-700'}`}>{t}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* 사역대상 */}
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider w-10 pt-0.5 shrink-0">대상</span>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {TARGETS.map((t) => (
-              <label key={t} className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={selectedTargets.includes(t)}
-                  onChange={() => updateParam('target', selectedTargets, t)}
-                  className="w-3.5 h-3.5 accent-[#1B3A6B]"
-                />
-                <span className={`text-sm ${selectedTargets.includes(t) ? 'font-semibold text-[#1B3A6B]' : 'text-gray-700'}`}>{t}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* 언어 */}
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider w-10 pt-0.5 shrink-0">언어</span>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {LANGUAGES.map((l) => (
-              <label key={l} className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={selectedLangs.includes(l)}
-                  onChange={() => updateParam('language', selectedLangs, l)}
-                  className="w-3.5 h-3.5 accent-[#1B3A6B]"
-                />
-                <span className={`text-sm ${selectedLangs.includes(l) ? 'font-semibold text-[#1B3A6B]' : 'text-gray-700'}`}>{l}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* 지역 */}
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider w-10 pt-0.5 shrink-0">지역</span>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {ORG_REGIONS.map((r) => (
-              <label key={r} className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={selectedRegions.includes(r)}
-                  onChange={() => updateParam('region', selectedRegions, r)}
-                  className="w-3.5 h-3.5 accent-[#1B3A6B]"
-                />
-                <span className={`text-sm ${selectedRegions.includes(r) ? 'font-semibold text-[#1B3A6B]' : 'text-gray-700'}`}>{r}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
+      {/* 필터 패널 — 모바일: 접힘/펼침 / 데스크탑: 항상 표시 */}
+      <div className={`bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm space-y-2.5 ${filterOpen ? 'block' : 'hidden'} sm:block`}>
+        <FilterGroup
+          label="유형"
+          paramKey="type"
+          items={ORG_TYPES}
+          selected={selectedTypes}
+          onToggle={updateParam}
+        />
+        <div className="sm:hidden border-t border-gray-50 my-1" />
+        <FilterGroup
+          label="대상"
+          paramKey="target"
+          items={TARGETS}
+          selected={selectedTargets}
+          onToggle={updateParam}
+        />
+        <div className="sm:hidden border-t border-gray-50 my-1" />
+        <FilterGroup
+          label="언어"
+          paramKey="language"
+          items={LANGUAGES}
+          selected={selectedLangs}
+          onToggle={updateParam}
+        />
+        <div className="sm:hidden border-t border-gray-50 my-1" />
+        <FilterGroup
+          label="지역"
+          paramKey="region"
+          items={ORG_REGIONS}
+          selected={selectedRegions}
+          onToggle={updateParam}
+        />
       </div>
     </div>
   )
