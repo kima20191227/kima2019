@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 type StoryType = 'NEWS' | 'EVENT_MEDIA'
 
@@ -279,11 +280,11 @@ export function StoryForm() {
               <div className="mt-3 grid grid-cols-4 sm:grid-cols-6 gap-2">
                 {previewUrls.map((url, i) => (
                   <div key={i} className="relative aspect-square">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={url}
                       alt={`미리보기 ${i + 1}`}
-                      className="w-full h-full object-cover rounded-lg border border-gray-200"
+                      fill
+                      className="object-cover rounded-lg border border-gray-200"
                     />
                     <button
                       type="button"

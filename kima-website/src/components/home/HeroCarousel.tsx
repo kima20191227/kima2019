@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { useSession } from 'next-auth/react'
 
 const SLIDES = [
   {
@@ -37,11 +39,9 @@ const SLIDES = [
   },
 ]
 
-interface Props {
-  isLoggedIn: boolean
-}
-
-export function HeroCarousel({ isLoggedIn }: Props) {
+export function HeroCarousel() {
+  const { data: session } = useSession()
+  const isLoggedIn = !!session
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
 
@@ -70,12 +70,13 @@ export function HeroCarousel({ isLoggedIn }: Props) {
       {/* 배경 */}
       {slide.type === 'image' ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             key={slide.id}
             src={slide.image}
             alt={slide.badge}
-            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+            fill
+            className="object-cover transition-opacity duration-700"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
         </>

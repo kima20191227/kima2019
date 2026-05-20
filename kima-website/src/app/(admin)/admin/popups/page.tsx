@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Image from 'next/image'
 import { PopupForm } from '@/components/admin/PopupForm'
 
 interface Popup {
@@ -79,6 +80,7 @@ export default function AdminPopupsPage() {
           <p className="text-sm text-gray-500 mt-1">홈페이지에 표시할 팝업을 등록·관리합니다.</p>
         </div>
         <button
+          type="button"
           onClick={() => { setEditing(null); setShowForm(true) }}
           className="px-4 py-2 bg-[#1B3A6B] text-white text-sm font-medium rounded-lg hover:bg-[#142d54] transition-colors"
         >
@@ -125,17 +127,16 @@ export default function AdminPopupsPage() {
               <div className="flex items-start gap-4">
                 {/* 썸네일 */}
                 {(popup.imageUrl || popup.youtubeId) && (
-                  <div className="w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                  <div className="w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 relative">
                     {popup.youtubeId ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
+                      <Image
                         src={`https://img.youtube.com/vi/${popup.youtubeId}/mqdefault.jpg`}
                         alt="썸네일"
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     ) : popup.imageUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={popup.imageUrl} alt="썸네일" className="w-full h-full object-contain bg-white" />
+                      <Image src={popup.imageUrl} alt="썸네일" fill className="object-contain bg-white" />
                     ) : null}
                   </div>
                 )}
@@ -161,18 +162,22 @@ export default function AdminPopupsPage() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {/* 활성/비활성 토글 */}
                   <button
+                    type="button"
+                    aria-label={popup.isActive ? '비활성으로 전환' : '활성으로 전환'}
                     onClick={() => handleToggle(popup)}
                     className={`relative w-9 h-5 rounded-full transition-colors ${popup.isActive ? 'bg-[#1B3A6B]' : 'bg-gray-300'}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${popup.isActive ? 'translate-x-4' : ''}`} />
                   </button>
                   <button
+                    type="button"
                     onClick={() => { setEditing(popup); setShowForm(false) }}
                     className="text-xs px-2.5 py-1 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     수정
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDelete(popup.id)}
                     disabled={deleting === popup.id}
                     className="text-xs px-2.5 py-1 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"

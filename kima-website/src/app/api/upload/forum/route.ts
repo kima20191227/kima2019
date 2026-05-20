@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
 import { safeStorageKey } from '@/lib/utils'
+import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
 const ALLOWED_TYPES = [
   'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic',
@@ -45,15 +46,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '허용되지 않는 파일 형식입니다. (이미지·PDF·PPT·Word·Excel·영상만 가능)' }, { status: 400 })
     }
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    let buffer   = Buffer.from(await file.arrayBuffer())
+    let mimeType = file.type
+    let ext      = file.name.split('.').pop() ?? 'bin'
 
-    const path = safeStorageKey(file, folder)
+    if (isConvertibleImage(mimeType)) {
+      const converted = await convertToWebP(buffer, mimeType)
+      buffer   = converted.buffer
+      mimeType = converted.contentType
+      ext      = converted.ext
+    }
+
+    const webpFile = new File([buffer], file.name.replace(/\.[^.]+$/, `.${ext}`), { type: mimeType })
+    const path = safeStorageKey(webpFile, folder)
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('forum-files')
       .upload(path, buffer, {
-        contentType: file.type,
+        contentType: mimeType,
         upsert: false,
       })
 

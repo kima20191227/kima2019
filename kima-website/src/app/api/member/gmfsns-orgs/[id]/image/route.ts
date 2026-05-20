@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
 import { prisma } from '@/lib/prisma'
+import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
 const BUCKET = 'org-images'
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
@@ -39,22 +40,18 @@ export async function POST(
     return NextResponse.json({ error: '파일 크기는 5MB 이하여야 합니다.' }, { status: 400 })
   }
 
-  const mimeToExt: Record<string, string> = {
-    'image/jpeg': 'jpg', 'image/jpg': 'jpg',
-    'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
-  }
-  const ext = mimeToExt[file.type]
-  if (!ext) {
+  if (!isConvertibleImage(file.type)) {
     return NextResponse.json({ error: 'JPG, PNG, WEBP, GIF만 업로드 가능합니다.' }, { status: 400 })
   }
+
+  const rawBuffer = Buffer.from(await file.arrayBuffer())
+  const { buffer, ext } = await convertToWebP(rawBuffer, file.type)
 
   // Determine storage filename — use numeric id if available
   const storageId = parseInt(id, 10)
   const fileKey = !isNaN(storageId) ? String(storageId) : id
   const filePath = `orgs/${fileKey}.${ext}`
 
-  const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
   const supabase = getServiceClient()
 
   // Remove old files for this org
@@ -65,7 +62,7 @@ export async function POST(
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
-    .upload(filePath, buffer, { contentType: file.type, upsert: true })
+    .upload(filePath, buffer, { contentType: 'image/webp', upsert: true })
 
   if (uploadError) {
     return NextResponse.json({ error: '업로드에 실패했습니다.', detail: uploadError.message }, { status: 500 })

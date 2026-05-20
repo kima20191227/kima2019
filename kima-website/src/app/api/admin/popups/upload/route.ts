@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
 import { safeStorageKey } from '@/lib/utils'
+import { convertToWebP } from '@/lib/imageConvert'
 
 const BUCKET = 'popups'
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
@@ -29,11 +30,12 @@ export async function POST(req: NextRequest) {
     }
 
     const adminClient = createClient(supabaseUrl, serviceKey)
-    const filename = safeStorageKey(file, '')
-    const bytes = await file.arrayBuffer()
+    const converted = await convertToWebP(Buffer.from(await file.arrayBuffer()), file.type)
+    const webpFile  = new File([converted.buffer], file.name.replace(/\.[^.]+$/, '.webp'), { type: converted.contentType })
+    const filename  = safeStorageKey(webpFile, '')
 
-    const { error } = await adminClient.storage.from(BUCKET).upload(filename, bytes, {
-      contentType: file.type,
+    const { error } = await adminClient.storage.from(BUCKET).upload(filename, converted.buffer, {
+      contentType: converted.contentType,
       upsert: false,
     })
     if (error) {

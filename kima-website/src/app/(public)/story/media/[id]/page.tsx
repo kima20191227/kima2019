@@ -2,8 +2,13 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { MediaGallery } from '@/components/story/MediaGallery'
-import { VideoEmbed } from '@/components/story/VideoEmbed'
+import nextDynamic from 'next/dynamic'
 import type { Metadata } from 'next'
+
+const VideoEmbed = nextDynamic(
+  () => import('@/components/story/VideoEmbed').then((m) => m.VideoEmbed),
+  { loading: () => <div className="aspect-video bg-gray-100 animate-pulse rounded-xl" /> }
+)
 
 export const dynamic = 'force-dynamic'
 

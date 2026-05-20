@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { convertDriveUrl, convertDriveUrls } from '@/lib/utils'
+import Image from 'next/image'
 
 export default function EventPromoWritePage() {
   const router = useRouter()
@@ -171,9 +172,8 @@ export default function EventPromoWritePage() {
             />
             <p className="text-xs text-gray-400 mt-1">구글 드라이브 공유 링크를 붙여넣으면 자동으로 표시 가능한 주소로 변환됩니다.</p>
             {form.thumbnailUrl && (
-              <div className="mt-2 max-w-xs rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.thumbnailUrl} alt="미리보기" className="max-w-full object-contain max-h-48" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              <div className="mt-2 max-w-xs rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex justify-center relative h-48">
+                <Image src={form.thumbnailUrl} alt="미리보기" fill className="object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 interface Popup {
   id: string
@@ -121,22 +122,24 @@ export function PopupBanner() {
         {!popup.youtubeId && popup.imageUrl && (
           popup.imageWidth ? (
             <div className={`flex justify-center ${popups.length > 1 ? '' : 'rounded-t-2xl overflow-hidden'}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {/* eslint-disable-next-line react/forbid-dom-props */}
-              <img
+              <Image
                 src={popup.imageUrl}
                 alt={popup.title}
-                style={{ width: popup.imageWidth, maxWidth: '100%' }}
-                className="object-contain"
+                width={800}
+                height={600}
+                className="h-auto object-contain"
               />
             </div>
           ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={popup.imageUrl}
-              alt={popup.title}
-              className={`w-full object-contain ${popups.length > 1 ? '' : 'rounded-t-2xl'}`}
-            />
+            <div className={`relative w-full ${popups.length > 1 ? '' : 'rounded-t-2xl overflow-hidden'}`}>
+              <Image
+                src={popup.imageUrl}
+                alt={popup.title}
+                width={800}
+                height={600}
+                className="w-full h-auto object-contain"
+              />
+            </div>
           )
         )}
 
@@ -168,12 +171,14 @@ export function PopupBanner() {
 
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             <button
+              type="button"
               onClick={handleHideToday}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
               오늘 하루 보지 않기
             </button>
             <button
+              type="button"
               onClick={handleClose}
               className="text-xs text-gray-500 hover:text-gray-700 font-medium transition-colors"
             >

@@ -48,17 +48,21 @@ export function MapComponent({ organizations, selectedId, onSelect, onHover, sho
   const onSelectRef     = useRef(onSelect)
   const onHoverRef      = useRef(onHover)
   const showContactRef  = useRef(showContact)
-  const prevOrgsKeyRef  = useRef<string>('')        // organizations 변경 감지용
+  const prevOrgsKeyRef  = useRef<string>('')
   onSelectRef.current  = onSelect
   onHoverRef.current   = onHover
   showContactRef.current = showContact
 
-  const [ready, setReady] = useState(false)
-  const [sdkError, setSdkError] = useState<string | null>(null)
+  const [ready, setReady]           = useState(false)
+  const [sdkError, setSdkError]     = useState<string | null>(null)
+  // 모바일(768px 미만)에서는 버튼 클릭 후 로드, 데스크탑은 즉시 로드
+  const [mapRequested, setMapRequested] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  )
 
   // ── SDK 로드 → 지도 초기화 ───────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!mapRequested || !containerRef.current) return
     let cancelled = false
 
     loadKakaoScript()
@@ -393,6 +397,22 @@ export function MapComponent({ organizations, selectedId, onSelect, onHover, sho
       }
     }
   }, [ready, organizations, selectedId, showInfo])
+
+  if (!mapRequested) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-3">
+        <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
+        <p className="text-sm text-gray-500">전국 단체 지도</p>
+        <button type="button" onClick={() => setMapRequested(true)}
+          className="px-5 py-2.5 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#15305a] transition-colors">
+          지도 보기
+        </button>
+      </div>
+    )
+  }
 
   if (sdkError) {
     return (

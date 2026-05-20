@@ -25,7 +25,7 @@ export default function GreetingPage() {
             {/* 프로필 사진 */}
             <div className="shrink-0 w-36 h-44 rounded-xl overflow-hidden border border-gray-200">
               <Image
-                src="/images/nam-yang-gyu.jpg.png"
+                src="/images/nam-yang-gyu.webp"
                 alt="남양규 상임대표"
                 width={144}
                 height={176}

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getEventType } from '@/lib/eventTypes'
 import { prisma } from '@/lib/prisma'
@@ -297,10 +298,11 @@ function ArchiveDetailView({
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">사진</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {photos.map((url, i) => (
-                <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`사진 ${i + 1}`}
-                    className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer" title={`사진 ${i + 1}`}>
+                  <div className="relative w-full aspect-square">
+                    <Image src={url} alt={`사진 ${i + 1}`}
+                      fill className="object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                  </div>
                 </a>
               ))}
             </div>

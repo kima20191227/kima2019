@@ -1,8 +1,13 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { StatsCharts } from '@/components/admin/StatsCharts'
+import nextDynamic from 'next/dynamic'
 import type { Metadata } from 'next'
+
+const StatsCharts = nextDynamic(
+  () => import('@/components/admin/StatsCharts').then((m) => m.StatsCharts),
+  { loading: () => <div className="h-64 animate-pulse bg-gray-100 rounded-xl" /> }
+)
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: '접속 통계 | KIMA 관리자' }

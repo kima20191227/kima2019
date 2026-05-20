@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 type ForumType = 'FORUM' | 'LISTENING_CALL'
 
@@ -506,8 +507,7 @@ export function ForumArchiveForm({ mode = 'create', initialData, onClose }: Prop
                   <div className="grid grid-cols-4 gap-2">
                     {photoPreviewUrls.map((url, i) => (
                       <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <Image src={url} alt="" fill className="object-cover" />
                         <button
                           type="button"
                           onClick={() => removePhoto(i)}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 
 interface Props {
   images: string[]
@@ -43,14 +44,14 @@ export function MediaGallery({ images, title }: Props) {
             key={i}
             type="button"
             onClick={() => setSelected(i)}
-            className="aspect-square overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#C8922A]"
+            aria-label={`${title} ${i + 1} 확대 보기`}
+            className="aspect-square overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#C8922A] relative"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={src}
               alt={`${title} ${i + 1}`}
-              className="w-full h-full object-cover"
-              loading="lazy"
+              fill
+              className="object-cover"
             />
           </button>
         ))}
@@ -80,12 +81,14 @@ export function MediaGallery({ images, title }: Props) {
             </button>
 
             {/* 이미지 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={images[selected]}
-              alt={`${title} ${selected + 1}`}
-              className="max-h-[80vh] max-w-full object-contain rounded-lg"
-            />
+            <div className="relative h-[80vh] w-full">
+              <Image
+                src={images[selected]}
+                alt={`${title} ${selected + 1}`}
+                fill
+                className="object-contain rounded-lg"
+              />
+            </div>
 
             {/* 페이지 표시 */}
             <p className="text-white/60 text-sm mt-3">

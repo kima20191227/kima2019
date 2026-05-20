@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 interface PopupData {
   id?: string
@@ -72,7 +73,7 @@ export function PopupForm({ initial, onClose }: { initial?: PopupData; onClose: 
   const set = (key: keyof PopupData, val: string | boolean) =>
     setForm((f) => ({ ...f, [key]: val }))
 
-  const switchChecked: 'true' | 'false' = form.isActive ? 'true' : 'false'
+  const switchChecked: boolean = form.isActive
 
   const handleFileUpload = async (file: File) => {
     setUploading(true)
@@ -201,8 +202,7 @@ export function PopupForm({ initial, onClose }: { initial?: PopupData; onClose: 
               <p className="text-sm text-gray-500 py-10">업로드 중...</p>
             ) : form.imageUrl ? (
               <div className="space-y-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.imageUrl} alt="미리보기" className="w-full max-h-96 rounded-lg object-contain" />
+                <Image src={form.imageUrl} alt="미리보기" width={800} height={384} className="w-full max-h-96 rounded-lg object-contain" />
                 <p className="text-xs text-green-600">업로드 완료 — 클릭하여 교체</p>
               </div>
             ) : (
@@ -277,13 +277,12 @@ export function PopupForm({ initial, onClose }: { initial?: PopupData; onClose: 
 
           {/* 미리보기 */}
           <div className="overflow-hidden rounded-lg bg-white border border-gray-100 p-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {/* eslint-disable-next-line react/forbid-dom-props */}
-            <img
+            <Image
               src={form.imageUrl}
               alt="크기 미리보기"
-              style={{ width: currentWidth, maxWidth: '100%' }}
-              className="mx-auto block object-contain rounded"
+              width={800}
+              height={600}
+              className="mx-auto block w-full h-auto object-contain rounded"
             />
             <p className="text-center text-xs text-gray-400 mt-1">
               미리보기 · 현재 크기: {currentWidth}

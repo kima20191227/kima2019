@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { getEventType } from '@/lib/eventTypes'
 import { prisma } from '@/lib/prisma'
 import { ARCHIVE_RECORDS } from '../archive/data'
@@ -117,12 +118,14 @@ export default async function ListeningCallPage() {
                 >
                   {/* 썸네일 */}
                   {record.photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={record.photo}
-                      alt={record.title}
-                      className="w-28 sm:w-36 shrink-0 object-cover"
-                    />
+                    <div className="w-28 sm:w-36 shrink-0 relative overflow-hidden">
+                      <Image
+                        src={record.photo}
+                        alt={record.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="w-28 sm:w-36 shrink-0 bg-[#1B3A6B]/5 flex items-center justify-center">
                       <span className="text-3xl opacity-30">🎙</span>

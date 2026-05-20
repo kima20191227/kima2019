@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
 import { safeStorageKey } from '@/lib/utils'
+import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
 const BUCKET = 'kima-media'
 const MAX_FILES = 20
@@ -62,12 +63,23 @@ export async function POST(request: NextRequest) {
     const urls: string[] = []
 
     for (const file of files) {
-      const filename = safeStorageKey(file, 'events')
-      const bytes    = await file.arrayBuffer()
+      let bytes    = Buffer.from(await file.arrayBuffer())
+      let mimeType = file.type
+      let ext      = file.name.split('.').pop() ?? 'bin'
+
+      if (isConvertibleImage(mimeType)) {
+        const converted = await convertToWebP(bytes, mimeType)
+        bytes    = converted.buffer
+        mimeType = converted.contentType
+        ext      = converted.ext
+      }
+
+      const webpFile = new File([bytes], file.name.replace(/\.[^.]+$/, `.${ext}`), { type: mimeType })
+      const filename = safeStorageKey(webpFile, 'events')
 
       const { error } = await supabase.storage
         .from(BUCKET)
-        .upload(filename, bytes, { contentType: file.type, upsert: false })
+        .upload(filename, bytes, { contentType: mimeType, upsert: false })
 
       if (error) {
         return NextResponse.json(

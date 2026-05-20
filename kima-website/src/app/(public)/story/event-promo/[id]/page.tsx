@@ -1,7 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { VideoEmbed } from '@/components/story/VideoEmbed'
+import nextDynamic from 'next/dynamic'
+
+const VideoEmbed = nextDynamic(
+  () => import('@/components/story/VideoEmbed').then((m) => m.VideoEmbed),
+  { loading: () => <div className="aspect-video bg-gray-100 animate-pulse rounded-xl" /> }
+)
 import { auth } from '@/lib/auth'
 import type { Metadata } from 'next'
 
@@ -77,12 +83,12 @@ export default async function EventPromoDetailPage({ params }: Props) {
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-10">
         {/* 대표 이미지 */}
         {story.thumbnail && (
-          <div className="rounded-xl overflow-hidden bg-gray-50 flex justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="rounded-xl overflow-hidden bg-gray-50 relative w-full h-96">
+            <Image
               src={story.thumbnail}
               alt={story.title}
-              className="max-w-full object-contain"
+              fill
+              className="object-contain"
             />
           </div>
         )}
@@ -100,12 +106,15 @@ export default async function EventPromoDetailPage({ params }: Props) {
             <h2 className="text-base font-semibold text-gray-700 mb-3">행사 사진</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {story.images.map((src, i) => (
-                <a key={i} href={src} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={src}
-                    alt={`행사 사진 ${i + 1}`}
-                    className="w-full h-36 object-cover rounded-lg hover:opacity-90 transition-opacity"
-                  />
+                <a key={i} href={src} target="_blank" rel="noopener noreferrer" title={`행사 사진 ${i + 1}`}>
+                  <div className="relative w-full h-36">
+                    <Image
+                      src={src}
+                      alt={`행사 사진 ${i + 1}`}
+                      fill
+                      className="object-cover rounded-lg hover:opacity-90 transition-opacity"
+                    />
+                  </div>
                 </a>
               ))}
             </div>

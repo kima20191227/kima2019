@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -58,7 +59,9 @@ export default async function StoryDetailPage({ params }: PageProps) {
         <article className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           {/* 썸네일 */}
           {story.thumbnail && (
-            <img src={story.thumbnail} alt={story.title} className="w-full h-56 object-cover" />
+            <div className="relative w-full h-56">
+              <Image src={story.thumbnail} alt={story.title} fill className="object-cover" />
+            </div>
           )}
 
           <div className="p-6 sm:p-8">
@@ -102,7 +105,9 @@ export default async function StoryDetailPage({ params }: PageProps) {
             {story.images.length > 0 && (
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-2">
                 {story.images.map((img, i) => (
-                  <img key={i} src={img} alt={`${story.title} ${i + 1}`} className="w-full h-32 object-cover rounded-lg" />
+                  <div key={i} className="relative w-full h-32">
+                    <Image src={img} alt={`${story.title} ${i + 1}`} fill className="object-cover rounded-lg" />
+                  </div>
                 ))}
               </div>
             )}

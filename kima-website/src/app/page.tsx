@@ -1,13 +1,12 @@
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/Card'
-import { auth } from '@/lib/auth'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
 import { PopupBanner } from '@/components/home/PopupBanner'
 import { CounterSection } from '@/components/home/CounterSection'
 import { prisma } from '@/lib/prisma'
 import type { StoryType } from '@prisma/client'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // 1시간마다 백그라운드 재생성
 
 const STORY_CATEGORIES: { type: StoryType; label: string; barCls: string; topCls: string }[] = [
   { type: 'NEWS',            label: 'KIMA 뉴스',       barCls: 'bg-[#1B3A6B]', topCls: 'bg-[#1B3A6B]' },
@@ -22,8 +21,6 @@ function storyHref(id: string, type: StoryType) {
 }
 
 export default async function HomePage() {
-  const session = await auth()
-
   const [
     newsStories, fieldStories, eventMediaStories, prayerStories, eventPromoStories,
     dbEvents, orgCount, memberCount, resourceCount,
@@ -62,7 +59,7 @@ export default async function HomePage() {
       <PopupBanner />
 
       {/* 1. 히어로 슬라이드 */}
-      <HeroCarousel isLoggedIn={!!session} />
+      <HeroCarousel />
 
       {/* 2. 숫자 카운터 */}
       <CounterSection stats={stats} />
