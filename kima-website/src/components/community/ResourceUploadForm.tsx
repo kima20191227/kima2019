@@ -67,7 +67,7 @@ export function ResourceUploadForm({ categoryId, categoryName }: ResourceUploadF
 
         if (!uploadRes.ok) {
           const data = await uploadRes.json()
-          setError(data.error ?? '파일 업로드에 실패했습니다.')
+          setError(data.error ?? data.detail ?? '파일 업로드에 실패했습니다.')
           return
         }
         const uploaded = await uploadRes.json()

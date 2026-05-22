@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: driveUrl, fileType })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
+    console.error('[upload/resource]', msg)
     return NextResponse.json(
-      { error: '파일 업로드 중 오류가 발생했습니다.', detail: msg },
+      { error: msg || '파일 업로드 중 오류가 발생했습니다.' },
       { status: 500 }
     )
   }
