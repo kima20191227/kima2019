@@ -1,10 +1,7 @@
 import { google } from 'googleapis'
 import { Readable } from 'stream'
 
-function getDriveClient() {
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-  if (!keyJson) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.')
-
+function getDriveClient(keyJson: string) {
   const credentials = JSON.parse(keyJson)
   const auth = new google.auth.GoogleAuth({
     credentials,
@@ -13,15 +10,20 @@ function getDriveClient() {
   return google.drive({ version: 'v3', auth })
 }
 
+export interface DriveEnvOptions {
+  folderId: string
+  serviceAccountKey: string
+}
+
 export async function uploadFileToDrive(
   buffer: Buffer,
   fileName: string,
   mimeType: string,
+  options: DriveEnvOptions,
 ): Promise<string> {
-  const folderId = process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID
-  if (!folderId) throw new Error('GOOGLE_DRIVE_RESOURCE_FOLDER_ID 환경변수가 설정되지 않았습니다.')
+  const { folderId, serviceAccountKey } = options
 
-  const drive = getDriveClient()
+  const drive = getDriveClient(serviceAccountKey)
 
   const stream = Readable.from(buffer)
 

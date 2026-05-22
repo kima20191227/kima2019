@@ -13,6 +13,24 @@ const ALLOWED_TYPES: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLS',
 }
 
+async function getDriveEnvVars(): Promise<{ folderId: string; serviceAccountKey: string }> {
+  // Try Cloudflare Worker bindings first (production)
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
+    const { env } = getCloudflareContext()
+    const cfEnv = env as Record<string, string | undefined>
+    const folderId = cfEnv.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? ''
+    const serviceAccountKey = cfEnv.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
+    if (folderId && serviceAccountKey) return { folderId, serviceAccountKey }
+  } catch {
+    // Not in Cloudflare context (local dev) — fall through to process.env
+  }
+  return {
+    folderId: process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '',
+    serviceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '',
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
@@ -42,8 +60,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { folderId, serviceAccountKey } = await getDriveEnvVars()
+
+    if (!folderId) {
+      return NextResponse.json({ error: 'Google Drive 폴더 설정이 올바르지 않습니다. (FOLDER_ID 누락)' }, { status: 500 })
+    }
+    if (!serviceAccountKey) {
+      return NextResponse.json({ error: 'Google Drive 서비스 계정 설정이 올바르지 않습니다. (SERVICE_ACCOUNT 누락)' }, { status: 500 })
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer())
-    const driveUrl = await uploadFileToDrive(buffer, file.name, file.type)
+    const driveUrl = await uploadFileToDrive(buffer, file.name, file.type, { folderId, serviceAccountKey })
 
     return NextResponse.json({ url: driveUrl, fileType })
   } catch (err) {
