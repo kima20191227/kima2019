@@ -114,39 +114,46 @@ function ResourceItem({
     return (
       <div className="border border-[#1B3A6B]/20 rounded-xl p-3 bg-blue-50/50 space-y-2">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">제목 *</label>
+          <label htmlFor={`edit-title-${resource.id}`} className="block text-xs text-gray-500 mb-1">제목 *</label>
           <input
+            id={`edit-title-${resource.id}`}
             type="text"
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             disabled={isPending}
+            placeholder="자료 제목"
             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] bg-white"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
+          <label htmlFor={`edit-url-${resource.id}`} className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
           <input
+            id={`edit-url-${resource.id}`}
             type="url"
             value={form.driveUrl}
             onChange={(e) => set('driveUrl', e.target.value)}
             disabled={isPending}
+            placeholder="https://drive.google.com/..."
             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] bg-white"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">설명 (선택)</label>
+          <label htmlFor={`edit-desc-${resource.id}`} className="block text-xs text-gray-500 mb-1">설명 (선택)</label>
           <input
+            id={`edit-desc-${resource.id}`}
             type="text"
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
             disabled={isPending}
+            placeholder="간단한 설명"
             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] bg-white"
           />
         </div>
         {roleWeight >= 3 && (
           <div>
-            <label className="block text-xs text-gray-500 mb-1">접근 등급</label>
+            <label htmlFor={`edit-access-${resource.id}`} className="block text-xs text-gray-500 mb-1">접근 등급</label>
             <select
+              id={`edit-access-${resource.id}`}
               value={form.accessLevel}
               onChange={(e) => set('accessLevel', e.target.value)}
               disabled={isPending}
@@ -246,7 +253,7 @@ export function ResourceListSection({
           <span className="w-2 h-2 rounded-full bg-gray-400 inline-block" />
           사역자료
         </h2>
-        {isPremium && (
+        {roleWeight >= 1 && userId && (
           <ResourceUploadForm categoryId={categoryId} categoryName={categoryName} />
         )}
       </div>
