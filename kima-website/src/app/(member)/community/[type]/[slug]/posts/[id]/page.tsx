@@ -96,6 +96,12 @@ export default async function PostDetailPage({ params }: Props) {
           {/* 하단 액션 */}
           {isAuthorOrAdmin && (
             <div className="px-8 py-4 border-t border-gray-50 flex justify-end gap-2">
+              <Link
+                href={`/community/${type}/${slug}/posts/${post.id}/edit`}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[#1B3A6B]/30 text-[#1B3A6B] hover:bg-[#1B3A6B]/5 transition-colors"
+              >
+                수정
+              </Link>
               <DeletePostButton postId={post.id} redirectTo={`/community/${type}/${slug}`} />
             </div>
           )}

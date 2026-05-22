@@ -14,11 +14,28 @@ interface WritePostFormProps {
   categoryType: string
   categorySlug: string
   canWriteNotice: boolean
+  mode?: 'create' | 'edit'
+  postId?: string
+  initialValues?: {
+    title: string
+    content: string
+    type: PostInput['type']
+  }
 }
 
-export function WritePostForm({ categoryId, categoryName, categoryType, categorySlug, canWriteNotice }: WritePostFormProps) {
+export function WritePostForm({
+  categoryId,
+  categoryName,
+  categoryType,
+  categorySlug,
+  canWriteNotice,
+  mode = 'create',
+  postId,
+  initialValues,
+}: WritePostFormProps) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
+  const isEdit = mode === 'edit'
 
   const {
     register,
@@ -26,23 +43,31 @@ export function WritePostForm({ categoryId, categoryName, categoryType, category
     formState: { errors, isSubmitting },
   } = useForm<PostInput>({
     resolver: zodResolver(postSchema),
-    defaultValues: { categoryId, type: 'SHARE' },
+    defaultValues: isEdit && initialValues
+      ? { categoryId, type: initialValues.type, title: initialValues.title, content: initialValues.content }
+      : { categoryId, type: 'SHARE' },
   })
 
   const onSubmit = async (data: PostInput) => {
     setServerError(null)
     try {
-      const res = await fetch('/api/posts', {
-        method: 'POST',
+      const url = isEdit ? `/api/posts/${postId}` : '/api/posts'
+      const method = isEdit ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
       if (!res.ok) {
         const body = await res.json()
-        setServerError(body.error ?? '게시글 작성 중 오류가 발생했습니다.')
+        setServerError(body.error ?? '게시글 처리 중 오류가 발생했습니다.')
         return
       }
-      router.push(`/community/${categoryType}/${categorySlug}`)
+      if (isEdit && postId) {
+        router.push(`/community/${categoryType}/${categorySlug}/posts/${postId}`)
+      } else {
+        router.push(`/community/${categoryType}/${categorySlug}`)
+      }
       router.refresh()
     } catch {
       setServerError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')
@@ -51,7 +76,6 @@ export function WritePostForm({ categoryId, categoryName, categoryType, category
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {/* hidden categoryId */}
       <input type="hidden" {...register('categoryId')} />
 
       {/* 유형 */}
@@ -121,7 +145,7 @@ export function WritePostForm({ categoryId, categoryName, categoryType, category
           취소
         </Button>
         <Button type="submit" className="flex-1" isLoading={isSubmitting}>
-          {isSubmitting ? '등록 중...' : '게시글 등록'}
+          {isSubmitting ? (isEdit ? '수정 중...' : '등록 중...') : (isEdit ? '수정 완료' : '게시글 등록')}
         </Button>
       </div>
     </form>
