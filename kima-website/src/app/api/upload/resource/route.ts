@@ -14,20 +14,24 @@ const ALLOWED_TYPES: Record<string, string> = {
 }
 
 async function getDriveEnvVars(): Promise<{ folderId: string; serviceAccountKey: string }> {
+  let cfFolderId = ''
+  let cfServiceAccountKey = ''
+
   // Try Cloudflare Worker bindings first (production)
   try {
     const { getCloudflareContext } = await import('@opennextjs/cloudflare')
     const { env } = getCloudflareContext()
     const cfEnv = env as Record<string, string | undefined>
-    const folderId = cfEnv.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? ''
-    const serviceAccountKey = cfEnv.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
-    if (folderId && serviceAccountKey) return { folderId, serviceAccountKey }
+    cfFolderId = cfEnv.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? ''
+    cfServiceAccountKey = cfEnv.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
   } catch {
     // Not in Cloudflare context (local dev) — fall through to process.env
   }
+
+  // Use each value independently: Cloudflare binding → process.env fallback
   return {
-    folderId: process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '',
-    serviceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '',
+    folderId: cfFolderId || process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '',
+    serviceAccountKey: cfServiceAccountKey || process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '',
   }
 }
 
