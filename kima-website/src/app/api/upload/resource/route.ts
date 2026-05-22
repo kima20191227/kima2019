@@ -13,9 +13,10 @@ const ALLOWED_TYPES: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLS',
 }
 
-async function getDriveEnvVars(): Promise<{ folderId: string; serviceAccountKey: string }> {
+async function getDriveEnvVars(): Promise<{ folderId: string; serviceAccountKey: string; diag: string }> {
   let cfFolderId = ''
   let cfServiceAccountKey = ''
+  let cfError = ''
 
   // Try Cloudflare Worker bindings first (production)
   try {
@@ -24,15 +25,15 @@ async function getDriveEnvVars(): Promise<{ folderId: string; serviceAccountKey:
     const cfEnv = env as Record<string, string | undefined>
     cfFolderId = cfEnv.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? ''
     cfServiceAccountKey = cfEnv.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
-  } catch {
-    // Not in Cloudflare context (local dev) — fall through to process.env
+  } catch (e) {
+    cfError = e instanceof Error ? e.message.slice(0, 80) : String(e).slice(0, 80)
   }
 
-  // Use each value independently: Cloudflare binding → process.env fallback
-  return {
-    folderId: cfFolderId || process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '',
-    serviceAccountKey: cfServiceAccountKey || process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '',
-  }
+  const folderId = cfFolderId || (process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '')
+  const serviceAccountKey = cfServiceAccountKey || (process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '')
+  const diag = `cf_folder=${cfFolderId ? 'Y' : 'N'} cf_key=${cfServiceAccountKey ? 'Y' : 'N'} env_folder=${process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ? 'Y' : 'N'} env_key=${process.env.GOOGLE_SERVICE_ACCOUNT_KEY ? 'Y' : 'N'}${cfError ? ` err=${cfError}` : ''}`
+
+  return { folderId, serviceAccountKey, diag }
 }
 
 export async function POST(request: NextRequest) {
@@ -64,13 +65,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { folderId, serviceAccountKey } = await getDriveEnvVars()
+    const { folderId, serviceAccountKey, diag } = await getDriveEnvVars()
 
     if (!folderId) {
-      return NextResponse.json({ error: 'Google Drive 폴더 설정이 올바르지 않습니다. (FOLDER_ID 누락)' }, { status: 500 })
+      return NextResponse.json({ error: `FOLDER_ID 누락 [${diag}]` }, { status: 500 })
     }
     if (!serviceAccountKey) {
-      return NextResponse.json({ error: 'Google Drive 서비스 계정 설정이 올바르지 않습니다. (SERVICE_ACCOUNT 누락)' }, { status: 500 })
+      return NextResponse.json({ error: `SERVICE_ACCOUNT 누락 [${diag}]` }, { status: 500 })
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
