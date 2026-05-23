@@ -13,10 +13,23 @@ const ALLOWED_TYPES: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLS',
 }
 
-function getDriveEnvVars(): { folderId: string; serviceAccountKey: string } {
+async function getDriveEnvVars(): Promise<{ folderId: string; serviceAccountKey: string }> {
+  // process.env works locally; in Cloudflare Pages production env vars are in
+  // the Worker's binding object, accessible via getCloudflareContext (async).
+  let cfFolderId = ''
+  let cfKey = ''
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
+    const ctx = await getCloudflareContext()
+    const env = ctx.env as Record<string, string | undefined>
+    cfFolderId = env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? ''
+    cfKey      = env.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
+  } catch {
+    // local dev — fall through to process.env
+  }
   return {
-    folderId: process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '',
-    serviceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '',
+    folderId:          cfFolderId || (process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? ''),
+    serviceAccountKey: cfKey      || (process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''),
   }
 }
 
@@ -49,7 +62,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { folderId, serviceAccountKey } = getDriveEnvVars()
+    const { folderId, serviceAccountKey } = await getDriveEnvVars()
 
     if (!folderId) {
       return NextResponse.json({ error: 'Google Drive 폴더 ID가 설정되지 않았습니다. (GOOGLE_DRIVE_RESOURCE_FOLDER_ID)' }, { status: 500 })
