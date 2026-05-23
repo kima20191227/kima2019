@@ -1,15 +1,15 @@
 import { google } from 'googleapis'
 import { Readable } from 'stream'
 
-function getDriveClient(keyJson: string) {
-  const credentials = JSON.parse(keyJson)
-  // Cloudflare dashboard sometimes stores literal \n instead of actual newlines
-  // in the private_key field — normalise before handing to googleapis.
-  if (credentials.private_key && typeof credentials.private_key === 'string') {
-    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n')
-  }
+function getDriveClient(clientEmail: string, privateKey: string) {
+  // Normalise \n sequences to actual newlines (dotenv or Cloudflare may keep them escaped)
+  const normalizedKey = privateKey.replace(/\\n/g, '\n')
   const auth = new google.auth.GoogleAuth({
-    credentials,
+    credentials: {
+      type: 'service_account',
+      client_email: clientEmail,
+      private_key: normalizedKey,
+    },
     scopes: ['https://www.googleapis.com/auth/drive'],
   })
   return google.drive({ version: 'v3', auth })
@@ -17,7 +17,8 @@ function getDriveClient(keyJson: string) {
 
 export interface DriveEnvOptions {
   folderId: string
-  serviceAccountKey: string
+  clientEmail: string
+  privateKey: string
 }
 
 export async function uploadFileToDrive(
@@ -26,9 +27,9 @@ export async function uploadFileToDrive(
   mimeType: string,
   options: DriveEnvOptions,
 ): Promise<string> {
-  const { folderId, serviceAccountKey } = options
+  const { folderId, clientEmail, privateKey } = options
 
-  const drive = getDriveClient(serviceAccountKey)
+  const drive = getDriveClient(clientEmail, privateKey)
 
   const stream = Readable.from(buffer)
 

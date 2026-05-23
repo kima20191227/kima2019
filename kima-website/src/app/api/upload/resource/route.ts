@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { uploadFileToDrive } from '@/lib/googleDrive'
-import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 const MAX_FILE_SIZE_MB = 50
 const ALLOWED_TYPES: Record<string, string> = {
@@ -15,19 +14,6 @@ const ALLOWED_TYPES: Record<string, string> = {
 }
 
 const DRIVE_FOLDER_ID = '1LKzxRWypSnhbZzkGTDhWvhHG7a07r1RF'
-
-function getServiceAccountKey(): string {
-  // Static import of getCloudflareContext lets OpenNext patch it at build time
-  // so it works correctly inside the Cloudflare Workers runtime.
-  try {
-    const { env } = getCloudflareContext()
-    const key = (env as Record<string, string | undefined>).GOOGLE_SERVICE_ACCOUNT_KEY
-    if (key) return key
-  } catch {
-    // local dev — fall through
-  }
-  return process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,15 +44,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const folderId = DRIVE_FOLDER_ID
-    const serviceAccountKey = getServiceAccountKey()
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL ?? ''
+    const privateKey  = process.env.GOOGLE_PRIVATE_KEY ?? ''
 
-    if (!serviceAccountKey) {
-      return NextResponse.json({ error: 'Google 서비스 계정 키가 설정되지 않았습니다. (GOOGLE_SERVICE_ACCOUNT_KEY)' }, { status: 500 })
+    if (!clientEmail || !privateKey) {
+      return NextResponse.json(
+        { error: 'Google 서비스 계정 설정이 필요합니다. (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY)' },
+        { status: 500 }
+      )
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const driveUrl = await uploadFileToDrive(buffer, file.name, file.type, { folderId, serviceAccountKey })
+    const driveUrl = await uploadFileToDrive(buffer, file.name, file.type, {
+      folderId: DRIVE_FOLDER_ID,
+      clientEmail,
+      privateKey,
+    })
 
     return NextResponse.json({ url: driveUrl, fileType })
   } catch (err) {
