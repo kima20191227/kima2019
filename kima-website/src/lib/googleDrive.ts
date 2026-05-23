@@ -95,7 +95,7 @@ export async function uploadFileToDrive(
   const fullBody = Buffer.concat([part1, buffer, part2])
 
   const uploadRes = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true',
     {
       method:  'POST',
       headers: {
@@ -115,7 +115,7 @@ export async function uploadFileToDrive(
   if (!fileId) throw new Error('Drive 파일 ID를 가져올 수 없습니다.')
 
   // 누구나 링크로 볼 수 있도록 공유 설정
-  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`, {
     method:  'POST',
     headers: {
       Authorization:  `Bearer ${accessToken}`,

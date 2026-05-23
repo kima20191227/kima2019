@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { uploadFileToDrive } from '@/lib/googleDrive'
 
-const MAX_FILE_SIZE_MB = 50
-const ALLOWED_TYPES: Record<string, string> = {
+const KNOWN_TYPES: Record<string, string> = {
   'application/pdf': 'PDF',
   'application/vnd.ms-powerpoint': 'PPT',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPT',
@@ -13,7 +12,7 @@ const ALLOWED_TYPES: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLS',
 }
 
-const DRIVE_FOLDER_ID = '1LKzxRWypSnhbZzkGTDhWvhHG7a07r1RF'
+const DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,20 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '파일이 없습니다.' }, { status: 400 })
     }
 
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      return NextResponse.json(
-        { error: `파일 크기는 ${MAX_FILE_SIZE_MB}MB 이하여야 합니다.` },
-        { status: 400 }
-      )
-    }
-
-    const fileType = ALLOWED_TYPES[file.type]
-    if (!fileType) {
-      return NextResponse.json(
-        { error: 'PDF, PPT, DOC, XLS 파일만 업로드 가능합니다.' },
-        { status: 400 }
-      )
-    }
+    const fileType = KNOWN_TYPES[file.type] ?? file.name.split('.').pop()?.toUpperCase() ?? 'FILE'
 
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL ?? ''
     const privateKey  = process.env.GOOGLE_PRIVATE_KEY ?? ''

@@ -150,13 +150,12 @@ export function ResourceUploadForm({ categoryId, categoryName }: ResourceUploadF
       {mode === 'file' && (
         <div>
           <label htmlFor="resource-file" className="block text-xs text-gray-500 mb-1">
-            파일 선택 * <span className="text-gray-400">(PDF, PPT, DOC, XLS · 최대 50MB)</span>
+            파일 선택 *
           </label>
           <input
             id="resource-file"
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx"
             onChange={handleFileChange}
             disabled={isPending}
             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] file:mr-2 file:text-xs file:border-0 file:bg-[#1B3A6B] file:text-white file:rounded file:px-2 file:py-0.5 file:cursor-pointer"
