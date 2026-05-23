@@ -13,27 +13,11 @@ const ALLOWED_TYPES: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLS',
 }
 
-async function getDriveEnvVars(): Promise<{ folderId: string; serviceAccountKey: string; diag: string }> {
-  let cfFolderId = ''
-  let cfServiceAccountKey = ''
-  let cfError = ''
-
-  // Try Cloudflare Worker bindings first (production)
-  try {
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
-    const { env } = getCloudflareContext()
-    const cfEnv = env as Record<string, string | undefined>
-    cfFolderId = cfEnv.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? ''
-    cfServiceAccountKey = cfEnv.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
-  } catch (e) {
-    cfError = e instanceof Error ? e.message.slice(0, 80) : String(e).slice(0, 80)
+function getDriveEnvVars(): { folderId: string; serviceAccountKey: string } {
+  return {
+    folderId: process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '',
+    serviceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '',
   }
-
-  const folderId = cfFolderId || (process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ?? '')
-  const serviceAccountKey = cfServiceAccountKey || (process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '')
-  const diag = `cf_folder=${cfFolderId ? 'Y' : 'N'} cf_key=${cfServiceAccountKey ? 'Y' : 'N'} env_folder=${process.env.GOOGLE_DRIVE_RESOURCE_FOLDER_ID ? 'Y' : 'N'} env_key=${process.env.GOOGLE_SERVICE_ACCOUNT_KEY ? 'Y' : 'N'}${cfError ? ` err=${cfError}` : ''}`
-
-  return { folderId, serviceAccountKey, diag }
 }
 
 export async function POST(request: NextRequest) {
@@ -65,13 +49,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { folderId, serviceAccountKey, diag } = await getDriveEnvVars()
+    const { folderId, serviceAccountKey } = getDriveEnvVars()
 
     if (!folderId) {
-      return NextResponse.json({ error: `FOLDER_ID 누락 [${diag}]` }, { status: 500 })
+      return NextResponse.json({ error: 'Google Drive 폴더 ID가 설정되지 않았습니다. (GOOGLE_DRIVE_RESOURCE_FOLDER_ID)' }, { status: 500 })
     }
     if (!serviceAccountKey) {
-      return NextResponse.json({ error: `SERVICE_ACCOUNT 누락 [${diag}]` }, { status: 500 })
+      return NextResponse.json({ error: 'Google 서비스 계정 키가 설정되지 않았습니다. (GOOGLE_SERVICE_ACCOUNT_KEY)' }, { status: 500 })
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
