@@ -44,6 +44,7 @@ export default async function CategoryBoardPage({ params }: Props) {
     posts: {
       id: string; title: string; content: string; type: PostType; isPublished: boolean
       categoryId: string; authorId: string; createdAt: Date; updatedAt: Date
+      attachments: import('@prisma/client').Prisma.JsonValue
       author: { id: string; name: string | null }
       category: { id: string; name: string; slug: string }
     }[]
