@@ -10,8 +10,8 @@ const attachmentSchema = z.object({ url: z.string().url(), name: z.string(), typ
 
 const updatePostSchema = z.object({
   title: z.string().min(2, '제목은 2자 이상 입력해주세요').max(200, '제목은 200자 이하로 입력해주세요'),
-  content: z.string().min(10, '내용은 10자 이상 입력해주세요'),
-  type: z.enum(['NOTICE', 'SHARE'], { message: '게시글 유형을 선택해주세요' }),
+  content: z.string(),
+  type: z.enum(['NOTICE', 'SHARE', 'INTRODUCE'], { message: '게시글 유형을 선택해주세요' }),
   attachments: z.array(attachmentSchema).optional(),
 })
 
@@ -50,8 +50,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { title, content, type, attachments } = parsed.data
 
-    if (type === 'NOTICE' && roleWeight < 3) {
-      return NextResponse.json({ error: '공지사항은 임원·위원장 이상만 작성할 수 있습니다.' }, { status: 403 })
+    if ((type === 'NOTICE' || type === 'INTRODUCE') && roleWeight < 3) {
+      return NextResponse.json({ error: '이 유형은 임원·위원장 이상만 작성할 수 있습니다.' }, { status: 403 })
     }
 
     const updated = await prisma.post.update({

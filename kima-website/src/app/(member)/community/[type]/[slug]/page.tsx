@@ -113,6 +113,7 @@ export default async function CategoryBoardPage({ params }: Props) {
 
   const notices = category.posts.filter((p) => p.type === 'NOTICE')
   const shares = category.posts.filter((p) => p.type === 'SHARE')
+  const introduces = category.posts.filter((p) => p.type === 'INTRODUCE')
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -251,6 +252,35 @@ export default async function CategoryBoardPage({ params }: Props) {
                 </div>
               )}
             </div>
+
+            {/* 알아가기 (언어권 카테고리 전용) */}
+            {(dbType === 'LANGUAGE' || introduces.length > 0) && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-[#1B3A6B] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#2A9D8F] inline-block" />
+                    {category.name} 알아가기
+                  </h2>
+                  {canWrite && (
+                    <Link
+                      href={`/community/${type}/${slug}/write`}
+                      className="text-xs text-[#1B3A6B] font-medium hover:underline"
+                    >
+                      + 글쓰기
+                    </Link>
+                  )}
+                </div>
+                {introduces.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4 text-center">등록된 게시글이 없습니다.</p>
+                ) : (
+                  <div>
+                    {introduces.map((post) => (
+                      <PostCard key={post.id} post={post} categoryType={type} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 자료 목록 (1/3) */}

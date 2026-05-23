@@ -51,7 +51,7 @@ export function WritePostForm({
     resolver: zodResolver(postSchema),
     defaultValues: isEdit && initialValues
       ? { categoryId, type: initialValues.type, title: initialValues.title, content: initialValues.content }
-      : { categoryId, type: 'SHARE' },
+      : { categoryId, type: 'SHARE', content: '' },
   })
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,9 +121,10 @@ export function WritePostForm({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           게시글 유형 <span className="text-red-500">*</span>
         </label>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap">
           {[
             { value: 'SHARE', label: '사역 나눔' },
+            ...(categoryType === 'language' ? [{ value: 'INTRODUCE', label: `${categoryName} 알아가기` }] : []),
             ...(canWriteNotice ? [{ value: 'NOTICE', label: '공지사항' }] : []),
           ].map((opt) => (
             <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
@@ -156,13 +157,13 @@ export function WritePostForm({
       {/* 내용 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          내용 <span className="text-red-500">*</span>
+          내용
         </label>
         <textarea
           {...register('content')}
           rows={12}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30 resize-none"
-          placeholder="내용을 입력해주세요 (최소 10자)"
+          placeholder="내용을 입력해주세요 (선택 사항)"
         />
         <FieldError message={errors.content?.message} />
       </div>

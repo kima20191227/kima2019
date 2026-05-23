@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const categoryId = searchParams.get('categoryId')
-    const type = searchParams.get('type') as 'NOTICE' | 'SHARE' | null
+    const type = searchParams.get('type') as 'NOTICE' | 'SHARE' | 'INTRODUCE' | null
 
     const posts = await prisma.post.findMany({
       where: {
@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
 
     const { title, content, type, categoryId, attachments } = parsed.data
 
-    if (type === 'NOTICE' && !['OFFICER', 'ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: '공지사항은 임원·위원장 이상만 작성할 수 있습니다.' }, { status: 403 })
+    if ((type === 'NOTICE' || type === 'INTRODUCE') && !['OFFICER', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: '이 유형은 임원·위원장 이상만 작성할 수 있습니다.' }, { status: 403 })
     }
 
     const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { id: true, name: true } })

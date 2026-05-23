@@ -133,6 +133,7 @@ model Post {
 enum PostType {
   NOTICE
   SHARE
+  INTRODUCE
 }
 
 model Resource {
