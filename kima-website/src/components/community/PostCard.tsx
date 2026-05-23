@@ -1,9 +1,13 @@
 import Link from 'next/link'
-import type { Post, User, Category } from '@prisma/client'
+import type { PostType } from '@prisma/client'
 
-type PostWithRelations = Post & {
-  author: Pick<User, 'id' | 'name'>
-  category: Pick<Category, 'id' | 'name' | 'slug'>
+type PostWithRelations = {
+  id: string
+  title: string
+  type: PostType
+  createdAt: Date
+  author: { id: string; name: string | null }
+  category: { id: string; name: string; slug: string }
 }
 
 interface PostCardProps {
