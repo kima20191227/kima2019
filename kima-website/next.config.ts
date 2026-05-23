@@ -4,10 +4,6 @@ const nextConfig: NextConfig = {
   // 카카오 지도 JS키 - NEXT_PUBLIC_KAKAO_MAP_KEY 환경변수에서 읽음 (Cloudflare Pages 환경변수에 설정)
   env: {
     NEXT_PUBLIC_KAKAO_MAP_KEY: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY ?? '',
-    // Build-time injection — Cloudflare Pages exposes dashboard vars to the
-    // build runner, so these get bundled into the server Worker at compile time.
-    GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL ?? '',
-    GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY ?? '',
   },
   typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: true },
