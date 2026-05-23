@@ -6,10 +6,13 @@ import type { UserRole } from '@prisma/client'
 
 const ROLE_WEIGHT: Record<UserRole, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
 
+const attachmentSchema = z.object({ url: z.string().url(), name: z.string(), type: z.string() })
+
 const updatePostSchema = z.object({
   title: z.string().min(2, '제목은 2자 이상 입력해주세요').max(200, '제목은 200자 이하로 입력해주세요'),
   content: z.string().min(10, '내용은 10자 이상 입력해주세요'),
   type: z.enum(['NOTICE', 'SHARE'], { message: '게시글 유형을 선택해주세요' }),
+  attachments: z.array(attachmentSchema).optional(),
 })
 
 interface RouteParams {
@@ -45,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: '입력값이 올바르지 않습니다.', details: parsed.error.format() }, { status: 400 })
     }
 
-    const { title, content, type } = parsed.data
+    const { title, content, type, attachments } = parsed.data
 
     if (type === 'NOTICE' && roleWeight < 3) {
       return NextResponse.json({ error: '공지사항은 임원·위원장 이상만 작성할 수 있습니다.' }, { status: 403 })
@@ -53,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const updated = await prisma.post.update({
       where: { id },
-      data: { title, content, type },
+      data: { title, content, type, attachments: attachments ?? [] },
     })
 
     return NextResponse.json({ post: updated })

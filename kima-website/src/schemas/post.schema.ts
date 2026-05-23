@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+export const attachmentSchema = z.object({
+  url: z.string().url(),
+  name: z.string(),
+  type: z.string(),
+})
+
 export const postSchema = z.object({
   title: z
     .string()
@@ -8,6 +14,8 @@ export const postSchema = z.object({
   content: z.string().min(10, '내용은 10자 이상 입력해주세요'),
   type: z.enum(['NOTICE', 'SHARE'], { message: '게시글 유형을 선택해주세요' }),
   categoryId: z.string().cuid('올바른 카테고리를 선택해주세요'),
+  attachments: z.array(attachmentSchema).optional(),
 })
 
+export type PostAttachment = z.infer<typeof attachmentSchema>
 export type PostInput = z.infer<typeof postSchema>

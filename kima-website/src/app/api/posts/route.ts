@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '입력값이 올바르지 않습니다.', details: parsed.error.format() }, { status: 400 })
     }
 
-    const { title, content, type, categoryId } = parsed.data
+    const { title, content, type, categoryId, attachments } = parsed.data
 
     if (type === 'NOTICE' && !['OFFICER', 'ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ error: '공지사항은 임원·위원장 이상만 작성할 수 있습니다.' }, { status: 403 })
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const post = await prisma.post.create({
-      data: { title, content, type, categoryId, authorId: session.user.id },
+      data: { title, content, type, categoryId, authorId: session.user.id, attachments: attachments ?? [] },
       include: { author: { select: { id: true, name: true } } },
     })
 

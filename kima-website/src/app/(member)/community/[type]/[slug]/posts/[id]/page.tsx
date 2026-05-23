@@ -93,6 +93,45 @@ export default async function PostDetailPage({ params }: Props) {
             </div>
           </div>
 
+          {/* 첨부파일 */}
+          {Array.isArray(post.attachments) && post.attachments.length > 0 && (
+            <div className="px-8 py-5 border-t border-gray-50">
+              <p className="text-xs font-semibold text-gray-500 mb-3">첨부파일 ({post.attachments.length})</p>
+              <ul className="space-y-2">
+                {(post.attachments as { url: string; name: string; type: string }[]).map((att, idx) => {
+                  const isImage = att.type?.startsWith('image/')
+                  return (
+                    <li key={idx}>
+                      {isImage ? (
+                        <div className="mb-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={att.url}
+                            alt={att.name}
+                            className="max-w-full rounded-lg border border-gray-100 max-h-96 object-contain"
+                          />
+                          <p className="text-xs text-gray-400 mt-1">{att.name}</p>
+                        </div>
+                      ) : (
+                        <a
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-[#1B3A6B]/5 border border-gray-100 rounded-lg text-sm text-[#1B3A6B] transition-colors"
+                        >
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                          <span className="truncate max-w-xs">{att.name}</span>
+                        </a>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
+
           {/* 하단 액션 */}
           {isAuthorOrAdmin && (
             <div className="px-8 py-4 border-t border-gray-50 flex justify-end gap-2">

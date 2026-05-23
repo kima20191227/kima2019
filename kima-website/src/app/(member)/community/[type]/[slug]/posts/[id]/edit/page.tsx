@@ -89,6 +89,9 @@ export default async function EditPostPage({ params }: Props) {
               title: post.title,
               content: post.content,
               type: post.type,
+              attachments: Array.isArray(post.attachments)
+                ? (post.attachments as { url: string; name: string; type: string }[])
+                : [],
             }}
           />
         </div>

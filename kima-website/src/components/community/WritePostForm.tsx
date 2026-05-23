@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { postSchema, type PostInput } from '@/schemas/post.schema'
+import { postSchema, type PostInput, type PostAttachment } from '@/schemas/post.schema'
 import { FieldError } from '@/components/auth/FieldError'
 import { Button } from '@/components/ui/Button'
 
@@ -20,8 +20,11 @@ interface WritePostFormProps {
     title: string
     content: string
     type: PostInput['type']
+    attachments?: PostAttachment[]
   }
 }
+
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
 
 export function WritePostForm({
   categoryId,
@@ -35,6 +38,9 @@ export function WritePostForm({
 }: WritePostFormProps) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<PostAttachment[]>(initialValues?.attachments ?? [])
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const isEdit = mode === 'edit'
 
   const {
@@ -48,6 +54,38 @@ export function WritePostForm({
       : { categoryId, type: 'SHARE' },
   })
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    if (files.length === 0) return
+
+    setUploading(true)
+    setServerError(null)
+
+    const uploaded: PostAttachment[] = []
+    for (const file of files) {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const data = await res.json()
+        setServerError(`"${file.name}" 업로드 실패: ${data.error ?? '알 수 없는 오류'}`)
+        setUploading(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return
+      }
+      const { url, fileType } = await res.json()
+      uploaded.push({ url, name: file.name, type: file.type || fileType || 'FILE' })
+    }
+
+    setAttachments((prev) => [...prev, ...uploaded])
+    setUploading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeAttachment = (idx: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx))
+  }
+
   const onSubmit = async (data: PostInput) => {
     setServerError(null)
     try {
@@ -56,7 +94,7 @@ export function WritePostForm({
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, attachments }),
       })
       if (!res.ok) {
         const body = await res.json()
@@ -129,6 +167,60 @@ export function WritePostForm({
         <FieldError message={errors.content?.message} />
       </div>
 
+      {/* 파일 첨부 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          파일·사진 첨부 <span className="text-xs text-gray-400 font-normal">(여러 파일 동시 선택 가능)</span>
+        </label>
+
+        <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-[#1B3A6B]/30 text-sm text-[#1B3A6B] cursor-pointer hover:bg-[#1B3A6B]/5 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+          {uploading ? '업로드 중...' : '파일 선택'}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+        </label>
+
+        {/* 첨부 목록 */}
+        {attachments.length > 0 && (
+          <ul className="mt-3 space-y-2">
+            {attachments.map((att, idx) => {
+              const isImage = IMAGE_TYPES.includes(att.type)
+              return (
+                <li key={idx} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                  {isImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={att.url} alt={att.name} className="w-10 h-10 object-cover rounded" />
+                  ) : (
+                    <div className="w-10 h-10 flex items-center justify-center bg-[#1B3A6B]/10 rounded text-[#1B3A6B] text-xs font-bold">
+                      {att.type.split('/').pop()?.toUpperCase().slice(0, 4) ?? 'FILE'}
+                    </div>
+                  )}
+                  <span className="flex-1 text-xs text-gray-600 truncate">{att.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(idx)}
+                    className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                    aria-label="삭제"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+
       {serverError && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
           {serverError}
@@ -144,7 +236,7 @@ export function WritePostForm({
         >
           취소
         </Button>
-        <Button type="submit" className="flex-1" isLoading={isSubmitting}>
+        <Button type="submit" className="flex-1" isLoading={isSubmitting || uploading}>
           {isSubmitting ? (isEdit ? '수정 중...' : '등록 중...') : (isEdit ? '수정 완료' : '게시글 등록')}
         </Button>
       </div>

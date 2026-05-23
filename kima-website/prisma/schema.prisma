@@ -125,6 +125,7 @@ model Post {
   authorId    String
   author      User      @relation(fields: [authorId], references: [id])
   isPublished Boolean   @default(true)
+  attachments Json?     // [{url, name, type}]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
