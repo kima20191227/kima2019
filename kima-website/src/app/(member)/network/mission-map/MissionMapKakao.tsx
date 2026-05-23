@@ -7,6 +7,7 @@ declare global {
 }
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY || 'c3db9b11452db7f5a8e2587ced3ab66e'
+let kakaoScriptPromise: Promise<void> | null = null
 
 export interface GmfsnsOrg {
   id: number
@@ -30,7 +31,9 @@ interface Props {
 }
 
 function loadKakaoScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
+  if (kakaoScriptPromise) return kakaoScriptPromise
+
+  kakaoScriptPromise = new Promise((resolve, reject) => {
     if (typeof window === 'undefined') { reject(new Error('SSR')); return }
     if (window.kakao?.maps) { resolve(); return }
     const existing = document.querySelector('script[data-kakao-map]')
@@ -40,12 +43,14 @@ function loadKakaoScript(): Promise<void> {
     }
     const script = document.createElement('script')
     script.setAttribute('data-kakao-map', 'true')
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&autoload=false`
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&autoload=false`
     script.async = true
     script.onload = () => resolve()
     script.onerror = () => reject(new Error('Kakao Maps SDK 로드 실패'))
     document.head.appendChild(script)
   })
+
+  return kakaoScriptPromise
 }
 
 export function MissionMapKakao({ orgs, selectedId, onSelect, onHover }: Props) {

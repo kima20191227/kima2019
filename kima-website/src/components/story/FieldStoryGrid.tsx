@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { parseVideoUrl } from '@/lib/videoUtils'
 
 export interface FieldStoryItem {
@@ -129,12 +130,12 @@ function StoryCard({ story, onPlayVideo }: StoryCardProps) {
       {/* 썸네일 영역 */}
       {thumbSrc ? (
         <div className="relative w-full h-44 rounded-t-xl overflow-hidden bg-gray-100 shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={thumbSrc}
             alt={story.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
+            fill
+            sizes="(min-width: 768px) 50vw, 100vw"
+            className="object-cover"
           />
           {/* 영상 재생 버튼 오버레이 */}
           {hasVideo && (
