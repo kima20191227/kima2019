@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { uploadFileToDrive } from '@/lib/googleDrive'
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 const MAX_FILE_SIZE_MB = 50
 const ALLOWED_TYPES: Record<string, string> = {
@@ -13,15 +14,19 @@ const ALLOWED_TYPES: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLS',
 }
 
-// Folder ID is not sensitive — hardcoded so it is always available at runtime.
 const DRIVE_FOLDER_ID = '1LKzxRWypSnhbZzkGTDhWvhHG7a07r1RF'
 
-function getDriveEnvVars() {
-  return {
-    folderId: DRIVE_FOLDER_ID,
-    // Injected at build time via next.config.ts env block.
-    serviceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '',
+function getServiceAccountKey(): string {
+  // Static import of getCloudflareContext lets OpenNext patch it at build time
+  // so it works correctly inside the Cloudflare Workers runtime.
+  try {
+    const { env } = getCloudflareContext()
+    const key = (env as Record<string, string | undefined>).GOOGLE_SERVICE_ACCOUNT_KEY
+    if (key) return key
+  } catch {
+    // local dev — fall through
   }
+  return process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? ''
 }
 
 export async function POST(request: NextRequest) {
@@ -53,11 +58,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { folderId, serviceAccountKey } = getDriveEnvVars()
+    const folderId = DRIVE_FOLDER_ID
+    const serviceAccountKey = getServiceAccountKey()
 
-    if (!folderId) {
-      return NextResponse.json({ error: 'Google Drive 폴더 ID가 설정되지 않았습니다. (GOOGLE_DRIVE_RESOURCE_FOLDER_ID)' }, { status: 500 })
-    }
     if (!serviceAccountKey) {
       return NextResponse.json({ error: 'Google 서비스 계정 키가 설정되지 않았습니다. (GOOGLE_SERVICE_ACCOUNT_KEY)' }, { status: 500 })
     }
