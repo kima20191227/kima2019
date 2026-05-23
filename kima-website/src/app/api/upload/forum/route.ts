@@ -17,17 +17,22 @@ const ALLOWED_TYPES = [
 ]
 
 export async function POST(request: NextRequest) {
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
   try {
     const session = await auth()
     const role = session?.user?.role
     if (role !== 'ADMIN' && role !== 'OFFICER') {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json(
+        { error: '서버 환경 변수가 설정되지 않았습니다. (SUPABASE_SERVICE_ROLE_KEY)' },
+        { status: 500 }
+      )
+    }
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey)
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null

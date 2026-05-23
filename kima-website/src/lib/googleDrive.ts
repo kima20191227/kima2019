@@ -3,6 +3,11 @@ import { Readable } from 'stream'
 
 function getDriveClient(keyJson: string) {
   const credentials = JSON.parse(keyJson)
+  // Cloudflare dashboard sometimes stores literal \n instead of actual newlines
+  // in the private_key field — normalise before handing to googleapis.
+  if (credentials.private_key && typeof credentials.private_key === 'string') {
+    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n')
+  }
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/drive'],

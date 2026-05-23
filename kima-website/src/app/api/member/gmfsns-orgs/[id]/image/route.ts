@@ -8,10 +8,10 @@ const BUCKET = 'org-images'
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 
 function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('SUPABASE_SERVICE_ROLE_KEY 환경 변수가 설정되지 않았습니다.')
+  return createClient(url, key)
 }
 
 function whereClause(id: string) {
