@@ -103,13 +103,22 @@ function ResourceRow({ resource, userAccessLevel }: { resource: Resource; userAc
           열기
         </a>
       ) : (
-        <span className="flex-shrink-0 text-xs text-gray-400 flex items-center gap-1">
+        <a
+          href={
+            userAccessLevel === 'none'
+              ? '/auth/login'
+              : resource.accessLevel === 'PREMIUM'
+                ? '/member/upgrade'
+                : '/auth/login'
+          }
+          className="flex-shrink-0 text-xs text-gray-400 flex items-center gap-1 hover:text-gray-600 transition-colors"
+        >
           {resource.accessLevel === 'PREMIUM' ? (
             <><LockIcon gold />정회원 전용</>
           ) : (
             <><LockIcon />회원 전용</>
           )}
-        </span>
+        </a>
       )}
     </div>
   )

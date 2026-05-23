@@ -47,11 +47,13 @@ function ResourceItem({
   canAccess,
   canEdit,
   roleWeight,
+  isLoggedIn,
 }: {
   resource: Resource
   canAccess: boolean
   canEdit: boolean
   roleWeight: number
+  isLoggedIn: boolean
 }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
@@ -228,8 +230,15 @@ function ResourceItem({
         </a>
       ) : (
         <Link
-          href={resource.accessLevel === 'PREMIUM' ? '/member/upgrade' : '/auth/login'}
+          href={
+            !isLoggedIn
+              ? '/auth/login'
+              : resource.accessLevel === 'PREMIUM'
+                ? '/member/upgrade'
+                : '/auth/login'
+          }
           className="shrink-0 text-xs text-gray-400"
+          title={!isLoggedIn ? '로그인이 필요합니다' : resource.accessLevel === 'PREMIUM' ? '정회원 전용' : '회원 전용'}
         >
           🔒
         </Link>
@@ -281,6 +290,7 @@ export function ResourceListSection({
                 canAccess={canAccess}
                 canEdit={canEdit}
                 roleWeight={roleWeight}
+                isLoggedIn={!!userId}
               />
             )
           })}

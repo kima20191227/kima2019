@@ -9,18 +9,6 @@ function hasRole(userRole: string | undefined, required: keyof typeof ROLE_HIERA
   return (ROLE_HIERARCHY[userRole as keyof typeof ROLE_HIERARCHY] ?? 0) >= ROLE_HIERARCHY[required]
 }
 
-function hasValidPremium(userRole: string | undefined, expiresAt?: string | null): boolean {
-  if (!userRole) return false
-  const weight = ROLE_HIERARCHY[userRole as keyof typeof ROLE_HIERARCHY] ?? 0
-  if (weight >= 3) return true  // OFFICER, ADMIN — no expiry check
-  if (weight >= 2) {
-    // PREMIUM must have a valid (non-expired) expiresAt
-    if (!expiresAt) return false
-    return new Date(expiresAt) > new Date()
-  }
-  return false
-}
-
 // Vercel Edge Runtime에서 req.url이 *.vercel.app 내부 도메인으로 처리되는 문제 방지.
 function getOrigin(req: NextRequest): string {
   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL.replace(/\/$/, '')
@@ -46,7 +34,6 @@ export default auth((req) => {
 
   const isLoggedIn = !!req.auth
   const userRole = req.auth?.user?.role
-  const expiresAt = req.auth?.user?.expiresAt
   const origin = getOrigin(req)
 
   // 단체 승인 → ADMIN 전용
@@ -61,17 +48,15 @@ export default auth((req) => {
     }
   }
 
-  if (pathname.startsWith('/resources')) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(`${origin}/auth/login?callbackUrl=${encodeURIComponent(pathname)}&notice=premium`)
-    }
-    if (!hasValidPremium(userRole, expiresAt)) {
-      return NextResponse.redirect(`${origin}/member/upgrade`)
-    }
-  }
+  // 자료실: 접근 등급(PUBLIC/MEMBER/PREMIUM)은 페이지에서 직접 처리
+  // 미들웨어 제한 없음 — 비로그인도 PUBLIC 자료 열람 가능
 
+  // 커뮤니티: 글쓰기·수정만 로그인 필요, 읽기는 공개
   if (pathname.startsWith('/community')) {
-    if (!isLoggedIn) {
+    const isWriteOrEdit =
+      pathname.endsWith('/write') ||
+      /\/posts\/[^/]+\/edit$/.test(pathname)
+    if (isWriteOrEdit && !isLoggedIn) {
       return NextResponse.redirect(`${origin}/auth/login?callbackUrl=${encodeURIComponent(pathname)}`)
     }
   }

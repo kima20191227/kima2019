@@ -73,10 +73,24 @@ export default async function ResourcesPage({ searchParams }: PageProps) {
           <p className="mt-2 text-sm text-gray-500">
             비자·법률, 의료·복지, 보조금·공모, 선교·훈련 자료를 열람하세요.
           </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200">
-            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-            <span className="text-xs font-medium text-amber-700">정회원 전용 공간입니다</span>
-          </div>
+          {userAccessLevel === 'none' && (
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200">
+              <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+              <span className="text-xs font-medium text-blue-700">
+                공개 자료는 로그인 없이 열람 가능합니다.{' '}
+                <a href="/auth/login" className="underline">로그인하면 더 많은 자료를 볼 수 있습니다 →</a>
+              </span>
+            </div>
+          )}
+          {userAccessLevel === 'member' && (
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200">
+              <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+              <span className="text-xs font-medium text-amber-700">
+                정회원 자료도 열람하려면{' '}
+                <a href="/member/upgrade" className="underline">정회원 신청 →</a>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 카테고리 필터 탭 */}
