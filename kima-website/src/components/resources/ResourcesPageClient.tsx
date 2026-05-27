@@ -179,24 +179,39 @@ function ResourceForm({
           {uploadMode === 'file' ? (
             <div>
               <label className="block text-xs text-gray-500 mb-1">파일 선택 (구글 드라이브에 자동 저장)</label>
+              {/* 숨겨진 실제 file input */}
               <input
                 ref={fileInputRef}
                 type="file"
                 aria-label="업로드할 파일 선택"
-                title="업로드할 파일 선택"
                 onChange={handleFileUpload}
                 disabled={uploading || isPending}
-                className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#1B3A6B] file:text-white hover:file:bg-[#142d54] disabled:opacity-50"
+                className="hidden"
               />
-              {uploading && (
-                <p className="text-xs text-blue-600 mt-1">구글 드라이브에 업로드 중...</p>
-              )}
+              {/* 클릭 시 file input 트리거 */}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || isPending}
+                  className="px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
+                >
+                  {uploading ? '업로드 중...' : '파일 선택'}
+                </button>
+                <span className="text-sm text-gray-500 truncate max-w-xs">
+                  {fields.driveUrl
+                    ? '✓ 업로드 완료'
+                    : uploading
+                      ? '구글 드라이브에 저장 중...'
+                      : '선택된 파일 없음'}
+                </span>
+              </div>
               {uploadError && (
                 <p className="text-xs text-red-500 mt-1">{uploadError}</p>
               )}
               {fields.driveUrl && (
                 <p className="text-xs text-green-600 mt-1 truncate">
-                  ✓ 업로드 완료: {fields.driveUrl}
+                  {fields.driveUrl}
                 </p>
               )}
             </div>
