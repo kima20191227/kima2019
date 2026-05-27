@@ -6,7 +6,7 @@ import TextStyle from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
-import TextAlign from '@tiptap/extension-text-align'
+import { Extension } from '@tiptap/core'
 import { useEffect, useState } from 'react'
 
 // Extends TextStyle to support fontSize without requiring Tiptap Pro
@@ -26,6 +26,45 @@ const CustomTextStyle = TextStyle.extend({
   },
 })
 
+// Custom TextAlign extension compatible with tiptap v2
+const TextAlign = Extension.create({
+  name: 'textAlign',
+  addOptions() {
+    return { types: ['heading', 'paragraph'] }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types as string[],
+        attributes: {
+          textAlign: {
+            default: null,
+            parseHTML: (element: HTMLElement) => element.style.textAlign || null,
+            renderHTML: (attributes: Record<string, unknown>) => {
+              if (!attributes.textAlign) return {}
+              return { style: `text-align: ${attributes.textAlign}` }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return {
+      setTextAlign:
+        (alignment: string) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ({ commands }: any) => {
+          return (this.options.types as string[]).every((type: string) =>
+            commands.updateAttributes(type, { textAlign: alignment }),
+          )
+        },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any
+  },
+})
+
 const FONT_SIZES = ['14px', '16px', '18px', '20px', '24px', '28px', '32px']
 
 interface Props {
@@ -36,6 +75,7 @@ interface Props {
 export function ColumnEditor({ content, onChange }: Props) {
   const [imageUrl, setImageUrl] = useState('')
   const [showImageInput, setShowImageInput] = useState(false)
+  const [currentAlign, setCurrentAlign] = useState<string | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -44,11 +84,18 @@ export function ColumnEditor({ content, onChange }: Props) {
       Color.configure({ types: ['textStyle'] }),
       Image.configure({ inline: false }),
       Placeholder.configure({ placeholder: '칼럼 내용을 작성해주세요...' }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign,
     ],
     content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
+      // Track current alignment
+      const attrs = editor.getAttributes('paragraph')
+      setCurrentAlign((attrs.textAlign as string | null) ?? null)
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const attrs = editor.getAttributes('paragraph')
+      setCurrentAlign((attrs.textAlign as string | null) ?? null)
     },
     editorProps: {
       attributes: {
@@ -86,6 +133,13 @@ export function ColumnEditor({ content, onChange }: Props) {
     } else {
       editor!.chain().focus().setMark('textStyle', { fontSize: size }).run()
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function handleSetAlign(align: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(editor!.chain().focus() as any).setTextAlign(align).run()
+    setCurrentAlign(align)
   }
 
   const btnBase =
@@ -133,8 +187,8 @@ export function ColumnEditor({ content, onChange }: Props) {
         {/* Align Left */}
         <button
           type="button"
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          className={`${btnBase} ${editor.isActive({ textAlign: 'left' }) ? btnActive : ''}`}
+          onClick={() => handleSetAlign('left')}
+          className={`${btnBase} ${currentAlign === 'left' || currentAlign === null ? btnActive : ''}`}
           title="왼쪽 정렬"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,8 +199,8 @@ export function ColumnEditor({ content, onChange }: Props) {
         {/* Align Center */}
         <button
           type="button"
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          className={`${btnBase} ${editor.isActive({ textAlign: 'center' }) ? btnActive : ''}`}
+          onClick={() => handleSetAlign('center')}
+          className={`${btnBase} ${currentAlign === 'center' ? btnActive : ''}`}
           title="가운데 정렬"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,8 +211,8 @@ export function ColumnEditor({ content, onChange }: Props) {
         {/* Align Right */}
         <button
           type="button"
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          className={`${btnBase} ${editor.isActive({ textAlign: 'right' }) ? btnActive : ''}`}
+          onClick={() => handleSetAlign('right')}
+          className={`${btnBase} ${currentAlign === 'right' ? btnActive : ''}`}
           title="오른쪽 정렬"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
