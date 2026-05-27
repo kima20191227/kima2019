@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/Card'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
 import { LazyPopupBanner } from '@/components/home/LazyPopupBanner'
@@ -19,6 +20,23 @@ const STORY_CATEGORIES: { type: StoryType; label: string; barCls: string; topCls
 
 function storyHref(id: string, type: StoryType) {
   return type === 'EVENT_PROMO' ? `/story/event-promo/${id}` : `/story/${id}`
+}
+
+function getStoryThumb(story: {
+  thumbnail?: string | null
+  images: string[]
+  videoUrls: string[]
+}): string | null {
+  if (story.thumbnail) return story.thumbnail
+  // YouTube 썸네일
+  if (story.videoUrls.length > 0) {
+    const ytMatch = story.videoUrls[0].match(
+      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    )
+    if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`
+  }
+  // 첫 번째 이미지
+  return story.images[0] ?? null
 }
 
 export default async function HomePage() {
@@ -100,26 +118,63 @@ export default async function HomePage() {
 
                   {/* 2열 카드 그리드 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {stories.map((story) => (
-                      <Link key={story.id} href={storyHref(story.id, story.type)}>
-                        <Card hover className="overflow-hidden h-full">
-                          <div className={`h-1.5 rounded-t-xl ${topCls}`} />
-                          <CardContent className="p-5">
-                            <h4 className="text-sm font-bold text-[#1A1A1A] leading-snug line-clamp-2 mb-2">
-                              {story.title}
-                            </h4>
-                            {story.excerpt && (
-                              <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
-                                {story.excerpt}
-                              </p>
+                    {stories.map((story) => {
+                      const thumb = getStoryThumb(story)
+                      const hasVideo = story.videoUrls.length > 0
+
+                      return (
+                        <Link key={story.id} href={storyHref(story.id, story.type)}>
+                          <Card hover className="overflow-hidden h-full flex flex-col">
+                            {/* 썸네일 이미지 */}
+                            {thumb ? (
+                              <div className="relative w-full h-44 overflow-hidden flex-shrink-0 bg-gray-100">
+                                <Image
+                                  src={thumb}
+                                  alt={story.title}
+                                  fill
+                                  sizes="(min-width: 768px) 50vw, 100vw"
+                                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                {/* 카테고리 컬러 바 */}
+                                <div className={`absolute bottom-0 left-0 right-0 h-1 ${topCls}`} />
+                                {/* 영상 재생 오버레이 */}
+                                {hasVideo && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                    <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-md">
+                                      <svg className="w-5 h-5 text-red-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className={`h-1.5 ${topCls}`} />
                             )}
-                            <p className="text-xs text-gray-400">
-                              {story.createdAt.toLocaleDateString('ko-KR')}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
+
+                            {/* 텍스트 영역 */}
+                            <CardContent className="p-5 flex flex-col flex-1">
+                              <h4 className="text-sm font-bold text-[#1A1A1A] leading-snug line-clamp-2 mb-2">
+                                {story.title}
+                              </h4>
+                              {story.excerpt && (
+                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
+                                  {story.excerpt}
+                                </p>
+                              )}
+                              <div className="mt-auto flex items-center gap-2 text-xs text-gray-400">
+                                {story.source && (
+                                  <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
+                                    {story.source}
+                                  </span>
+                                )}
+                                <span>{story.createdAt.toLocaleDateString('ko-KR')}</span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      )
+                    })}
                   </div>
                 </div>
               ))}
