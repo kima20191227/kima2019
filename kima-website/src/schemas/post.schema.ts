@@ -4,6 +4,7 @@ export const attachmentSchema = z.object({
   url: z.string().url(),
   name: z.string(),
   type: z.string(),
+  isCover: z.boolean().optional(),
 })
 
 export const postSchema = z.object({

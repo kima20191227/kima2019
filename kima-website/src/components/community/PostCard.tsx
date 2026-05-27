@@ -29,9 +29,12 @@ export function PostCard({ post, categoryType }: PostCardProps) {
   const isNotice = post.type === 'NOTICE'
 
   const attList = Array.isArray(post.attachments)
-    ? (post.attachments as { url: string; name: string; type: string }[])
+    ? (post.attachments as { url: string; name: string; type: string; isCover?: boolean }[])
     : []
-  const firstImage = attList.find((a) => a.type?.startsWith('image/'))
+  // 대표이미지(isCover) 우선, 없으면 첫 번째 이미지
+  const firstImage =
+    attList.find((a) => a.isCover && a.type?.startsWith('image/')) ??
+    attList.find((a) => a.type?.startsWith('image/'))
 
   return (
     <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0 group">
