@@ -13,7 +13,7 @@ type NavChild = {
   requiresPremium?: boolean
   dividerBefore?: boolean  // 이 항목 위에 구분선 표시
 }
-type NavItem  = { href: string; label: string; children?: NavChild[] }
+type NavItem  = { href: string; label: string; children?: NavChild[]; minWeight?: number }
 
 export type SessionUser = {
   name?: string | null
@@ -67,6 +67,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: '/resources',
     label: 'KIMA 자료실',
+    minWeight: 2,  // 정회원(2) 이상만 표시
     children: [
       { href: '/resources/kima',     label: 'KIMA 자료', desc: '총회자료·회의록·예산결산·정관 등 공식 자료' },
       { href: '/resources/ministry', label: '사역 자료', desc: '지역·언어권·사역대상별 사역 자료', dividerBefore: true },
@@ -142,7 +143,7 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
 
       {/* Desktop Nav */}
       <nav className="hidden md:flex items-center gap-1">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => !item.minWeight || roleWeight >= item.minWeight).map((item) => (
           <div key={item.href} className="relative" onMouseEnter={() => openMenu(item.href)} onMouseLeave={closeMenu}>
             <Link
               href={item.href}
@@ -250,7 +251,7 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-gray-100 py-2 w-full">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter((item) => !item.minWeight || roleWeight >= item.minWeight).map((item) => {
             const hasChildren = item.children && item.children.length > 1
             const expanded    = mobileExpanded === item.href
             return (
