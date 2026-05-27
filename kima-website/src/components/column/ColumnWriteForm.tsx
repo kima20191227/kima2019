@@ -13,6 +13,7 @@ interface InitialData {
   imageUrls?: string[]
   fileUrls?: string[]
   tags?: string[]
+  authorName?: string | null
 }
 
 interface Props {
@@ -24,6 +25,7 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [content, setContent] = useState(initialData?.content ?? '')
+  const [authorName, setAuthorName] = useState(initialData?.authorName ?? '')
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '')
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail ?? '')
   const [tagInput, setTagInput] = useState((initialData?.tags ?? []).join(', '))
@@ -79,6 +81,7 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
       const body = {
         title: title.trim(),
         content,
+        authorName: authorName.trim() || null,
         excerpt: excerpt.trim() || null,
         thumbnail: thumbnail.trim() || null,
         tags: parseTags(tagInput),
@@ -124,6 +127,21 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
           placeholder="칼럼 제목을 입력해주세요"
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
           maxLength={200}
+        />
+      </div>
+
+      {/* Author Name (optional) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          작성자 <span className="text-gray-400 text-xs">(선택 — 미입력 시 계정 이름 표시)</span>
+        </label>
+        <input
+          type="text"
+          value={authorName}
+          onChange={(e) => setAuthorName(e.target.value)}
+          placeholder="표시할 작성자 이름"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
+          maxLength={100}
         />
       </div>
 

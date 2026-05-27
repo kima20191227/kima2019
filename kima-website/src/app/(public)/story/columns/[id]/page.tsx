@@ -34,6 +34,7 @@ export default async function ColumnDetailPage({ params }: Props) {
     prisma.columnPost.findUnique({
       where: { id, isPublished: true },
       include: { author: { select: { id: true, name: true } } },
+      // authorName is automatically included
     }),
     // Increment view count (force-dynamic prevents prefetch inflation)
     prisma.columnPost.update({
@@ -58,7 +59,7 @@ export default async function ColumnDetailPage({ params }: Props) {
           </p>
           <h1 className="text-2xl font-bold leading-snug">{column.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-blue-200">
-            <span>{column.author.name ?? '익명'}</span>
+            <span>{column.authorName ?? column.author.name ?? '익명'}</span>
             <span>{new Date(column.createdAt).toLocaleDateString('ko-KR')}</span>
             <span className="flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

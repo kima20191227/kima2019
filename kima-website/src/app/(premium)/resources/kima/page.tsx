@@ -48,7 +48,6 @@ export default async function KimaResourcesPage() {
 
   const resources = await prisma.resource.findMany({
     where: {
-      section: 'KIMA',
       accessLevel: { in: [...allowedLevels] },
     },
     include: {

@@ -415,6 +415,7 @@ model ColumnPost {
   viewCount   Int      @default(0)
   isPublished Boolean  @default(true)
   authorId    String
+  authorName  String?  // 표시용 작성자 이름 (선택 — 미입력 시 계정 이름 사용)
   author      User     @relation(fields: [authorId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

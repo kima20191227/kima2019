@@ -14,6 +14,7 @@ export async function GET(
     const column = await prisma.columnPost.findUnique({
       where: { id, isPublished: true },
       include: { author: { select: { id: true, name: true } } },
+      // authorName is automatically included
     })
     if (!column) {
       return NextResponse.json({ error: '칼럼을 찾을 수 없습니다.' }, { status: 404 })
@@ -62,6 +63,7 @@ export async function PATCH(
       data: {
         ...(parsed.data.title !== undefined && { title: parsed.data.title }),
         ...(parsed.data.content !== undefined && { content: sanitizeRichHtml(parsed.data.content) }),
+        ...(parsed.data.authorName !== undefined && { authorName: parsed.data.authorName }),
         ...(parsed.data.excerpt !== undefined && { excerpt: parsed.data.excerpt }),
         ...(parsed.data.thumbnail !== undefined && { thumbnail: parsed.data.thumbnail }),
         ...(parsed.data.imageUrls !== undefined && { imageUrls: parsed.data.imageUrls }),

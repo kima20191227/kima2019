@@ -2,32 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { uploadFileToDrive } from '@/lib/googleDrive'
 
-const KNOWN_TYPES: Record<string, string> = {
-  'application/pdf': 'PDF',
-  'application/vnd.ms-powerpoint': 'PPT',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPT',
-  'application/msword': 'DOC',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOC',
-}
-
-const EXTENSION_TYPES: Record<string, string> = {
-  pdf: 'PDF',
-  ppt: 'PPT',
-  pptx: 'PPT',
-  doc: 'DOC',
-  docx: 'DOC',
-}
-
-const MAX_FILE_SIZE_MB = 50
+const MAX_FILE_SIZE_MB = 100
 const DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
-
-function getFileExtension(name: string): string {
-  return name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? ''
-}
-
-function getKnownFileType(file: File): string | undefined {
-  return KNOWN_TYPES[file.type] ?? EXTENSION_TYPES[getFileExtension(file.name)]
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,14 +26,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const fileType = getKnownFileType(file)
-    if (!fileType) {
-      return NextResponse.json(
-        { error: 'PDF, PPT, DOC 파일만 업로드할 수 있습니다.' },
-        { status: 400 }
-      )
-    }
-
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL ?? ''
     const privateKey  = process.env.GOOGLE_PRIVATE_KEY ?? ''
 
@@ -68,14 +36,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const mimeType = file.type || 'application/octet-stream'
     const buffer = Buffer.from(await file.arrayBuffer())
-    const driveUrl = await uploadFileToDrive(buffer, file.name, file.type, {
+    const driveUrl = await uploadFileToDrive(buffer, file.name, mimeType, {
       folderId: DRIVE_FOLDER_ID,
       clientEmail,
       privateKey,
     })
 
-    return NextResponse.json({ url: driveUrl, fileType })
+    return NextResponse.json({ url: driveUrl })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[upload/resource]', msg)

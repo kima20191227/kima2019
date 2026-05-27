@@ -8,6 +8,11 @@ export const columnPostSchema = z.object({
   content: z
     .string()
     .min(1, '본문을 입력해주세요'),
+  authorName: z
+    .string()
+    .max(100, '작성자 이름은 100자 이하로 입력해주세요')
+    .optional()
+    .nullable(),
   excerpt: z
     .string()
     .max(300, '요약은 300자 이하로 입력해주세요')

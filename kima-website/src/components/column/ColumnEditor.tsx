@@ -6,6 +6,7 @@ import TextStyle from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
+import TextAlign from '@tiptap/extension-text-align'
 import { useEffect, useState } from 'react'
 
 // Extends TextStyle to support fontSize without requiring Tiptap Pro
@@ -43,6 +44,7 @@ export function ColumnEditor({ content, onChange }: Props) {
       Color.configure({ types: ['textStyle'] }),
       Image.configure({ inline: false }),
       Placeholder.configure({ placeholder: '칼럼 내용을 작성해주세요...' }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -124,6 +126,44 @@ export function ColumnEditor({ content, onChange }: Props) {
           title="제목 3"
         >
           H3
+        </button>
+
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
+
+        {/* Align Left */}
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={`${btnBase} ${editor.isActive({ textAlign: 'left' }) ? btnActive : ''}`}
+          title="왼쪽 정렬"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M3 12h12M3 18h15" />
+          </svg>
+        </button>
+
+        {/* Align Center */}
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={`${btnBase} ${editor.isActive({ textAlign: 'center' }) ? btnActive : ''}`}
+          title="가운데 정렬"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M6 12h12M4 18h16" />
+          </svg>
+        </button>
+
+        {/* Align Right */}
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          className={`${btnBase} ${editor.isActive({ textAlign: 'right' }) ? btnActive : ''}`}
+          title="오른쪽 정렬"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M9 12h12M6 18h15" />
+          </svg>
         </button>
 
         <div className="w-px h-5 bg-gray-300 mx-0.5" />

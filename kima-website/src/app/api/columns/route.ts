@@ -19,6 +19,7 @@ export async function GET() {
         tags: true,
         viewCount: true,
         createdAt: true,
+        authorName: true,
         author: { select: { name: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: parsed.data.title,
         content: sanitizeRichHtml(parsed.data.content),
+        authorName: parsed.data.authorName ?? null,
         excerpt: parsed.data.excerpt ?? null,
         thumbnail: parsed.data.thumbnail ?? null,
         imageUrls: parsed.data.imageUrls ?? [],

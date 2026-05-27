@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ResourceList } from './ResourceList'
 import type { Resource } from './ResourceList'
@@ -23,8 +23,6 @@ export interface ResourcesPageClientProps {
   preselectedCategoryId?: string
 }
 
-const FILE_TYPES = ['PDF', 'PPT', 'DOCX', 'HWP', 'IMG', 'ETC'] as const
-
 const DEFAULT_ACCESS_LEVEL: Record<ResourceSection, string> = {
   KIMA: 'MEMBER',
   MINISTRY: 'MEMBER',
@@ -35,7 +33,6 @@ interface FormFields {
   title: string
   description: string
   driveUrl: string
-  fileType: string
   accessLevel: string
   categoryId: string
 }
@@ -49,7 +46,6 @@ function makeInitialFields(
     title: resource?.title ?? '',
     description: resource?.description ?? '',
     driveUrl: resource?.driveUrl ?? '',
-    fileType: resource?.fileType ?? 'PDF',
     accessLevel: resource?.accessLevel ?? DEFAULT_ACCESS_LEVEL[section],
     categoryId: resource?.category?.id ?? preselectedCategoryId ?? '',
   }
@@ -79,26 +75,149 @@ function ResourceForm({
   const [fields, setFields] = useState<FormFields>(() =>
     makeInitialFields(section, preselectedCategoryId, editing),
   )
+  const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const set = (k: keyof FormFields, v: string) => setFields((prev) => ({ ...prev, [k]: v }))
   const hasCategories = categories && categories.length > 0
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadError('')
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload/resource', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const json = await res.json()
+      if (!res.ok) {
+        setUploadError((json as { error?: string }).error ?? '업로드 실패')
+        return
+      }
+
+      const { url } = json as { url: string }
+      setFields((prev) => ({
+        ...prev,
+        driveUrl: url,
+        title: prev.title || file.name.replace(/\.[^.]+$/, ''),
+      }))
+    } catch {
+      setUploadError('업로드 중 오류가 발생했습니다.')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6 space-y-4">
       <h3 className="font-semibold text-gray-800">{editing ? '자료 수정' : '새 자료 등록'}</h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">제목 *</label>
-          <input
-            type="text"
-            value={fields.title}
-            onChange={(e) => set('title', e.target.value)}
-            placeholder="자료 제목"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
-            disabled={isPending}
-          />
-        </div>
+      {/* 제목 */}
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">제목 *</label>
+        <input
+          type="text"
+          value={fields.title}
+          onChange={(e) => set('title', e.target.value)}
+          placeholder="자료 제목"
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+          disabled={isPending}
+        />
+      </div>
 
+      {/* 설명 */}
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">설명</label>
+        <input
+          type="text"
+          value={fields.description}
+          onChange={(e) => set('description', e.target.value)}
+          placeholder="자료에 대한 간략한 설명 (선택)"
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+          disabled={isPending}
+        />
+      </div>
+
+      {/* 파일 업로드 / URL 입력 토글 */}
+      {!editing && (
+        <div>
+          <div className="flex gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setUploadMode('file')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                uploadMode === 'file'
+                  ? 'bg-[#1B3A6B] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              파일 업로드
+            </button>
+            <button
+              type="button"
+              onClick={() => setUploadMode('url')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                uploadMode === 'url'
+                  ? 'bg-[#1B3A6B] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              URL 직접 입력
+            </button>
+          </div>
+
+          {uploadMode === 'file' ? (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">파일 선택 (구글 드라이브에 자동 저장)</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                aria-label="업로드할 파일 선택"
+                title="업로드할 파일 선택"
+                onChange={handleFileUpload}
+                disabled={uploading || isPending}
+                className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#1B3A6B] file:text-white hover:file:bg-[#142d54] disabled:opacity-50"
+              />
+              {uploading && (
+                <p className="text-xs text-blue-600 mt-1">구글 드라이브에 업로드 중...</p>
+              )}
+              {uploadError && (
+                <p className="text-xs text-red-500 mt-1">{uploadError}</p>
+              )}
+              {fields.driveUrl && (
+                <p className="text-xs text-green-600 mt-1 truncate">
+                  ✓ 업로드 완료: {fields.driveUrl}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
+              <input
+                type="url"
+                value={fields.driveUrl}
+                onChange={(e) => set('driveUrl', e.target.value)}
+                placeholder="https://drive.google.com/..."
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+                disabled={isPending}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 수정 모드에서는 URL 직접 입력만 */}
+      {editing && (
         <div>
           <label className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
           <input
@@ -110,73 +229,46 @@ function ResourceForm({
             disabled={isPending}
           />
         </div>
+      )}
 
-        <div className="md:col-span-2">
-          <label className="block text-xs text-gray-500 mb-1">설명</label>
-          <input
-            type="text"
-            value={fields.description}
-            onChange={(e) => set('description', e.target.value)}
-            placeholder="자료에 대한 간략한 설명 (선택)"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+      {/* 접근 등급 + 카테고리 */}
+      <div className={`grid gap-2 ${hasCategories ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">접근 등급</label>
+          <select
+            value={fields.accessLevel}
+            onChange={(e) => set('accessLevel', e.target.value)}
+            aria-label="접근 등급 선택"
+            title="접근 등급 선택"
+            className="w-full text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
             disabled={isPending}
-          />
+          >
+            <option value="PUBLIC">공개</option>
+            <option value="MEMBER">회원</option>
+            <option value="PREMIUM">정회원</option>
+          </select>
         </div>
 
-        <div
-          className={`grid gap-2 md:col-span-2 ${
-            hasCategories ? 'grid-cols-3' : 'grid-cols-2'
-          }`}
-        >
+        {hasCategories && (
           <div>
-            <label className="block text-xs text-gray-500 mb-1">파일 형식</label>
+            <label className="block text-xs text-gray-500 mb-1">카테고리</label>
             <select
-              value={fields.fileType}
-              onChange={(e) => set('fileType', e.target.value)}
+              value={fields.categoryId}
+              onChange={(e) => set('categoryId', e.target.value)}
+              aria-label="카테고리 선택"
+              title="카테고리 선택"
               className="w-full text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
               disabled={isPending}
             >
-              {FILE_TYPES.map((ft) => (
-                <option key={ft} value={ft}>
-                  {ft}
+              <option value="">없음</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>
           </div>
-
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">접근 등급</label>
-            <select
-              value={fields.accessLevel}
-              onChange={(e) => set('accessLevel', e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
-              disabled={isPending}
-            >
-              <option value="PUBLIC">공개</option>
-              <option value="MEMBER">회원</option>
-              <option value="PREMIUM">정회원</option>
-            </select>
-          </div>
-
-          {hasCategories && (
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">카테고리</label>
-              <select
-                value={fields.categoryId}
-                onChange={(e) => set('categoryId', e.target.value)}
-                className="w-full text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
-                disabled={isPending}
-              >
-                <option value="">없음</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
@@ -185,16 +277,12 @@ function ResourceForm({
         <button
           type="button"
           onClick={() => onSubmit(fields)}
-          disabled={isPending}
+          disabled={isPending || uploading}
           className="px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
         >
           {isPending
-            ? editing
-              ? '수정 중…'
-              : '등록 중…'
-            : editing
-              ? '수정 완료'
-              : '등록'}
+            ? editing ? '수정 중…' : '등록 중…'
+            : editing ? '수정 완료' : '등록'}
         </button>
         <button
           type="button"
@@ -241,7 +329,7 @@ export function ResourcesPageClient({
 
   const handleSubmit = (fields: FormFields) => {
     if (!fields.title.trim() || !fields.driveUrl.trim()) {
-      setFormError('제목과 구글 드라이브 URL은 필수입니다.')
+      setFormError('제목과 파일(또는 드라이브 URL)은 필수입니다.')
       return
     }
     setFormError('')
@@ -254,7 +342,6 @@ export function ResourcesPageClient({
       const body: Record<string, unknown> = {
         title: fields.title.trim(),
         driveUrl: fields.driveUrl.trim(),
-        fileType: fields.fileType,
         accessLevel: fields.accessLevel,
         ...(fields.description.trim() ? { description: fields.description.trim() } : {}),
         ...(fields.categoryId ? { categoryId: fields.categoryId } : {}),
