@@ -21,6 +21,8 @@ export default async function NetworkSchedulePage() {
     orderBy: { scheduledAt: 'asc' },
   }).catch(() => [])
 
+  const userRole = (session?.user?.role ?? null) as string | null
+
   const calendarEvents = events.map((e) => ({
     id: e.id,
     title: e.title,
@@ -46,7 +48,7 @@ export default async function NetworkSchedulePage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <ScheduleCalendar events={calendarEvents} isLoggedIn={isLoggedIn} />
+        <ScheduleCalendar events={calendarEvents} isLoggedIn={isLoggedIn} userRole={userRole} />
       </div>
     </div>
   )

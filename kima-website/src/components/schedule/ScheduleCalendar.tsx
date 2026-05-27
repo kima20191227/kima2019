@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { EVENT_TYPES } from '@/lib/eventTypes'
 
 export interface CalendarEvent {
   id: string
@@ -18,14 +20,20 @@ export interface CalendarEvent {
 interface Props {
   events: CalendarEvent[]
   isLoggedIn: boolean
+  userRole?: string | null
 }
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 const TYPE_STYLES: Record<string, { label: string; dot: string; badge: string }> = {
-  LISTENING_CALL: { label: '리스닝콜', dot: 'bg-blue-500',   badge: 'bg-blue-100 text-blue-700' },
-  FORUM:          { label: '포럼',     dot: 'bg-purple-500', badge: 'bg-purple-100 text-purple-700' },
-  ZOOM_MEETING:   { label: '줌 미팅',  dot: 'bg-teal-500',   badge: 'bg-teal-100 text-teal-700' },
+  LISTENING_CALL:  { label: '리스닝콜',     dot: 'bg-blue-500',   badge: 'bg-blue-100 text-blue-700' },
+  FORUM:           { label: '포럼',          dot: 'bg-purple-500', badge: 'bg-purple-100 text-purple-700' },
+  ZOOM_MEETING:    { label: '줌 미팅',       dot: 'bg-teal-500',   badge: 'bg-teal-100 text-teal-700' },
+  EVENT:           { label: '행사',          dot: 'bg-green-500',  badge: 'bg-green-100 text-green-700' },
+  REGION_MEETING:  { label: '지역별모임',    dot: 'bg-orange-500', badge: 'bg-orange-100 text-orange-700' },
+  MINISTRY_MEETING:{ label: '사역권별 모임', dot: 'bg-sky-500',    badge: 'bg-sky-100 text-sky-700' },
+  OFFICER_MEETING: { label: '임원회의',      dot: 'bg-red-500',    badge: 'bg-red-100 text-red-700' },
+  ETC:             { label: '기타',          dot: 'bg-gray-400',   badge: 'bg-gray-100 text-gray-600' },
 }
 
 function typeInfo(type: string) {
@@ -46,55 +54,74 @@ function isSameDay(a: Date, b: Date) {
          a.getDate() === b.getDate()
 }
 
-export function ScheduleCalendar({ events, isLoggedIn }: Props) {
+const EMPTY_FORM = {
+  title: '',
+  description: '',
+  type: 'LISTENING_CALL',
+  scheduledAt: '',
+  zoomUrl: '',
+  location: '',
+  maxAttendees: '',
+}
+
+export function ScheduleCalendar({ events, isLoggedIn, userRole }: Props) {
+  const router = useRouter()
   const today = new Date()
-  const [viewYear, setViewYear] = useState(today.getFullYear())
-  const [viewMonth, setViewMonth] = useState(today.getMonth()) // 0-indexed
+  const [localEvents, setLocalEvents] = useState<CalendarEvent[]>(events)
+  const [viewYear, setViewYear]       = useState(today.getFullYear())
+  const [viewMonth, setViewMonth]     = useState(today.getMonth()) // 0-indexed
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+
+  // Officer-only registration form state
+  const canManage = userRole === 'ADMIN' || userRole === 'OFFICER'
+  const [formOpen, setFormOpen]       = useState(false)
+  const [form, setForm]               = useState(EMPTY_FORM)
+  const [formError, setFormError]     = useState('')
+  const [isPending, startTransition]  = useTransition()
+
+  useEffect(() => {
+    setLocalEvents(events)
+  }, [events])
 
   // Build calendar grid for current view month
   const calendarDays = useMemo(() => {
     const firstDay = new Date(viewYear, viewMonth, 1)
-    const lastDay = new Date(viewYear, viewMonth + 1, 0)
-    const startOffset = firstDay.getDay() // 0=Sun
+    const lastDay  = new Date(viewYear, viewMonth + 1, 0)
+    const startOffset = firstDay.getDay()
 
     const days: (Date | null)[] = []
     for (let i = 0; i < startOffset; i++) days.push(null)
     for (let d = 1; d <= lastDay.getDate(); d++) {
       days.push(new Date(viewYear, viewMonth, d))
     }
-    // Pad to complete last week
     while (days.length % 7 !== 0) days.push(null)
     return days
   }, [viewYear, viewMonth])
 
-  // Map: "YYYY-MM-DD" → events[]
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>()
-    for (const ev of events) {
+    for (const ev of localEvents) {
       const d = new Date(ev.scheduledAt)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(ev)
     }
     return map
-  }, [events])
+  }, [localEvents])
 
   const dayKey = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-  // Upcoming events list — if a day is selected show that day, otherwise show all upcoming
   const listEvents = useMemo(() => {
     if (selectedDate) {
       return (eventsByDay.get(dayKey(selectedDate)) ?? []).sort(
         (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
       )
     }
-    // All events sorted by date ascending (upcoming first)
-    return [...events].sort(
+    return [...localEvents].sort(
       (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
     )
-  }, [selectedDate, eventsByDay, events])
+  }, [selectedDate, eventsByDay, localEvents])
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewYear((y) => y - 1); setViewMonth(11) }
@@ -113,6 +140,58 @@ export function ScheduleCalendar({ events, isLoggedIn }: Props) {
     setViewMonth(today.getMonth())
     setSelectedDate(null)
   }
+
+  const setField = (k: keyof typeof form, v: string) =>
+    setForm((prev) => ({ ...prev, [k]: v }))
+
+  const handleRegister = () => {
+    if (!form.title.trim() || !form.scheduledAt) {
+      setFormError('제목과 일시는 필수입니다.')
+      return
+    }
+    setFormError('')
+    startTransition(async () => {
+      const res = await fetch('/api/admin/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title,
+          description: form.description || undefined,
+          type: form.type,
+          scheduledAt: new Date(form.scheduledAt).toISOString(),
+          zoomUrl: form.zoomUrl || undefined,
+          location: form.location || undefined,
+          maxAttendees: form.maxAttendees ? Number(form.maxAttendees) : undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setFormError(data.error ?? '등록에 실패했습니다.')
+        return
+      }
+      // Optimistic add
+      const created = data.event
+      const newEvent: CalendarEvent = {
+        id: created.id,
+        title: created.title,
+        type: created.type,
+        scheduledAt: typeof created.scheduledAt === 'string'
+          ? created.scheduledAt
+          : new Date(created.scheduledAt).toISOString(),
+        description: created.description ?? null,
+        location: created.location ?? null,
+        zoomUrl: isLoggedIn ? (created.zoomUrl ?? null) : null,
+        maxAttendees: created.maxAttendees ?? null,
+        attendeeCount: 0,
+      }
+      setLocalEvents((prev) => [...prev, newEvent])
+      setForm(EMPTY_FORM)
+      setFormOpen(false)
+      router.refresh()
+    })
+  }
+
+  const inputClass = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]'
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -184,10 +263,10 @@ export function ScheduleCalendar({ events, isLoggedIn }: Props) {
 
               const key = dayKey(day)
               const dayEvents = eventsByDay.get(key) ?? []
-              const isToday = isSameDay(day, today)
+              const isToday    = isSameDay(day, today)
               const isSelected = selectedDate ? isSameDay(day, selectedDate) : false
-              const isSun = day.getDay() === 0
-              const isSat = day.getDay() === 6
+              const isSun      = day.getDay() === 0
+              const isSat      = day.getDay() === 6
               const isOtherMonth = day.getMonth() !== viewMonth
 
               return (
@@ -211,7 +290,6 @@ export function ScheduleCalendar({ events, isLoggedIn }: Props) {
                   >
                     {day.getDate()}
                   </span>
-                  {/* Event dots */}
                   {dayEvents.length > 0 && (
                     <div className="flex gap-0.5 flex-wrap justify-center px-0.5">
                       {dayEvents.slice(0, 3).map((ev) => (
@@ -242,8 +320,150 @@ export function ScheduleCalendar({ events, isLoggedIn }: Props) {
         </div>
       </div>
 
-      {/* ── 오른쪽: 이벤트 리스트 ── */}
+      {/* ── 오른쪽: 일정 등록 폼 + 이벤트 리스트 ── */}
       <div className="flex-1 min-w-0">
+
+        {/* 임원/관리자 일정 등록 */}
+        {canManage && (
+          <div className="mb-4">
+            {!formOpen ? (
+              <button
+                type="button"
+                onClick={() => setFormOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                일정 등록
+              </button>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800 text-sm">새 일정 등록</h3>
+                  <button
+                    type="button"
+                    onClick={() => { setFormOpen(false); setFormError(''); setForm(EMPTY_FORM) }}
+                    className="text-gray-400 hover:text-gray-600 text-xs"
+                  >
+                    ✕ 닫기
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">제목 *</label>
+                    <input
+                      type="text"
+                      value={form.title}
+                      onChange={(e) => setField('title', e.target.value)}
+                      placeholder="일정 제목"
+                      className={inputClass}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">유형</label>
+                    <select
+                      title="유형"
+                      value={form.type}
+                      onChange={(e) => setField('type', e.target.value)}
+                      className={inputClass}
+                      disabled={isPending}
+                    >
+                      {EVENT_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">일시 *</label>
+                    <input
+                      title="일시"
+                      type="datetime-local"
+                      value={form.scheduledAt}
+                      onChange={(e) => setField('scheduledAt', e.target.value)}
+                      className={inputClass}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">장소</label>
+                    <input
+                      type="text"
+                      value={form.location}
+                      onChange={(e) => setField('location', e.target.value)}
+                      placeholder="예: 오륜교회 그레이스홀"
+                      className={inputClass}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Zoom URL</label>
+                    <input
+                      type="url"
+                      value={form.zoomUrl}
+                      onChange={(e) => setField('zoomUrl', e.target.value)}
+                      placeholder="https://zoom.us/j/..."
+                      className={inputClass}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">최대 참석 인원</label>
+                    <input
+                      type="number"
+                      value={form.maxAttendees}
+                      onChange={(e) => setField('maxAttendees', e.target.value)}
+                      placeholder="없으면 비워두기"
+                      min="1"
+                      className={inputClass}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs text-gray-500 mb-1">설명</label>
+                    <input
+                      type="text"
+                      value={form.description}
+                      onChange={(e) => setField('description', e.target.value)}
+                      placeholder="간단한 설명 (선택)"
+                      className={inputClass}
+                      disabled={isPending}
+                    />
+                  </div>
+                </div>
+
+                {formError && <p className="text-sm text-red-500">{formError}</p>}
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRegister}
+                    disabled={isPending}
+                    className="px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
+                  >
+                    {isPending ? '등록 중…' : '등록'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setFormOpen(false); setFormError(''); setForm(EMPTY_FORM) }}
+                    className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-700">
             {selectedDate
@@ -271,7 +491,7 @@ export function ScheduleCalendar({ events, isLoggedIn }: Props) {
         ) : (
           <div className="space-y-4">
             {listEvents.map((event) => {
-              const info = typeInfo(event.type)
+              const info   = typeInfo(event.type)
               const isFull = event.maxAttendees != null && event.attendeeCount >= event.maxAttendees
               const isPast = new Date(event.scheduledAt) < today
 
