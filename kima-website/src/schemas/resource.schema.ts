@@ -11,7 +11,7 @@ export const resourceSchema = z.object({
   // 자료실 큰 구분 (미전송 시 PUBLIC 기본값)
   section: z.enum(resourceSectionValues, { message: '자료 구분을 선택해주세요' }).default('PUBLIC'),
   accessLevel: z.enum(['PUBLIC', 'MEMBER', 'PREMIUM'], { message: '접근 등급을 선택해주세요' }),
-  categoryId: z.string().cuid('올바른 카테고리를 선택해주세요').optional(),
+  categoryId: z.string().cuid('올바른 카테고리를 선택해주세요').optional().nullable(),
 })
 
 export type ResourceInput = z.infer<typeof resourceSchema>

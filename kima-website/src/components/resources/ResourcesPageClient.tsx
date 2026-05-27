@@ -51,6 +51,9 @@ function makeInitialFields(
   }
 }
 
+// 카테고리 선택 시 섹션 이동을 나타내는 특수 값
+const MOVE_TO_KIMA = '__MOVE_TO_KIMA__'
+
 interface ResourceFormProps {
   section: ResourceSection
   categories?: Category[]
@@ -264,7 +267,7 @@ function ResourceForm({
           </select>
         </div>
 
-        {hasCategories && (
+        {(hasCategories || (editing && section === 'MINISTRY')) && (
           <div>
             <label className="block text-xs text-gray-500 mb-1">카테고리</label>
             <select
@@ -276,12 +279,21 @@ function ResourceForm({
               disabled={isPending}
             >
               <option value="">없음</option>
-              {categories.map((cat) => (
+              {categories?.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
               ))}
+              {/* 사역 자료 수정 시: KIMA 자료 섹션으로 이동 옵션 */}
+              {editing && section === 'MINISTRY' && (
+                <option value={MOVE_TO_KIMA}>── KIMA 자료로 이동 ──</option>
+              )}
             </select>
+            {fields.categoryId === MOVE_TO_KIMA && (
+              <p className="text-xs text-amber-600 mt-1">
+                저장하면 이 자료가 &apos;KIMA 자료&apos; 섹션으로 이동됩니다.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -354,16 +366,25 @@ export function ResourcesPageClient({
       const url = isEdit ? `/api/resources/${editingResource.id}` : '/api/resources'
       const method = isEdit ? 'PATCH' : 'POST'
 
+      // KIMA 자료로 이동 선택 시 section 변경, categoryId 제거
+      const movingToKima = fields.categoryId === MOVE_TO_KIMA
+
       const body: Record<string, unknown> = {
         title: fields.title.trim(),
         driveUrl: fields.driveUrl.trim(),
         accessLevel: fields.accessLevel,
         ...(fields.description.trim() ? { description: fields.description.trim() } : {}),
-        ...(fields.categoryId ? { categoryId: fields.categoryId } : {}),
+        ...(!movingToKima && fields.categoryId ? { categoryId: fields.categoryId } : {}),
       }
 
       if (!isEdit) {
         body.section = section
+      }
+
+      // 섹션 이동 처리
+      if (isEdit && movingToKima) {
+        body.section = 'KIMA'
+        body.categoryId = null
       }
 
       const res = await fetch(url, {
@@ -379,7 +400,12 @@ export function ResourcesPageClient({
       }
 
       closeForm()
-      router.refresh()
+      // KIMA 자료로 이동한 경우 해당 페이지로 이동
+      if (isEdit && movingToKima) {
+        router.push('/resources/kima')
+      } else {
+        router.refresh()
+      }
     })
   }
 
