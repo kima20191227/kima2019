@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { convertDriveUrl, convertDriveUrls } from '@/lib/utils'
-import Image from 'next/image'
+import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
+import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
 
 export default function EventPromoWritePage() {
   const router = useRouter()
@@ -14,12 +14,12 @@ export default function EventPromoWritePage() {
     authorName: '',
     eventLocation: '',
     websiteUrl: '',
-    thumbnailUrl: '',
-    imageUrls: '',
     videoUrls: '',
     tags: '',
     agree: false,
   })
+  const [storyImages, setStoryImages] = useState<PhotoAttachment[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -29,10 +29,11 @@ export default function EventPromoWritePage() {
     setSubmitting(true)
     setError('')
 
-    const images = form.imageUrls.split('\n').map((v) => v.trim()).filter(Boolean)
+    const images = storyImages.map((a) => a.url)
+    const coverImage = storyImages.find((a) => a.isCover)
+    const thumbnail = coverImage?.url ?? images[0] ?? null
     const videoUrls = form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean)
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean)
-    const thumbnail = form.thumbnailUrl.trim() || images[0] || null
 
     try {
       const res = await fetch('/api/stories', {
@@ -74,7 +75,7 @@ export default function EventPromoWritePage() {
           <p className="font-semibold text-rose-800 mb-1">작성 안내</p>
           <ul className="list-disc list-inside space-y-1 text-rose-700">
             <li>행사 제목, 일시, 장소, 내용을 상세히 기재해 주세요.</li>
-            <li>이미지는 외부 링크(구글 드라이브, 이미지 호스팅 등) URL을 한 줄씩 입력해 주세요.</li>
+            <li>사진을 직접 업로드하면 자동으로 구글 드라이브에 저장됩니다.</li>
             <li>유튜브·Vimeo 영상 링크를 추가하면 상세 페이지에서 바로 재생됩니다.</li>
             <li>게시 후 수정이 필요하면 관리자에게 문의해 주세요.</li>
           </ul>
@@ -120,7 +121,6 @@ export default function EventPromoWritePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* 주최/작성자 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">주최·작성자 (선택)</label>
               <input
@@ -131,7 +131,6 @@ export default function EventPromoWritePage() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
               />
             </div>
-            {/* 행사 장소 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">행사 장소 (선택)</label>
               <input
@@ -158,41 +157,17 @@ export default function EventPromoWritePage() {
             <p className="text-xs text-gray-400 mt-1">행사 공식 홈페이지, 신청 폼, SNS 링크 등을 입력하세요.</p>
           </div>
 
-          {/* 대표 이미지 URL */}
+          {/* 이미지 업로드 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">대표 이미지 URL (선택)</label>
-            <input
-              type="url"
-              maxLength={500}
-              value={form.thumbnailUrl}
-              onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
-              onBlur={(e) => setForm((f) => ({ ...f, thumbnailUrl: convertDriveUrl(e.target.value) }))}
-              placeholder="예: https://i.imgur.com/abc123.jpg 또는 구글 드라이브 공유 링크"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
+            <label className="block text-sm font-medium text-gray-700 mb-2">행사 사진 (선택)</label>
+            <PhotoUploadZone
+              onAttachmentsChange={(atts, uploading) => {
+                setStoryImages(atts)
+                setIsUploading(uploading)
+              }}
             />
-            <p className="text-xs text-gray-400 mt-1">구글 드라이브 공유 링크를 붙여넣으면 자동으로 표시 가능한 주소로 변환됩니다.</p>
-            {form.thumbnailUrl && (
-              <div className="mt-2 max-w-xs rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex justify-center relative h-48">
-                <Image src={form.thumbnailUrl} alt="미리보기" fill className="object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              </div>
-            )}
-          </div>
-
-          {/* 이미지 URL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              이미지 링크 (선택, 여러 개는 줄바꿈)
-            </label>
-            <textarea
-              rows={3}
-              value={form.imageUrls}
-              onChange={(e) => setForm({ ...form, imageUrls: e.target.value })}
-              onBlur={(e) => setForm((f) => ({ ...f, imageUrls: convertDriveUrls(e.target.value) }))}
-              placeholder={`이미지 URL을 한 줄씩 입력하세요\n첫 번째 이미지가 대표 이미지로 사용됩니다`}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] resize-none font-mono"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              구글 드라이브 공유 링크를 그대로 붙여넣으면 자동으로 변환됩니다.
+            <p className="text-xs text-gray-400 mt-1.5">
+              &apos;대표 설정&apos; 버튼을 눌러 대표 이미지를 지정하거나 첫 번째 사진이 자동으로 대표 이미지가 됩니다.
             </p>
           </div>
 
@@ -237,10 +212,10 @@ export default function EventPromoWritePage() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || isUploading}
             className="w-full py-3 bg-[#1B3A6B] text-white font-semibold rounded-lg hover:bg-[#15305a] transition-colors disabled:opacity-50"
           >
-            {submitting ? '등록 중...' : '행사 홍보 등록하기'}
+            {isUploading ? '업로드 중...' : submitting ? '등록 중...' : '행사 홍보 등록하기'}
           </button>
         </form>
       </div>

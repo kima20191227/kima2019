@@ -28,6 +28,7 @@ export default async function QnaEditPage({ params }: Props) {
       title: true,
       content: true,
       authorId: true,
+      attachments: true,
     },
   })
 
@@ -57,6 +58,9 @@ export default async function QnaEditPage({ params }: Props) {
               id: question.id,
               title: question.title,
               content: question.content,
+              attachments: Array.isArray(question.attachments)
+                ? (question.attachments as { url: string; name: string; type: string; isCover?: boolean }[])
+                : [],
             }}
           />
         </div>

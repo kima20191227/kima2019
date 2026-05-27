@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: parsed.data.title,
         content: parsed.data.content,
+        attachments: parsed.data.attachments ?? [],
         authorId: session.user.id,
       },
     })

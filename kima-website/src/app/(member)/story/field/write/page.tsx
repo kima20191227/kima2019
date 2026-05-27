@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
+import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
 
 export default function FieldStoryWritePage() {
   const router = useRouter()
@@ -15,6 +17,8 @@ export default function FieldStoryWritePage() {
     tags: '',
     agree: false,
   })
+  const [storyImages, setStoryImages] = useState<PhotoAttachment[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -24,6 +28,10 @@ export default function FieldStoryWritePage() {
     setSubmitting(true)
     setError('')
     try {
+      const images = storyImages.map((a) => a.url)
+      const coverImage = storyImages.find((a) => a.isCover)
+      const thumbnail = coverImage?.url ?? images[0] ?? null
+
       const res = await fetch('/api/stories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,6 +42,8 @@ export default function FieldStoryWritePage() {
           excerpt: form.excerpt || null,
           authorName: form.authorName || null,
           ministryLocation: form.ministryLocation || null,
+          thumbnail,
+          images,
           videoUrls: form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean),
           tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
           status: 'PENDING',
@@ -123,6 +133,19 @@ export default function FieldStoryWritePage() {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">사진 첨부 (선택)</label>
+            <PhotoUploadZone
+              onAttachmentsChange={(atts, uploading) => {
+                setStoryImages(atts)
+                setIsUploading(uploading)
+              }}
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              첫 번째 이미지(또는 &apos;대표 설정&apos; 이미지)가 썸네일로 사용됩니다.
+            </p>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">동영상 링크 (선택, 여러 개는 줄바꿈)</label>
             <textarea
               rows={3}
@@ -160,10 +183,10 @@ export default function FieldStoryWritePage() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || isUploading}
             className="w-full py-3 bg-[#1B3A6B] text-white font-semibold rounded-lg hover:bg-[#15305a] transition-colors disabled:opacity-50"
           >
-            {submitting ? '제출 중...' : '이야기 올리기 (검토 후 게시)'}
+            {isUploading ? '업로드 중...' : submitting ? '제출 중...' : '이야기 올리기 (검토 후 게시)'}
           </button>
         </form>
       </div>

@@ -29,7 +29,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const parsed = answerSchema.pick({ content: true }).safeParse(body)
+    const parsed = answerSchema.pick({ content: true, attachments: true }).safeParse(body)
     if (!parsed.success) {
       return NextResponse.json(
         { error: '입력값이 올바르지 않습니다.', details: parsed.error.format() },
@@ -39,7 +39,10 @@ export async function PATCH(
 
     const updated = await prisma.answer.update({
       where: { id },
-      data: { content: parsed.data.content },
+      data: {
+        content: parsed.data.content,
+        ...(parsed.data.attachments !== undefined && { attachments: parsed.data.attachments }),
+      },
     })
 
     return NextResponse.json({ answer: updated })

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { attachmentSchema } from './post.schema'
 
 export const questionSchema = z.object({
   title: z
@@ -8,6 +9,7 @@ export const questionSchema = z.object({
   content: z
     .string()
     .min(10, '내용은 10자 이상 입력해주세요'),
+  attachments: z.array(attachmentSchema).optional(),
 })
 
 export const questionStatusSchema = z.enum(['PENDING', 'ANSWERED'])

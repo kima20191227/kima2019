@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
+import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
 
 interface InitialData {
   id?: string
   title?: string
   content?: string
+  attachments?: PhotoAttachment[]
 }
 
 interface Props {
@@ -18,8 +21,21 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [content, setContent] = useState(initialData?.content ?? '')
+  const [attachments, setAttachments] = useState<PhotoAttachment[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  function insertImageInContent(text: string) {
+    const ta = textareaRef.current
+    if (!ta) {
+      setContent((prev) => prev + text)
+      return
+    }
+    const pos = ta.selectionStart ?? content.length
+    setContent(content.slice(0, pos) + text + content.slice(pos))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -42,7 +58,11 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), content: content.trim() }),
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          attachments,
+        }),
       })
 
       if (!res.ok) {
@@ -85,6 +105,7 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
           내용 <span className="text-red-500">*</span>
         </label>
         <textarea
+          ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="질문 내용을 자세히 입력해주세요 (10자 이상)"
@@ -92,6 +113,19 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
         />
         <p className="mt-1 text-xs text-gray-400 text-right">{content.length}자</p>
+      </div>
+
+      {/* 이미지 첨부 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">이미지 첨부 (선택)</label>
+        <PhotoUploadZone
+          initialAttachments={initialData?.attachments}
+          onAttachmentsChange={(atts, uploading) => {
+            setAttachments(atts)
+            setIsUploading(uploading)
+          }}
+          onInsertImage={insertImageInContent}
+        />
       </div>
 
       {/* 에러 */}
@@ -112,10 +146,10 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
         </button>
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || isUploading}
           className="px-5 py-2 text-sm bg-[#1B3A6B] text-white rounded-lg hover:bg-[#15305a] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? '저장 중...' : mode === 'edit' ? '수정 완료' : '질문 등록'}
+          {isUploading ? '업로드 중...' : submitting ? '저장 중...' : mode === 'edit' ? '수정 완료' : '질문 등록'}
         </button>
       </div>
     </form>

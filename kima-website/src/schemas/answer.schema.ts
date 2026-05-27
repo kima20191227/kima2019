@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { attachmentSchema } from './post.schema'
 
 export const answerSchema = z.object({
   content: z
@@ -7,6 +8,7 @@ export const answerSchema = z.object({
   questionId: z
     .string()
     .cuid('올바른 질문 ID 형식이 아닙니다'),
+  attachments: z.array(attachmentSchema).optional(),
 })
 
 export type AnswerInput = z.infer<typeof answerSchema>

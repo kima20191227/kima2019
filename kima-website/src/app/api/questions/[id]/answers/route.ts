@@ -30,8 +30,8 @@ export async function POST(
     }
 
     const body = await request.json()
-    // questionId comes from URL; validate only content from body
-    const parsed = answerSchema.pick({ content: true }).safeParse(body)
+    // questionId comes from URL; validate content + attachments from body
+    const parsed = answerSchema.pick({ content: true, attachments: true }).safeParse(body)
     if (!parsed.success) {
       return NextResponse.json(
         { error: '입력값이 올바르지 않습니다.', details: parsed.error.format() },
@@ -44,6 +44,7 @@ export async function POST(
       prisma.answer.create({
         data: {
           content: parsed.data.content,
+          attachments: parsed.data.attachments ?? [],
           questionId,
           authorId: session.user.id,
         },

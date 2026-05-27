@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
+import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
 
 export default function PrayerWritePage() {
   const router = useRouter()
@@ -13,6 +15,8 @@ export default function PrayerWritePage() {
     requesterName: '',
     agree: false,
   })
+  const [storyImages, setStoryImages] = useState<PhotoAttachment[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,6 +26,10 @@ export default function PrayerWritePage() {
     setSubmitting(true)
     setError('')
     try {
+      const images = storyImages.map((a) => a.url)
+      const coverImage = storyImages.find((a) => a.isCover)
+      const thumbnail = coverImage?.url ?? images[0] ?? null
+
       const res = await fetch('/api/stories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,6 +40,8 @@ export default function PrayerWritePage() {
           urgency: form.urgency,
           visibility: form.visibility,
           requesterName: form.requesterName || null,
+          thumbnail,
+          images,
           status: 'APPROVED',
         }),
       })
@@ -53,7 +63,7 @@ export default function PrayerWritePage() {
         <div className="bg-blue-50 rounded-xl p-4 mb-6 text-sm text-blue-800 leading-relaxed">
           <p className="font-semibold mb-1">작성 안내</p>
           <ul className="list-disc list-inside space-y-1 text-blue-700">
-            <li>제목에 기도 제목을 한 줄로 요약해 주세요. 예: "○○형제 수술을 위해"</li>
+            <li>제목에 기도 제목을 한 줄로 요약해 주세요. 예: &quot;○○형제 수술을 위해&quot;</li>
             <li>본문에는 상황을 간단히 설명하고 구체적인 기도 내용을 적어주세요.</li>
             <li>민감한 개인정보(실명·질병명·연락처)는 꼭 필요한 경우가 아니면 생략해 주세요.</li>
           </ul>
@@ -92,6 +102,7 @@ export default function PrayerWritePage() {
               <select
                 value={form.urgency}
                 onChange={(e) => setForm({ ...form, urgency: e.target.value })}
+                title="긴급도"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
               >
                 <option value="NORMAL">일반</option>
@@ -103,6 +114,7 @@ export default function PrayerWritePage() {
               <select
                 value={form.visibility}
                 onChange={(e) => setForm({ ...form, visibility: e.target.value })}
+                title="공개 범위"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
               >
                 <option value="PUBLIC">전체 공개</option>
@@ -123,6 +135,16 @@ export default function PrayerWritePage() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">사진 첨부 (선택)</label>
+            <PhotoUploadZone
+              onAttachmentsChange={(atts, uploading) => {
+                setStoryImages(atts)
+                setIsUploading(uploading)
+              }}
+            />
+          </div>
+
           <label className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -139,10 +161,10 @@ export default function PrayerWritePage() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || isUploading}
             className="w-full py-3 bg-[#1B3A6B] text-white font-semibold rounded-lg hover:bg-[#15305a] transition-colors disabled:opacity-50"
           >
-            {submitting ? '제출 중...' : '기도 요청 올리기'}
+            {isUploading ? '업로드 중...' : submitting ? '제출 중...' : '기도 요청 올리기'}
           </button>
         </form>
       </div>

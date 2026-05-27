@@ -372,6 +372,7 @@ model Question {
   id          String         @id @default(cuid())
   title       String
   content     String
+  attachments Json?
   status      QuestionStatus @default(PENDING)
   isPublished Boolean        @default(true)
   authorId    String
@@ -389,6 +390,7 @@ model Question {
 model Answer {
   id          String   @id @default(cuid())
   content     String
+  attachments Json?
   questionId  String
   question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   authorId    String

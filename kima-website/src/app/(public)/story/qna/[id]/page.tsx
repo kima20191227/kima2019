@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import type { UserRole } from '@prisma/client'
 import { AnswerSection } from '@/components/qna/AnswerSection'
 import { QuestionDeleteButton } from '@/components/qna/QuestionDeleteButton'
+import { convertDriveUrl } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +40,8 @@ export default async function QnaDetailPage({ params }: Props) {
     },
   })
 
+  type AttachmentItem = { url: string; name: string; type: string; isCover?: boolean }
+
   if (!question) notFound()
 
   const role = session?.user?.role as UserRole | undefined
@@ -47,10 +50,20 @@ export default async function QnaDetailPage({ params }: Props) {
     isAdmin || (!!session?.user?.id && question.author.id === session.user.id)
   const isLoggedIn = !!session?.user
 
+  const questionAttachments = Array.isArray(question.attachments)
+    ? (question.attachments as AttachmentItem[])
+    : []
+  const questionImages = questionAttachments.filter((a) => a.type?.startsWith('image/'))
+  const inlineNamesInQuestion = new Set(
+    Array.from(question.content.matchAll(/\[img:([^\]]*)\]/g)).map((m) => m[1])
+  )
+  const questionGallery = questionImages.filter((a) => !inlineNamesInQuestion.has(a.name))
+
   // Serialize dates for client components
   const serializedAnswers = question.answers.map((a) => ({
     id: a.id,
     content: a.content,
+    attachments: Array.isArray(a.attachments) ? (a.attachments as AttachmentItem[]) : [],
     createdAt: a.createdAt.toISOString(),
     author: a.author,
   }))
@@ -86,9 +99,36 @@ export default async function QnaDetailPage({ params }: Props) {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
         {/* 질문 본문 */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          <p className="text-gray-800 whitespace-pre-line leading-relaxed text-sm">
-            {question.content}
-          </p>
+          <div className="text-gray-800 leading-relaxed text-sm">
+            {question.content.split(/(\[img:[^\]]*\]\([^)]*\))/g).map((part, i) => {
+              const match = part.match(/\[img:([^\]]*)\]\(([^)]*)\)/)
+              if (match) {
+                return (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={i}
+                    src={convertDriveUrl(match[2])}
+                    alt={match[1]}
+                    className="max-w-full rounded-lg my-2 max-h-96 object-contain"
+                  />
+                )
+              }
+              return <span key={i} className="whitespace-pre-line">{part}</span>
+            })}
+          </div>
+          {questionGallery.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {questionGallery.map((img, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={convertDriveUrl(img.url)}
+                  alt={img.name}
+                  className="w-full rounded-lg object-cover aspect-square"
+                />
+              ))}
+            </div>
+          )}
 
           {/* 질문 수정·삭제 (작성자 또는 ADMIN) */}
           {canManageQuestion && (
