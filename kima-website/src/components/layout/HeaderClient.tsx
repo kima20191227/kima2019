@@ -70,7 +70,6 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { href: '/resources/kima',     label: 'KIMA 자료', desc: '총회자료·회의록·예산결산·정관 등 공식 자료' },
       { href: '/resources/ministry', label: '사역 자료', desc: '지역·언어권·사역대상별 사역 자료', dividerBefore: true },
-      { href: '/resources/public',   label: '공개 자료', desc: '누구나 자유롭게 열람·다운로드 가능한 자료' },
     ],
   },
   { href: '/donate', label: '후원' },
