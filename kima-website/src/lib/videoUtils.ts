@@ -13,7 +13,7 @@ export function parseVideoUrl(url: string): VideoInfo {
     return {
       platform: 'youtube',
       embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`,
-      thumbnailUrl: `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`,
+      thumbnailUrl: `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`,
     }
   }
 

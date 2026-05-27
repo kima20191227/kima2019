@@ -37,6 +37,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'gmfsns.org',
       },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+      },
     ],
   },
   async headers() {
