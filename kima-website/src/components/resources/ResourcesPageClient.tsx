@@ -44,6 +44,7 @@ const SECTION_REDIRECT: Record<ResourceSection, string> = {
 interface FormFields {
   title: string
   description: string
+  content: string
   driveUrl: string
   accessLevel: string
   categoryId: string
@@ -58,6 +59,7 @@ function makeInitialFields(
   return {
     title: resource?.title ?? '',
     description: resource?.description ?? '',
+    content: resource?.content ?? '',
     driveUrl: resource?.driveUrl ?? '',
     accessLevel: resource?.accessLevel ?? DEFAULT_ACCESS_LEVEL[pageSection],
     categoryId: resource?.category?.id ?? preselectedCategoryId ?? '',
@@ -162,6 +164,19 @@ function ResourceForm({
           onChange={(e) => set('description', e.target.value)}
           placeholder="자료에 대한 간략한 설명 (선택)"
           className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+          disabled={isPending}
+        />
+      </div>
+
+      {/* 글 내용 */}
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">글 내용</label>
+        <textarea
+          value={fields.content}
+          onChange={(e) => set('content', e.target.value)}
+          rows={6}
+          placeholder="자료에 대한 상세 내용을 입력해주세요 (선택)"
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] resize-none"
           disabled={isPending}
         />
       </div>
@@ -403,6 +418,7 @@ export function ResourcesPageClient({
         driveUrl: fields.driveUrl.trim(),
         accessLevel: fields.accessLevel,
         ...(fields.description.trim() ? { description: fields.description.trim() } : {}),
+        ...(fields.content.trim() ? { content: fields.content.trim() } : { content: null }),
         ...(fields.categoryId ? { categoryId: fields.categoryId } : {}),
       }
 

@@ -150,6 +150,7 @@ model Resource {
   id           String          @id @default(cuid())
   title        String
   description  String?
+  content      String?         // 본문 내용 (선택)
   driveUrl     String
   fileType     String?
   section      ResourceSection @default(PUBLIC)

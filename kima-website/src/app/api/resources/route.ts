@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: parsed.data.title,
         description: parsed.data.description ?? null,
+        content: parsed.data.content ?? null,
         driveUrl: parsed.data.driveUrl,
         fileType: parsed.data.fileType ?? null,
         section: parsed.data.section,
