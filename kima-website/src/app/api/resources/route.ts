@@ -98,9 +98,16 @@ export async function POST(request: NextRequest) {
         categoryId: parsed.data.categoryId ?? null,
         uploadedById: session.user.id,
       },
+      include: { category: { select: { id: true, name: true, slug: true } } },
     })
 
-    return NextResponse.json({ resource }, { status: 201 })
+    return NextResponse.json({
+      resource: {
+        ...resource,
+        createdAt: resource.createdAt.toISOString(),
+        updatedAt: resource.updatedAt.toISOString(),
+      },
+    }, { status: 201 })
   } catch {
     return NextResponse.json({ error: '자료 등록 중 오류가 발생했습니다.' }, { status: 500 })
   }

@@ -23,11 +23,10 @@ export interface ResourceListProps {
   resources: Resource[]
   userAccessLevel: 'none' | 'member' | 'premium'
   searchable?: boolean
-  /** 'all' = 이 목록의 모든 자료를 수정/삭제 가능 (OFFICER+) */
-  /** 'own' = 본인이 등록한 자료만 수정/삭제 가능 */
   deleteMode?: 'all' | 'own' | null
   currentUserId?: string
   onEdit?: (resource: Resource) => void
+  onDeleted?: (id: string) => void
 }
 
 const ACCESS_BADGES: Record<AccessLevel, { label: string; className: string }> = {
@@ -59,25 +58,103 @@ function LockIcon({ gold }: { gold?: boolean }) {
   )
 }
 
+function FileIcon() {
+  return (
+    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
+  )
+}
+
+function getDriveFileId(url: string): string | null {
+  // https://drive.google.com/file/d/{id}/view
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/)
+  if (m1) return m1[1]
+  // https://drive.google.com/open?id={id} or /uc?id={id}
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/)
+  if (m2) return m2[1]
+  return null
+}
+
+function DriveThumbnail({ driveUrl, title }: { driveUrl: string; title: string }) {
+  const fileId = getDriveFileId(driveUrl)
+  const [failed, setFailed] = useState(false)
+
+  if (!fileId || failed) {
+    return (
+      <div className="w-12 h-16 rounded-md border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+        <FileIcon />
+      </div>
+    )
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://drive.google.com/thumbnail?id=${fileId}&sz=w120`}
+      alt={title}
+      onError={() => setFailed(true)}
+      className="w-12 h-16 rounded-md border border-gray-200 object-cover flex-shrink-0"
+    />
+  )
+}
+
+function DrivePreview({ driveUrl, title }: { driveUrl: string; title: string }) {
+  const fileId = getDriveFileId(driveUrl)
+  if (!fileId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
+        <FileIcon />
+        <span className="text-xs">직접 미리보기를 지원하지 않는 파일입니다.</span>
+        <a
+          href={driveUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-[#1B3A6B] underline hover:text-[#142d54]"
+        >
+          파일 열기 →
+        </a>
+      </div>
+    )
+  }
+  return (
+    <iframe
+      src={`https://drive.google.com/file/d/${fileId}/preview`}
+      title={title}
+      className="w-full h-full border-0"
+      allow="autoplay"
+    />
+  )
+}
+
 function ResourceRow({
   resource,
   userAccessLevel,
   canManage,
   onEdit,
+  onDeleted,
 }: {
   resource: Resource
   userAccessLevel: 'none' | 'member' | 'premium'
   canManage: boolean
   onEdit?: (resource: Resource) => void
+  onDeleted?: (id: string) => void
 }) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [contentOpen, setContentOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const accessible = canAccess(resource.accessLevel, userAccessLevel)
   const badge = ACCESS_BADGES[resource.accessLevel]
   const date = new Date(resource.createdAt).toLocaleDateString('ko-KR')
   const hasContent = !!resource.content?.trim()
+  const hasDriveFile = !!getDriveFileId(resource.driveUrl)
 
   const handleDelete = async () => {
     if (!confirm(`"${resource.title}" 자료를 삭제하시겠습니까?`)) return
@@ -85,6 +162,7 @@ function ResourceRow({
     try {
       const res = await fetch(`/api/resources/${resource.id}`, { method: 'DELETE' })
       if (res.ok) {
+        onDeleted?.(resource.id)
         router.refresh()
       } else {
         const data = await res.json().catch(() => ({}))
@@ -100,12 +178,14 @@ function ResourceRow({
   return (
     <div className={cn('py-4 px-2 transition-colors', accessible ? 'hover:bg-gray-50' : 'opacity-60')}>
       <div className="flex items-start gap-3">
+        {/* 썸네일 */}
+        <DriveThumbnail driveUrl={resource.driveUrl} title={resource.title} />
+
         {/* 제목 + 메타 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-gray-900">{resource.title}</span>
 
-            {/* 접근 등급 */}
             <span
               className={cn(
                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
@@ -118,21 +198,18 @@ function ResourceRow({
               {badge.label}
             </span>
 
-            {/* 파일 형식 */}
             {resource.fileType && (
               <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 font-mono uppercase">
                 {resource.fileType}
               </span>
             )}
 
-            {/* 카테고리 */}
             {resource.category && (
               <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">
                 {resource.category.name}
               </span>
             )}
 
-            {/* 글 내용 있음 표시 */}
             {hasContent && (
               <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600">
                 글 내용 있음
@@ -144,7 +221,7 @@ function ResourceRow({
             <p className="text-sm text-gray-500 mt-0.5">{resource.description}</p>
           )}
 
-          <div className="mt-1 flex items-center gap-3">
+          <div className="mt-1 flex items-center gap-3 flex-wrap">
             <span className="text-xs text-gray-400">{date}</span>
             {hasContent && (
               <button
@@ -153,6 +230,15 @@ function ResourceRow({
                 className="text-xs text-[#1B3A6B] hover:underline flex items-center gap-0.5"
               >
                 {contentOpen ? '내용 접기 ▲' : '내용 보기 ▼'}
+              </button>
+            )}
+            {hasDriveFile && accessible && (
+              <button
+                type="button"
+                onClick={() => setPreviewOpen((v) => !v)}
+                className="text-xs text-[#C8922A] hover:underline flex items-center gap-0.5 font-medium"
+              >
+                {previewOpen ? '미리보기 닫기 ▲' : '미리보기 ▼'}
               </button>
             )}
           </div>
@@ -243,10 +329,30 @@ function ResourceRow({
 
       {/* 글 내용 펼치기 */}
       {hasContent && contentOpen && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="mt-3 pt-3 border-t border-gray-100 ml-15">
           <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-lg px-4 py-3 text-sm">
             {resource.content}
           </div>
+        </div>
+      )}
+
+      {/* 미리보기 iframe */}
+      {previewOpen && accessible && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 h-[480px]">
+            <DrivePreview driveUrl={resource.driveUrl} title={resource.title} />
+          </div>
+          <p className="text-xs text-gray-400 mt-1.5 text-center">
+            미리보기가 표시되지 않으면{' '}
+            <a
+              href={resource.driveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#1B3A6B] underline"
+            >
+              직접 열기 →
+            </a>
+          </p>
         </div>
       )}
     </div>
@@ -260,6 +366,7 @@ export function ResourceList({
   deleteMode,
   currentUserId,
   onEdit,
+  onDeleted,
 }: ResourceListProps) {
   const [query, setQuery] = useState('')
 
@@ -353,6 +460,7 @@ export function ResourceList({
               userAccessLevel={userAccessLevel}
               canManage={getCanManage(resource)}
               onEdit={onEdit}
+              onDeleted={onDeleted}
             />
           ))}
         </div>

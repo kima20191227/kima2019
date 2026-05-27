@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ResourceList } from './ResourceList'
 import type { Resource } from './ResourceList'
@@ -381,10 +381,16 @@ export function ResourcesPageClient({
   preselectedCategoryId,
 }: ResourcesPageClientProps) {
   const router = useRouter()
+  const [localResources, setLocalResources] = useState<Resource[]>(resources)
   const [formOpen, setFormOpen] = useState(false)
   const [editingResource, setEditingResource] = useState<Resource | null>(null)
   const [isPending, startTransition] = useTransition()
   const [formError, setFormError] = useState('')
+
+  // 서버 데이터가 갱신되면(router.refresh 완료) 로컬 상태도 동기화
+  useEffect(() => {
+    setLocalResources(resources)
+  }, [resources])
 
   const isFormVisible = formOpen || editingResource !== null
 
@@ -399,6 +405,10 @@ export function ResourcesPageClient({
     setFormOpen(false)
     setFormError('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDeleted = (id: string) => {
+    setLocalResources((prev) => prev.filter((r) => r.id !== id))
   }
 
   const handleSubmit = (fields: FormFields) => {
@@ -425,11 +435,9 @@ export function ResourcesPageClient({
       if (!isEdit) {
         body.section = section
       } else {
-        // 수정 모드: 섹션이 바뀐 경우만 포함
         const originalSection = (editingResource.section as ResourceSection) ?? section
         if (fields.targetSection !== originalSection) {
           body.section = fields.targetSection
-          // 섹션 이동 시 카테고리 초기화 (선택 안 한 경우)
           if (!fields.categoryId) body.categoryId = null
         }
       }
@@ -446,9 +454,21 @@ export function ResourcesPageClient({
         return
       }
 
+      const json = await res.json()
+      const saved = (json as { resource: Resource }).resource
+
+      // 서버 응답 즉시 로컬 상태 반영 (화면 즉시 갱신)
+      if (isEdit) {
+        setLocalResources((prev) =>
+          prev.map((r) => (r.id === saved.id ? saved : r)),
+        )
+      } else {
+        setLocalResources((prev) => [saved, ...prev])
+      }
+
       closeForm()
 
-      // 섹션이 바뀐 경우 이동한 페이지로 리다이렉트
+      // 섹션 이동 시 해당 페이지로 리다이렉트
       if (isEdit) {
         const originalSection = (editingResource.section as ResourceSection) ?? section
         if (fields.targetSection !== originalSection) {
@@ -456,6 +476,8 @@ export function ResourcesPageClient({
           return
         }
       }
+
+      // 백그라운드에서 서버 데이터 동기화
       router.refresh()
     })
   }
@@ -501,12 +523,13 @@ export function ResourcesPageClient({
       {/* 자료 목록 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4">
         <ResourceList
-          resources={resources}
+          resources={localResources}
           userAccessLevel={userAccessLevel}
           searchable
           deleteMode={deleteMode}
           currentUserId={currentUserId}
           onEdit={canUpload ? handleEdit : undefined}
+          onDeleted={handleDeleted}
         />
       </div>
     </div>
