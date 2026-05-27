@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { resourceSchema } from '@/schemas/resource.schema'
-import type { UserRole, AccessLevel } from '@prisma/client'
+import type { UserRole, AccessLevel, ResourceSection } from '@prisma/client'
+
+const VALID_SECTIONS = new Set<ResourceSection>(['KIMA', 'MINISTRY', 'PUBLIC'])
 
 const ROLE_WEIGHT: Record<UserRole, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
 
@@ -35,10 +37,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const categoryId = searchParams.get('categoryId')
+    const rawSection = searchParams.get('section')
+    const section: ResourceSection | undefined =
+      rawSection && VALID_SECTIONS.has(rawSection as ResourceSection)
+        ? (rawSection as ResourceSection)
+        : undefined
 
     const resources = await prisma.resource.findMany({
       where: {
         accessLevel: { in: allowedLevels },
+        ...(section ? { section } : {}),
         ...(categoryId ? { categoryId } : {}),
       },
       include: {
@@ -60,14 +68,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
     const role = session.user.role as UserRole
-    if (ROLE_WEIGHT[role] < 1) {
-      return NextResponse.json({ error: '로그인 회원만 자료를 등록할 수 있습니다.' }, { status: 403 })
-    }
+    const weight = ROLE_WEIGHT[role] ?? 0
 
     const body = await request.json()
     const parsed = resourceSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: '입력값이 올바르지 않습니다.', details: parsed.error.format() }, { status: 400 })
+    }
+
+    // 섹션별 등록 권한 확인
+    const reqSection = parsed.data.section
+    if (reqSection === 'KIMA' || reqSection === 'MINISTRY') {
+      if (weight < 3) {
+        return NextResponse.json({ error: 'KIMA/사역 자료는 임원(OFFICER) 이상만 등록할 수 있습니다.' }, { status: 403 })
+      }
+    } else if (weight < 1) {
+      return NextResponse.json({ error: '로그인 회원만 공개 자료를 등록할 수 있습니다.' }, { status: 403 })
     }
 
     const resource = await prisma.resource.create({
@@ -76,6 +92,7 @@ export async function POST(request: NextRequest) {
         description: parsed.data.description ?? null,
         driveUrl: parsed.data.driveUrl,
         fileType: parsed.data.fileType ?? null,
+        section: parsed.data.section,
         accessLevel: parsed.data.accessLevel,
         categoryId: parsed.data.categoryId ?? null,
         uploadedById: session.user.id,

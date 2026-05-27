@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
         description: parsed.data.description ?? null,
         driveUrl: parsed.data.driveUrl,
         fileType: parsed.data.fileType ?? null,
+        section: parsed.data.section,
         accessLevel: parsed.data.accessLevel,
         categoryId: parsed.data.categoryId ?? null,
         uploadedById: session.user.id,

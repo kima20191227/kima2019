@@ -5,7 +5,7 @@
  *   npx tsx prisma/seed-members.ts
  *
  * 전제조건:
- *   - public/members_data.json 파일이 존재해야 합니다 (Excel에서 변환)
+ *   - public/members_data.json 파일이 존재해야 합니다
  *   - DATABASE_URL 환경변수가 설정되어 있어야 합니다
  *
  * 초기 비밀번호: kima2019!  (회원들에게 변경 안내 필요)

@@ -8,10 +8,22 @@ import { useState } from 'react'
 import { loginSchema, type LoginInput } from '@/schemas/auth.schema'
 import { FieldError } from './FieldError'
 
+function getSafeCallbackUrl(value: string | null): string {
+  if (!value) return '/'
+
+  try {
+    const url = new URL(value, window.location.origin)
+    if (url.origin !== window.location.origin) return '/'
+    return `${url.pathname}${url.search}${url.hash}` || '/'
+  } catch {
+    return '/'
+  }
+}
+
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const callbackUrl = getSafeCallbackUrl(searchParams.get('callbackUrl'))
   const [serverError, setServerError] = useState('')
 
   const {

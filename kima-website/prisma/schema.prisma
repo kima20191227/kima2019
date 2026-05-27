@@ -31,6 +31,9 @@ model User {
   sessions      Session[]
   posts         Post[]
   stories       Story[]
+  questions     Question[]
+  answers       Answer[]
+  columnPosts   ColumnPost[]
 }
 
 enum UserRole {
@@ -136,18 +139,26 @@ enum PostType {
   INTRODUCE
 }
 
+// 자료실 큰 구분: KIMA 자료 / 사역 자료 / 공개 자료
+enum ResourceSection {
+  KIMA      // KIMA 자료 — OFFICER 이상 등록/수정/삭제
+  MINISTRY  // 사역 자료 — 커뮤니티 카테고리와 연동, 기존 커뮤니티 자료 권한 정책 적용
+  PUBLIC    // 공개 자료 — MEMBER 이상 등록, 작성자/ADMIN 수정·삭제
+}
+
 model Resource {
-  id           String      @id @default(cuid())
+  id           String          @id @default(cuid())
   title        String
   description  String?
   driveUrl     String
   fileType     String?
-  accessLevel  AccessLevel @default(MEMBER)
+  section      ResourceSection @default(PUBLIC)
+  accessLevel  AccessLevel     @default(MEMBER)
   categoryId   String?
-  category     Category?   @relation(fields: [categoryId], references: [id])
+  category     Category?       @relation(fields: [categoryId], references: [id])
   uploadedById String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 }
 
 enum AccessLevel {
@@ -345,4 +356,68 @@ enum LeaderGroup {
   REGION_CHAIR     // 지역 위원장
   DENOMINATION_REP // 교단 대표
   NETWORK_CHAIR    // 네트워크 위원장
+}
+
+// ─── Q&A 게시판 ────────────────────────────────────────────────────────────────
+
+enum QuestionStatus {
+  PENDING  // 답변대기
+  ANSWERED // 답변완료
+}
+
+// 질문: 작성 MEMBER 이상 / 조회 비회원 가능
+// 수정·삭제: 작성자 또는 ADMIN
+model Question {
+  id          String         @id @default(cuid())
+  title       String
+  content     String
+  status      QuestionStatus @default(PENDING)
+  isPublished Boolean        @default(true)
+  authorId    String
+  author      User           @relation(fields: [authorId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  answers     Answer[]
+
+  @@index([createdAt])
+}
+
+// 답변: 작성 MEMBER 이상 / 하나의 질문에 여러 답변 가능
+// 수정·삭제: 작성자 또는 ADMIN
+model Answer {
+  id          String   @id @default(cuid())
+  content     String
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([questionId])
+}
+
+// ─── 이주민 사역 칼럼 ────────────────────────────────────────────────────────────
+
+// 칼럼: 조회 비회원 가능 / 작성 MEMBER 이상 / 수정·삭제 작성자 또는 ADMIN
+// 본문은 HTML 또는 Markdown 형식으로 저장
+model ColumnPost {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   // rich text (HTML 또는 Markdown)
+  excerpt     String?  // 목록 요약문
+  thumbnail   String?  // 대표 이미지 URL
+  imageUrls   String[] // 본문 이미지 URL 목록
+  fileUrls    String[] // 첨부파일 URL 목록
+  tags        String[]
+  viewCount   Int      @default(0)
+  isPublished Boolean  @default(true)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
 }

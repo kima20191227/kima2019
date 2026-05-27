@@ -39,7 +39,13 @@ describe('registerSchema', () => {
     email: 'test@kima.org',
     password: 'password123',
     passwordConfirm: 'password123',
+    position: '목사',
+    phone: '010-1234-5678',
+    address: '서울시 강남구',
+    denomination: '예장합동',
     organization: '한국이주민선교연합회',
+    ministryLanguages: ['베트남어'],
+    ministryTargets: ['이주노동자'],
   }
 
   it('유효한 입력값은 통과한다', () => {
@@ -96,9 +102,15 @@ describe('registerSchema', () => {
   it('한국어 에러 메시지가 출력된다', () => {
     const result = registerSchema.safeParse({
       name: '',
-      email: '',
+      email: 'invalid',
       password: '',
       passwordConfirm: '',
+      position: '',
+      phone: '',
+      address: '',
+      denomination: '',
+      ministryLanguages: [],
+      ministryTargets: [],
     })
     expect(result.success).toBe(false)
     if (!result.success) {

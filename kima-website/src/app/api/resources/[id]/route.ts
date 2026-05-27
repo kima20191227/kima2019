@@ -6,79 +6,88 @@ import type { UserRole } from '@prisma/client'
 
 const ROLE_WEIGHT: Record<UserRole, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
 
-interface RouteParams {
-  params: Promise<{ id: string }>
+function hasManagePermission(
+  section: string,
+  uploadedById: string | null,
+  userId: string,
+  role: UserRole,
+): boolean {
+  if (role === 'ADMIN') return true
+  // PUBLIC 섹션: 작성자만 수정/삭제 가능
+  if (section === 'PUBLIC') return uploadedById === userId
+  // KIMA / MINISTRY 섹션: OFFICER 이상
+  return (ROLE_WEIGHT[role] ?? 0) >= 3
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+type Context = { params: Promise<{ id: string }> }
+
+export async function PATCH(request: NextRequest, { params }: Context) {
   try {
-    const { id } = await params
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
 
+    const { id } = await params
     const resource = await prisma.resource.findUnique({
       where: { id },
-      select: { uploadedById: true },
+      select: { section: true, uploadedById: true },
     })
     if (!resource) {
       return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    const roleWeight = ROLE_WEIGHT[session.user.role as UserRole] ?? 0
-    const isUploader = resource.uploadedById === session.user.id
-    const isOfficerOrAbove = roleWeight >= 3
-
-    if (!isUploader && !isOfficerOrAbove) {
+    const role = session.user.role as UserRole
+    if (!hasManagePermission(resource.section, resource.uploadedById, session.user.id, role)) {
       return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 })
     }
 
     const body = await request.json()
-    const parsed = resourceSchema.safeParse(body)
+    // PATCH는 부분 업데이트 허용
+    const parsed = resourceSchema.partial().safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: '입력값이 올바르지 않습니다.', details: parsed.error.format() }, { status: 400 })
+      return NextResponse.json(
+        { error: '입력값이 올바르지 않습니다.', details: parsed.error.format() },
+        { status: 400 },
+      )
     }
 
     const updated = await prisma.resource.update({
       where: { id },
-      data: {
-        title: parsed.data.title,
-        description: parsed.data.description ?? null,
-        driveUrl: parsed.data.driveUrl,
-        fileType: parsed.data.fileType ?? null,
-        accessLevel: parsed.data.accessLevel,
-        categoryId: parsed.data.categoryId ?? null,
-      },
+      data: parsed.data,
+      include: { category: { select: { id: true, name: true, slug: true } } },
     })
 
-    return NextResponse.json({ resource: updated })
+    return NextResponse.json({
+      resource: {
+        ...updated,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      },
+    })
   } catch {
     return NextResponse.json({ error: '자료 수정 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: Context) {
   try {
-    const { id } = await params
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
 
+    const { id } = await params
     const resource = await prisma.resource.findUnique({
       where: { id },
-      select: { uploadedById: true },
+      select: { section: true, uploadedById: true },
     })
     if (!resource) {
       return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    const roleWeight = ROLE_WEIGHT[session.user.role as UserRole] ?? 0
-    const isUploader = resource.uploadedById === session.user.id
-    const isOfficerOrAbove = roleWeight >= 3
-
-    if (!isUploader && !isOfficerOrAbove) {
+    const role = session.user.role as UserRole
+    if (!hasManagePermission(resource.section, resource.uploadedById, session.user.id, role)) {
       return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 })
     }
 

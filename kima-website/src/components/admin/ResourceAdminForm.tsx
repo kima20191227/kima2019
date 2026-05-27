@@ -15,7 +15,7 @@ interface ResourceAdminFormProps {
   preselectedCategoryId?: string
 }
 
-const FILE_TYPES = ['PDF', 'PPT', 'DOC', 'XLS', 'ETC'] as const
+const FILE_TYPES = ['PDF', 'PPT', 'DOC', 'ETC'] as const
 
 export function ResourceAdminForm({ categories, preselectedCategoryId = '' }: ResourceAdminFormProps) {
   const router = useRouter()
@@ -28,6 +28,7 @@ export function ResourceAdminForm({ categories, preselectedCategoryId = '' }: Re
     description: '',
     driveUrl: '',
     fileType: 'PDF' as string,
+    section: 'PUBLIC' as string,
     accessLevel: 'MEMBER' as string,
     categoryId: preselectedCategoryId,
   })
@@ -55,7 +56,7 @@ export function ResourceAdminForm({ categories, preselectedCategoryId = '' }: Re
         setError(data.error ?? '등록에 실패했습니다.')
         return
       }
-      setForm({ title: '', description: '', driveUrl: '', fileType: 'PDF', accessLevel: 'MEMBER', categoryId: '' })
+      setForm({ title: '', description: '', driveUrl: '', fileType: 'PDF', section: 'PUBLIC', accessLevel: 'MEMBER', categoryId: '' })
       setOpen(false)
       router.refresh()
     })
@@ -108,7 +109,20 @@ export function ResourceAdminForm({ categories, preselectedCategoryId = '' }: Re
             disabled={isPending}
           />
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">섹션</label>
+            <select
+              value={form.section}
+              onChange={(e) => set('section', e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+              disabled={isPending}
+            >
+              <option value="PUBLIC">공개 자료</option>
+              <option value="MINISTRY">사역 자료</option>
+              <option value="KIMA">KIMA 자료</option>
+            </select>
+          </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">파일 형식</label>
             <select

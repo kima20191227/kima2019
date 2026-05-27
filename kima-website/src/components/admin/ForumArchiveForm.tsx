@@ -42,7 +42,7 @@ interface Props {
   onClose?: () => void
 }
 
-const FILE_TYPES = ['PDF', 'PPT', 'DOCX', 'XLSX', 'HWP', 'VIDEO', 'LINK', 'ZIP', '기타']
+const FILE_TYPES = ['PDF', 'PPT', 'DOCX', 'HWP', 'VIDEO', 'LINK', 'ZIP', '기타']
 
 const emptySchedule = (): ScheduleItem => ({ time: '', title: '', speaker: '' })
 const emptyMaterial = (): MaterialItem => ({ title: '', fileType: 'PDF', url: '' })

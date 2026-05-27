@@ -4,8 +4,8 @@ import { organizationSchema } from '@/schemas/organization.schema'
 describe('organizationSchema', () => {
   const validData = {
     name: '한국이주민선교연합회',
-    region: '서울경기인천',
-    languages: ['베트남'],
+    region: '서울',
+    languages: ['베트남어'],
     targets: ['이주노동자'],
   }
 
@@ -19,7 +19,7 @@ describe('organizationSchema', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       const err = result.error.issues.find((i) => i.path.includes('languages'))
-      expect(err?.message).toBe('언어권을 최소 1개 선택해주세요')
+      expect(err?.message).toBe('언어권을 1개 이상 선택해주세요')
     }
   })
 
@@ -28,7 +28,7 @@ describe('organizationSchema', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       const err = result.error.issues.find((i) => i.path.includes('targets'))
-      expect(err?.message).toBe('사역대상을 최소 1개 선택해주세요')
+      expect(err?.message).toBe('사역대상을 1개 이상 선택해주세요')
     }
   })
 
@@ -77,7 +77,7 @@ describe('organizationSchema', () => {
   it('복수의 languages와 targets도 통과한다', () => {
     const result = organizationSchema.safeParse({
       ...validData,
-      languages: ['베트남', '네팔', '몽골'],
+      languages: ['베트남어', '네팔어', '몽골어'],
       targets: ['이주노동자', '유학생'],
     })
     expect(result.success).toBe(true)

@@ -72,10 +72,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // JSON 변환 파일에서 로드 (Excel 파일은 gitignore 대상)
+    // 기존 JSON 데이터 파일에서 로드
     const filePath = path.join(process.cwd(), 'public', 'orgs_data.json')
     if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: 'orgs_data.json 파일을 찾을 수 없습니다. Excel을 JSON으로 변환 후 public/orgs_data.json에 저장하세요.' }, { status: 404 })
+      return NextResponse.json({ error: 'orgs_data.json 파일을 찾을 수 없습니다. public/orgs_data.json에 저장하세요.' }, { status: 404 })
     }
 
     interface OrgRow { name: string; address?: string; email?: string; phone?: string; nationRaw?: string; missionRaw?: string }

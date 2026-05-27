@@ -9,7 +9,7 @@ export function SeedMembersButton() {
   const [msg, setMsg] = useState('')
 
   const handleSeed = () => {
-    if (!confirm('Excel 파일의 130명 회원 데이터를 사역지도(Organization)에 등록합니다. 계속할까요?')) return
+    if (!confirm('기존 JSON 데이터의 130명 회원 데이터를 사역지도(Organization)에 등록합니다. 계속할까요?')) return
     startTransition(async () => {
       const res = await fetch('/api/admin/seed-members', { method: 'POST' })
       const data = await res.json()

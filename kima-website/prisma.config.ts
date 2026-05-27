@@ -1,9 +1,10 @@
 import { defineConfig } from 'prisma/config'
+import { loadEnvConfig } from '@next/env'
+
+// .env.local을 Next.js 방식으로 로드 (prisma CLI는 .env.local을 자동으로 읽지 않음)
+loadEnvConfig(process.cwd())
 
 export default defineConfig({
-  // Supabase 연결 문자열 형식:
-  // postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
-  // .env.local에 DATABASE_URL 설정 후 prisma db push 실행
   migrations: {
     seed: 'node --env-file=.env.local --require tsx/cjs prisma/seed.ts',
   },

@@ -16,6 +16,22 @@ beforeEach(() => {
   mockFetch.mockReset()
 })
 
+async function fillValidForm() {
+  await userEvent.type(screen.getByPlaceholderText('홍길동'), '홍길동')
+  await userEvent.type(screen.getByPlaceholderText('example@email.com'), 'test@kima.org')
+  await userEvent.type(screen.getByPlaceholderText('영문+숫자 8자 이상'), 'password123')
+  await userEvent.type(screen.getByPlaceholderText('비밀번호 재입력'), 'password123')
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: '목사' } })
+  await userEvent.type(screen.getByPlaceholderText('010-0000-0000'), '010-1234-5678')
+  await userEvent.type(
+    screen.getByPlaceholderText('예) 예장합동, 예장통합, 기감, 기침 등'),
+    '예장합동'
+  )
+  await userEvent.type(screen.getByPlaceholderText('예) 서울시 강남구 역삼동'), '서울시 강남구')
+  await userEvent.type(screen.getByPlaceholderText('예) 베트남어, 네팔어, 중국어'), '베트남어')
+  await userEvent.type(screen.getByPlaceholderText('예) 이주노동자, 유학생, 결혼이민자'), '이주노동자')
+}
+
 describe('RegisterForm', () => {
   it('빈 폼 제출 시 에러 메시지를 표시한다', async () => {
     render(<RegisterForm />)
@@ -56,10 +72,7 @@ describe('RegisterForm', () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
 
     render(<RegisterForm />)
-    await userEvent.type(screen.getByPlaceholderText('홍길동'), '홍길동')
-    await userEvent.type(screen.getByPlaceholderText('example@email.com'), 'test@kima.org')
-    await userEvent.type(screen.getByPlaceholderText('영문+숫자 8자 이상'), 'password123')
-    await userEvent.type(screen.getByPlaceholderText('비밀번호 재입력'), 'password123')
+    await fillValidForm()
     fireEvent.click(screen.getByRole('button', { name: '회원가입' }))
 
     await waitFor(() => {
@@ -74,10 +87,7 @@ describe('RegisterForm', () => {
     mockFetch.mockImplementation(() => new Promise(() => {})) // 응답 없이 대기
 
     render(<RegisterForm />)
-    await userEvent.type(screen.getByPlaceholderText('홍길동'), '홍길동')
-    await userEvent.type(screen.getByPlaceholderText('example@email.com'), 'test@kima.org')
-    await userEvent.type(screen.getByPlaceholderText('영문+숫자 8자 이상'), 'password123')
-    await userEvent.type(screen.getByPlaceholderText('비밀번호 재입력'), 'password123')
+    await fillValidForm()
     fireEvent.click(screen.getByRole('button', { name: '회원가입' }))
 
     await waitFor(() => {

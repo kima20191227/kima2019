@@ -11,8 +11,6 @@ const ALLOWED_TYPES = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'video/mp4', 'video/quicktime',
 ]
 
@@ -48,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: '허용되지 않는 파일 형식입니다. (이미지·PDF·PPT·Word·Excel·영상만 가능)' }, { status: 400 })
+      return NextResponse.json({ error: '허용되지 않는 파일 형식입니다. (이미지·PDF·PPT·Word·영상만 가능)' }, { status: 400 })
     }
 
     let buffer   = Buffer.from(await file.arrayBuffer())

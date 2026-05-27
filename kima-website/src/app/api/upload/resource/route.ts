@@ -8,11 +8,26 @@ const KNOWN_TYPES: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPT',
   'application/msword': 'DOC',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOC',
-  'application/vnd.ms-excel': 'XLS',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLS',
 }
 
+const EXTENSION_TYPES: Record<string, string> = {
+  pdf: 'PDF',
+  ppt: 'PPT',
+  pptx: 'PPT',
+  doc: 'DOC',
+  docx: 'DOC',
+}
+
+const MAX_FILE_SIZE_MB = 50
 const DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
+
+function getFileExtension(name: string): string {
+  return name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? ''
+}
+
+function getKnownFileType(file: File): string | undefined {
+  return KNOWN_TYPES[file.type] ?? EXTENSION_TYPES[getFileExtension(file.name)]
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +43,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '파일이 없습니다.' }, { status: 400 })
     }
 
-    const fileType = KNOWN_TYPES[file.type] ?? file.name.split('.').pop()?.toUpperCase() ?? 'FILE'
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      return NextResponse.json(
+        { error: `파일 크기는 ${MAX_FILE_SIZE_MB}MB 이하여야 합니다.` },
+        { status: 400 }
+      )
+    }
+
+    const fileType = getKnownFileType(file)
+    if (!fileType) {
+      return NextResponse.json(
+        { error: 'PDF, PPT, DOC 파일만 업로드할 수 있습니다.' },
+        { status: 400 }
+      )
+    }
 
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL ?? ''
     const privateKey  = process.env.GOOGLE_PRIVATE_KEY ?? ''

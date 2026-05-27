@@ -66,8 +66,8 @@ describe('OrganizationCard', () => {
 
   it('언어권 태그를 렌더링한다', () => {
     render(<OrganizationCard org={mockOrg} />)
-    expect(screen.getByText('베트남')).toBeInTheDocument()
-    expect(screen.getByText('네팔')).toBeInTheDocument()
+    expect(screen.getByText('베트남어')).toBeInTheDocument()
+    expect(screen.getByText('네팔어')).toBeInTheDocument()
   })
 
   it('showContact 없이 렌더링하면 연락처를 숨긴다', () => {
