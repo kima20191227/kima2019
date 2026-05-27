@@ -41,19 +41,10 @@ export default async function PublicResourcesPage() {
   // ADMIN은 모든 자료 수정/삭제, 일반 회원은 본인 자료만
   const deleteMode: 'all' | 'own' | null = isAdmin ? 'all' : weight >= 1 ? 'own' : null
 
-  // 공개 자료 섹션은 accessLevel=PUBLIC 자료만 표시
-  // (섹션이 PUBLIC인 자료 중 사용자가 접근 가능한 등급까지 표시)
-  const allowedLevels =
-    userAccessLevel === 'premium'
-      ? (['PUBLIC', 'MEMBER', 'PREMIUM'] as const)
-      : userAccessLevel === 'member'
-        ? (['PUBLIC', 'MEMBER'] as const)
-        : (['PUBLIC'] as const)
-
   const resources = await prisma.resource.findMany({
     where: {
       section: 'PUBLIC',
-      accessLevel: { in: [...allowedLevels] },
+      accessLevel: 'PUBLIC',
     },
     include: {
       category: { select: { id: true, name: true, slug: true } },
