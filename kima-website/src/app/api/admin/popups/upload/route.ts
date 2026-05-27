@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase'
 import { safeStorageKey } from '@/lib/utils'
 import { convertToWebP } from '@/lib/imageConvert'
 
@@ -23,13 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'JPG, PNG, WebP, GIF 파일만 업로드 가능합니다.' }, { status: 400 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!supabaseUrl || !serviceKey) {
-      return NextResponse.json({ error: 'Supabase 환경변수가 설정되지 않았습니다.' }, { status: 500 })
-    }
-
-    const adminClient = createClient(supabaseUrl, serviceKey)
+    const adminClient = createAdminClient()
     const converted = await convertToWebP(Buffer.from(await file.arrayBuffer()), file.type)
     const webpFile  = new File([converted.buffer], file.name.replace(/\.[^.]+$/, '.webp'), { type: converted.contentType })
     const filename  = safeStorageKey(webpFile, '')

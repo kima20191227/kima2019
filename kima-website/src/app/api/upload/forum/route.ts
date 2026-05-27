@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase'
 import { safeStorageKey } from '@/lib/utils'
 import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
@@ -22,15 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!supabaseUrl || !serviceKey) {
-      return NextResponse.json(
-        { error: '서버 환경 변수가 설정되지 않았습니다. (SUPABASE_SERVICE_ROLE_KEY)' },
-        { status: 500 }
-      )
-    }
-    const supabaseAdmin = createClient(supabaseUrl, serviceKey)
+    const supabaseAdmin = createAdminClient()
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null

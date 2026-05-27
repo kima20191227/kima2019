@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
 import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
 const BUCKET = 'org-images'
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
-
-function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('SUPABASE_SERVICE_ROLE_KEY 환경 변수가 설정되지 않았습니다.')
-  return createClient(url, key)
-}
 
 function whereClause(id: string) {
   const numeric = parseInt(id, 10)
@@ -52,7 +45,7 @@ export async function POST(
   const fileKey = !isNaN(storageId) ? String(storageId) : id
   const filePath = `orgs/${fileKey}.${ext}`
 
-  const supabase = getServiceClient()
+  const supabase = createAdminClient()
 
   // Remove old files for this org
   await supabase.storage.from(BUCKET).remove([

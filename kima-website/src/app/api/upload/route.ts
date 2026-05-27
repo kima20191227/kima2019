@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase'
 import { safeStorageKey } from '@/lib/utils'
 import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
@@ -18,16 +18,6 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     if (!isOfficer(session?.user?.role)) {
       return NextResponse.json({ error: '임원 이상만 파일을 업로드할 수 있습니다.' }, { status: 403 })
-    }
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceKey) {
-      return NextResponse.json(
-        { error: '서버 환경 변수가 설정되지 않았습니다. (SUPABASE_SERVICE_ROLE_KEY)' },
-        { status: 500 }
-      )
     }
 
     const formData = await request.formData()
@@ -59,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey)
+    const supabase = createAdminClient()
     const urls: string[] = []
 
     for (const file of files) {

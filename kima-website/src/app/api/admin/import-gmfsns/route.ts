@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase'
 import { addressToKimaRegion } from '@/lib/normalizeKoreanAddress'
 import orgsData from '@/data/gmfsns_orgs.json'
 
@@ -24,13 +24,6 @@ interface RawOrg {
   contactItems?: string[]
 }
 
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-}
-
 export async function POST(_req: NextRequest) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') {
@@ -40,7 +33,7 @@ export async function POST(_req: NextRequest) {
   // Fetch all Supabase edits
   let editMap = new Map<number, Record<string, any>>()
   try {
-    const supabase = getServiceClient()
+    const supabase = createAdminClient()
     const { data: edits } = await supabase
       .from('gmfsns_org_edits')
       .select('org_id, type, targets, languages, address, phone, email, website, image_url, intro_lines, contact_items')
