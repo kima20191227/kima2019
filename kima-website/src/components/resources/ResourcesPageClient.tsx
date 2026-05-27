@@ -29,16 +29,29 @@ const DEFAULT_ACCESS_LEVEL: Record<ResourceSection, string> = {
   PUBLIC: 'PUBLIC',
 }
 
+const SECTION_LABELS: Record<ResourceSection, string> = {
+  KIMA: 'KIMA 자료',
+  MINISTRY: '사역 자료',
+  PUBLIC: '공개 자료',
+}
+
+const SECTION_REDIRECT: Record<ResourceSection, string> = {
+  KIMA: '/resources/kima',
+  MINISTRY: '/resources/ministry',
+  PUBLIC: '/resources/public',
+}
+
 interface FormFields {
   title: string
   description: string
   driveUrl: string
   accessLevel: string
   categoryId: string
+  targetSection: ResourceSection
 }
 
 function makeInitialFields(
-  section: ResourceSection,
+  pageSection: ResourceSection,
   preselectedCategoryId?: string,
   resource?: Resource | null,
 ): FormFields {
@@ -46,16 +59,14 @@ function makeInitialFields(
     title: resource?.title ?? '',
     description: resource?.description ?? '',
     driveUrl: resource?.driveUrl ?? '',
-    accessLevel: resource?.accessLevel ?? DEFAULT_ACCESS_LEVEL[section],
+    accessLevel: resource?.accessLevel ?? DEFAULT_ACCESS_LEVEL[pageSection],
     categoryId: resource?.category?.id ?? preselectedCategoryId ?? '',
+    targetSection: (resource?.section as ResourceSection) ?? pageSection,
   }
 }
 
-// 카테고리 선택 시 섹션 이동을 나타내는 특수 값
-const MOVE_TO_KIMA = '__MOVE_TO_KIMA__'
-
 interface ResourceFormProps {
-  section: ResourceSection
+  pageSection: ResourceSection
   categories?: Category[]
   preselectedCategoryId?: string
   editing?: Resource | null
@@ -66,7 +77,7 @@ interface ResourceFormProps {
 }
 
 function ResourceForm({
-  section,
+  pageSection,
   categories,
   preselectedCategoryId,
   editing,
@@ -76,15 +87,19 @@ function ResourceForm({
   error,
 }: ResourceFormProps) {
   const [fields, setFields] = useState<FormFields>(() =>
-    makeInitialFields(section, preselectedCategoryId, editing),
+    makeInitialFields(pageSection, preselectedCategoryId, editing),
   )
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const set = (k: keyof FormFields, v: string) => setFields((prev) => ({ ...prev, [k]: v }))
+  const set = <K extends keyof FormFields>(k: K, v: FormFields[K]) =>
+    setFields((prev) => ({ ...prev, [k]: v }))
+
   const hasCategories = categories && categories.length > 0
+  const originalSection = (editing?.section as ResourceSection) ?? pageSection
+  const sectionChanged = editing && fields.targetSection !== originalSection
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -151,7 +166,7 @@ function ResourceForm({
         />
       </div>
 
-      {/* 파일 업로드 / URL 입력 토글 */}
+      {/* 파일 업로드 / URL 입력 토글 (신규 등록) */}
       {!editing && (
         <div>
           <div className="flex gap-2 mb-2">
@@ -181,8 +196,9 @@ function ResourceForm({
 
           {uploadMode === 'file' ? (
             <div>
-              <label className="block text-xs text-gray-500 mb-1">파일 선택 (구글 드라이브에 자동 저장)</label>
-              {/* 숨겨진 실제 file input */}
+              <label className="block text-xs text-gray-500 mb-1">
+                파일 선택 (구글 드라이브에 자동 저장)
+              </label>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -191,7 +207,6 @@ function ResourceForm({
                 disabled={uploading || isPending}
                 className="hidden"
               />
-              {/* 클릭 시 file input 트리거 */}
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -209,13 +224,9 @@ function ResourceForm({
                       : '선택된 파일 없음'}
                 </span>
               </div>
-              {uploadError && (
-                <p className="text-xs text-red-500 mt-1">{uploadError}</p>
-              )}
+              {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
               {fields.driveUrl && (
-                <p className="text-xs text-green-600 mt-1 truncate">
-                  {fields.driveUrl}
-                </p>
+                <p className="text-xs text-green-600 mt-1 truncate">{fields.driveUrl}</p>
               )}
             </div>
           ) : (
@@ -234,7 +245,7 @@ function ResourceForm({
         </div>
       )}
 
-      {/* 수정 모드에서는 URL 직접 입력만 */}
+      {/* 수정 모드: URL 입력 */}
       {editing && (
         <div>
           <label className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
@@ -246,6 +257,32 @@ function ResourceForm({
             className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
             disabled={isPending}
           />
+        </div>
+      )}
+
+      {/* 자료 위치 (수정 모드에서만 표시) */}
+      {editing && (
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">자료 위치 (섹션)</label>
+          <select
+            value={fields.targetSection}
+            onChange={(e) => set('targetSection', e.target.value as ResourceSection)}
+            aria-label="자료 위치 선택"
+            title="자료 위치 선택"
+            className="w-full text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+            disabled={isPending}
+          >
+            <option value="KIMA">KIMA 자료 (총회자료·회의록·공식 문서)</option>
+            <option value="MINISTRY">사역 자료 (지역·언어권·사역대상별)</option>
+            <option value="PUBLIC">공개 자료 (누구나 열람 가능)</option>
+          </select>
+          {sectionChanged && (
+            <p className="text-xs text-amber-600 mt-1">
+              ⚠ 저장 시 자료가{' '}
+              <strong>&apos;{SECTION_LABELS[fields.targetSection]}&apos;</strong> 페이지로
+              이동됩니다.
+            </p>
+          )}
         </div>
       )}
 
@@ -267,7 +304,7 @@ function ResourceForm({
           </select>
         </div>
 
-        {(hasCategories || (editing && section === 'MINISTRY')) && (
+        {hasCategories && (
           <div>
             <label className="block text-xs text-gray-500 mb-1">카테고리</label>
             <select
@@ -279,21 +316,12 @@ function ResourceForm({
               disabled={isPending}
             >
               <option value="">없음</option>
-              {categories?.map((cat) => (
+              {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
               ))}
-              {/* 사역 자료 수정 시: KIMA 자료 섹션으로 이동 옵션 */}
-              {editing && section === 'MINISTRY' && (
-                <option value={MOVE_TO_KIMA}>── KIMA 자료로 이동 ──</option>
-              )}
             </select>
-            {fields.categoryId === MOVE_TO_KIMA && (
-              <p className="text-xs text-amber-600 mt-1">
-                저장하면 이 자료가 &apos;KIMA 자료&apos; 섹션으로 이동됩니다.
-              </p>
-            )}
           </div>
         )}
       </div>
@@ -308,8 +336,12 @@ function ResourceForm({
           className="px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
         >
           {isPending
-            ? editing ? '수정 중…' : '등록 중…'
-            : editing ? '수정 완료' : '등록'}
+            ? editing
+              ? '수정 중…'
+              : '등록 중…'
+            : editing
+              ? '수정 완료'
+              : '등록'}
         </button>
         <button
           type="button"
@@ -366,25 +398,24 @@ export function ResourcesPageClient({
       const url = isEdit ? `/api/resources/${editingResource.id}` : '/api/resources'
       const method = isEdit ? 'PATCH' : 'POST'
 
-      // KIMA 자료로 이동 선택 시 section 변경, categoryId 제거
-      const movingToKima = fields.categoryId === MOVE_TO_KIMA
-
       const body: Record<string, unknown> = {
         title: fields.title.trim(),
         driveUrl: fields.driveUrl.trim(),
         accessLevel: fields.accessLevel,
         ...(fields.description.trim() ? { description: fields.description.trim() } : {}),
-        ...(!movingToKima && fields.categoryId ? { categoryId: fields.categoryId } : {}),
+        ...(fields.categoryId ? { categoryId: fields.categoryId } : {}),
       }
 
       if (!isEdit) {
         body.section = section
-      }
-
-      // 섹션 이동 처리
-      if (isEdit && movingToKima) {
-        body.section = 'KIMA'
-        body.categoryId = null
+      } else {
+        // 수정 모드: 섹션이 바뀐 경우만 포함
+        const originalSection = (editingResource.section as ResourceSection) ?? section
+        if (fields.targetSection !== originalSection) {
+          body.section = fields.targetSection
+          // 섹션 이동 시 카테고리 초기화 (선택 안 한 경우)
+          if (!fields.categoryId) body.categoryId = null
+        }
       }
 
       const res = await fetch(url, {
@@ -400,18 +431,22 @@ export function ResourcesPageClient({
       }
 
       closeForm()
-      // KIMA 자료로 이동한 경우 해당 페이지로 이동
-      if (isEdit && movingToKima) {
-        router.push('/resources/kima')
-      } else {
-        router.refresh()
+
+      // 섹션이 바뀐 경우 이동한 페이지로 리다이렉트
+      if (isEdit) {
+        const originalSection = (editingResource.section as ResourceSection) ?? section
+        if (fields.targetSection !== originalSection) {
+          router.push(SECTION_REDIRECT[fields.targetSection])
+          return
+        }
       }
+      router.refresh()
     })
   }
 
   return (
     <div>
-      {/* 자료 등록 버튼 (폼이 닫혀 있을 때) */}
+      {/* 자료 등록 버튼 */}
       {canUpload && !isFormVisible && (
         <div className="mb-6 flex justify-end">
           <button
@@ -436,7 +471,7 @@ export function ResourcesPageClient({
       {isFormVisible && (
         <ResourceForm
           key={editingResource?.id ?? 'new'}
-          section={section}
+          pageSection={section}
           categories={categories}
           preselectedCategoryId={preselectedCategoryId}
           editing={editingResource}

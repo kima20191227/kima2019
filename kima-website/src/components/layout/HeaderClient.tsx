@@ -6,7 +6,13 @@ import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 
-type NavChild = { href: string; label: string; desc?: string; requiresPremium?: boolean }
+type NavChild = {
+  href: string
+  label: string
+  desc?: string
+  requiresPremium?: boolean
+  dividerBefore?: boolean  // 이 항목 위에 구분선 표시
+}
 type NavItem  = { href: string; label: string; children?: NavChild[] }
 
 export type SessionUser = {
@@ -42,11 +48,11 @@ const NAV_ITEMS: NavItem[] = [
     href: '/community',
     label: '사역별 커뮤니티',
     children: [
-      { href: '/community',                label: '커뮤니티 홈',    desc: '전체 카테고리 게시판' },
-      { href: '/community?tab=REGION',     label: '지역별',         desc: '서울경기·부산경남·광주전라 외' },
-      { href: '/community?tab=LANGUAGE',   label: '언어권별',       desc: '베트남·네팔·몽골·중국 외' },
-      { href: '/community?tab=TARGET',     label: '사역대상별',     desc: '이주노동자·유학생·결혼이민자 외' },
-      { href: '/resources', label: '사역자료', desc: '정회원 전용 사역 자료 모음', requiresPremium: true },
+      { href: '/community',              label: '커뮤니티 홈',  desc: '전체 카테고리 게시판' },
+      { href: '/community?tab=REGION',   label: '지역별',       desc: '서울경기·부산경남·광주전라 외' },
+      { href: '/community?tab=LANGUAGE', label: '언어권별',     desc: '베트남·네팔·몽골·중국 외' },
+      { href: '/community?tab=TARGET',   label: '사역대상별',   desc: '이주노동자·유학생·결혼이민자 외' },
+      { href: '/resources/public',       label: '일반 자료',    desc: '누구나 열람·다운로드 가능한 공개 자료', dividerBefore: true },
     ],
   },
   {
@@ -62,8 +68,8 @@ const NAV_ITEMS: NavItem[] = [
     href: '/resources',
     label: 'KIMA 자료실',
     children: [
-      { href: '/resources/kima',     label: 'KIMA 자료', desc: '총회자료, 회의록, 예산·결산자료 등 공식 자료' },
-      { href: '/resources/ministry', label: '사역 자료', desc: '지역·언어권·사역대상별 사역 자료' },
+      { href: '/resources/kima',     label: 'KIMA 자료', desc: '총회자료·회의록·예산결산·정관 등 공식 자료' },
+      { href: '/resources/ministry', label: '사역 자료', desc: '지역·언어권·사역대상별 사역 자료', dividerBefore: true },
       { href: '/resources/public',   label: '공개 자료', desc: '누구나 자유롭게 열람·다운로드 가능한 자료' },
     ],
   },
@@ -158,17 +164,22 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
               <div className="absolute top-full left-0 pt-1 z-50" onMouseEnter={cancelClose} onMouseLeave={closeMenu}>
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 py-2 min-w-[220px]">
                   {item.children.filter((c) => !(c.requiresPremium && roleWeight < 2)).map((child) => (
-                    <button key={child.href + child.label} type="button"
-                      onClick={() => handleChildClick(child)}
-                      className="w-full text-left flex flex-col px-4 py-2.5 hover:bg-blue-50 transition-colors group">
-                      <span className="text-sm font-medium text-gray-800 group-hover:text-[#1B3A6B] flex items-center gap-1.5">
-                        {child.label}
-                        {child.requiresPremium && !isPremium && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">정회원</span>
-                        )}
-                      </span>
-                      {child.desc && <span className="text-xs text-gray-400 mt-0.5">{child.desc}</span>}
-                    </button>
+                    <div key={child.href + child.label}>
+                      {child.dividerBefore && (
+                        <hr className="my-1 border-gray-100" />
+                      )}
+                      <button type="button"
+                        onClick={() => handleChildClick(child)}
+                        className="w-full text-left flex flex-col px-4 py-2.5 hover:bg-blue-50 transition-colors group">
+                        <span className="text-sm font-medium text-gray-800 group-hover:text-[#1B3A6B] flex items-center gap-1.5">
+                          {child.label}
+                          {child.requiresPremium && !isPremium && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">정회원</span>
+                          )}
+                        </span>
+                        {child.desc && <span className="text-xs text-gray-400 mt-0.5">{child.desc}</span>}
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -265,19 +276,24 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
                 {hasChildren && expanded && (
                   <div className="bg-gray-50 rounded-lg mx-3 mb-1">
                     {item.children!.filter((c) => !(c.requiresPremium && roleWeight < 2)).map((child) => (
-                      <button key={child.href + child.label} type="button"
-                        className="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:text-[#1B3A6B] border-b border-gray-100 last:border-0"
-                        onClick={() => {
-                          setMobileOpen(false); setMobileExpanded(null)
-                          if (child.requiresPremium && !isPremium) { setShowPremium(true); return }
-                          router.push(child.href)
-                        }}>
-                        <span className="w-1 h-1 rounded-full bg-[#C8922A] shrink-0" />
-                        {child.label}
-                        {child.requiresPremium && !isPremium && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium ml-1">정회원</span>
+                      <div key={child.href + child.label}>
+                        {child.dividerBefore && (
+                          <hr className="border-gray-200 mx-2" />
                         )}
-                      </button>
+                        <button type="button"
+                          className="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:text-[#1B3A6B] border-b border-gray-100 last:border-0"
+                          onClick={() => {
+                            setMobileOpen(false); setMobileExpanded(null)
+                            if (child.requiresPremium && !isPremium) { setShowPremium(true); return }
+                            router.push(child.href)
+                          }}>
+                          <span className="w-1 h-1 rounded-full bg-[#C8922A] shrink-0" />
+                          {child.label}
+                          {child.requiresPremium && !isPremium && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium ml-1">정회원</span>
+                          )}
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}

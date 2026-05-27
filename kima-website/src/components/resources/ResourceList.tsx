@@ -12,6 +12,7 @@ export interface Resource {
   driveUrl: string
   fileType: string | null
   accessLevel: AccessLevel
+  section?: string | null
   uploadedById?: string | null
   createdAt: string | Date
   category?: { id: string; name: string; slug: string } | null
