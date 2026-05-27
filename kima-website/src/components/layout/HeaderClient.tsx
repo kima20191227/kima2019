@@ -59,9 +59,11 @@ const NAV_ITEMS: NavItem[] = [
     href: '/story',
     label: '현장스토리',
     children: [
-      { href: '/story',         label: '현장스토리 전체',   desc: '뉴스, 행사, 현장이야기, 기도 요청 모음' },
-      { href: '/story/columns', label: '이주민 사역 칼럼',  desc: '이주민 사역 현장에서 온 칼럼' },
-      { href: '/story/qna',     label: 'Q&A 게시판',        desc: '이주민 사역 질문과 답변' },
+      { href: '/story',              label: '현장스토리 홈',     desc: '사역현장 이야기·기도 요청·행사 홍보 모음' },
+      { href: '/story/news',         label: 'KIMA 뉴스',         desc: '외부 언론 기사·뉴스 링크 모음', dividerBefore: true },
+      { href: '/story/media',        label: 'KIMA 행사&영상',    desc: 'KIMA가 주관·참여한 행사들의 사진·영상' },
+      { href: '/story/columns',      label: '이주민 사역 칼럼',  desc: '이주민 사역 현장에서 온 칼럼', dividerBefore: true },
+      { href: '/story/qna',          label: 'Q&A 게시판',        desc: '이주민 사역 질문과 답변' },
     ],
   },
   {

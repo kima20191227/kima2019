@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { postSchema, type PostInput, type PostAttachment } from '@/schemas/post.schema'
 import { FieldError } from '@/components/auth/FieldError'
 import { Button } from '@/components/ui/Button'
+import { convertDriveUrl } from '@/lib/utils'
 
 interface WritePostFormProps {
   categoryId: string
@@ -24,8 +25,6 @@ interface WritePostFormProps {
   }
 }
 
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
-
 export function WritePostForm({
   categoryId,
   categoryName,
@@ -41,11 +40,14 @@ export function WritePostForm({
   const [attachments, setAttachments] = useState<PostAttachment[]>(initialValues?.attachments ?? [])
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const contentRef = useRef<HTMLTextAreaElement>(null)
   const isEdit = mode === 'edit'
 
   const {
     register,
     handleSubmit,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<PostInput>({
     resolver: zodResolver(postSchema),
@@ -53,6 +55,23 @@ export function WritePostForm({
       ? { categoryId, type: initialValues.type, title: initialValues.title, content: initialValues.content }
       : { categoryId, type: 'SHARE', content: '' },
   })
+
+  const { ref: contentFormRef, ...contentRegister } = register('content')
+
+  const insertImageInContent = (att: PostAttachment) => {
+    const textarea = contentRef.current
+    const current = getValues('content') ?? ''
+    const pos = textarea?.selectionStart ?? current.length
+    const imgTag = `\n[img:${att.name}](${att.url})\n`
+    setValue('content', current.slice(0, pos) + imgTag + current.slice(pos), { shouldDirty: true })
+    setTimeout(() => {
+      if (textarea) {
+        const newPos = pos + imgTag.length
+        textarea.focus()
+        textarea.setSelectionRange(newPos, newPos)
+      }
+    }, 0)
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -160,10 +179,14 @@ export function WritePostForm({
           내용
         </label>
         <textarea
-          {...register('content')}
+          {...contentRegister}
+          ref={(el) => {
+            contentFormRef(el)
+            contentRef.current = el
+          }}
           rows={12}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30 resize-none"
-          placeholder="내용을 입력해주세요 (선택 사항)"
+          placeholder="내용을 입력해주세요 (사진은 아래에서 첨부 후 '본문에 삽입' 버튼으로 내용에 추가할 수 있습니다)"
         />
         <FieldError message={errors.content?.message} />
       </div>
@@ -171,10 +194,15 @@ export function WritePostForm({
       {/* 파일 첨부 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          파일·사진 첨부 <span className="text-xs text-gray-400 font-normal">(여러 파일 동시 선택 가능)</span>
+          파일·사진 첨부{' '}
+          <span className="text-xs text-gray-400 font-normal">
+            (여러 파일 동시 선택 가능 · 사진은 &apos;본문에 삽입&apos; 버튼으로 글 내용에 포함할 수 있습니다)
+          </span>
         </label>
 
-        <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-[#1B3A6B]/30 text-sm text-[#1B3A6B] cursor-pointer hover:bg-[#1B3A6B]/5 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+        <label
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-[#1B3A6B]/30 text-sm text-[#1B3A6B] cursor-pointer hover:bg-[#1B3A6B]/5 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+        >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
           </svg>
@@ -193,18 +221,31 @@ export function WritePostForm({
         {attachments.length > 0 && (
           <ul className="mt-3 space-y-2">
             {attachments.map((att, idx) => {
-              const isImage = IMAGE_TYPES.includes(att.type)
+              const isImage = att.type.startsWith('image/')
               return (
                 <li key={idx} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
                   {isImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={att.url} alt={att.name} className="w-10 h-10 object-cover rounded" />
+                    <img
+                      src={convertDriveUrl(att.url)}
+                      alt={att.name}
+                      className="w-10 h-10 object-cover rounded flex-shrink-0"
+                    />
                   ) : (
-                    <div className="w-10 h-10 flex items-center justify-center bg-[#1B3A6B]/10 rounded text-[#1B3A6B] text-xs font-bold">
+                    <div className="w-10 h-10 flex items-center justify-center bg-[#1B3A6B]/10 rounded text-[#1B3A6B] text-xs font-bold flex-shrink-0">
                       {att.type.split('/').pop()?.toUpperCase().slice(0, 4) ?? 'FILE'}
                     </div>
                   )}
                   <span className="flex-1 text-xs text-gray-600 truncate">{att.name}</span>
+                  {isImage && (
+                    <button
+                      type="button"
+                      onClick={() => insertImageInContent(att)}
+                      className="text-xs px-2.5 py-1 rounded-md bg-[#1B3A6B]/10 text-[#1B3A6B] hover:bg-[#1B3A6B]/20 transition-colors flex-shrink-0 whitespace-nowrap font-medium"
+                    >
+                      본문에 삽입
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeAttachment(idx)}

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { convertDriveUrl } from '@/lib/utils'
 import type { Metadata } from 'next'
 import type { CategoryType } from '@prisma/client'
 
@@ -34,6 +35,51 @@ function formatDate(date: Date) {
   })
 }
 
+type Attachment = { url: string; name: string; type: string }
+
+function renderPostContent(content: string) {
+  const imgPattern = /\[img:([^\]]*)\]\(([^)]+)\)/g
+  const nodes: React.ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = imgPattern.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(
+        <span key={`t${lastIndex}`} className="whitespace-pre-wrap">
+          {content.slice(lastIndex, match.index)}
+        </span>
+      )
+    }
+    const name = match[1]
+    const url = match[2]
+    nodes.push(
+      <div key={`i${match.index}`} className="my-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={convertDriveUrl(url)}
+          alt={name}
+          className="max-w-full rounded-lg border border-gray-100 shadow-sm"
+        />
+        {name && <p className="text-xs text-gray-400 mt-1">{name}</p>}
+      </div>
+    )
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < content.length) {
+    nodes.push(
+      <span key={`t${lastIndex}`} className="whitespace-pre-wrap">
+        {content.slice(lastIndex)}
+      </span>
+    )
+  }
+
+  return nodes.length > 0 ? nodes : [
+    <span key="all" className="whitespace-pre-wrap">{content}</span>
+  ]
+}
+
 export default async function PostDetailPage({ params }: Props) {
   const { type, slug, id } = await params
   const dbType = URL_TO_DB[type]
@@ -55,6 +101,15 @@ export default async function PostDetailPage({ params }: Props) {
   const ROLE_WEIGHT: Record<string, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
   const roleWeight = session?.user?.role ? (ROLE_WEIGHT[session.user.role] ?? 1) : 0
   const isAuthorOrAdmin = session?.user?.id === post.authorId || roleWeight >= 4
+
+  // 본문에 이미 삽입된 이미지 URL은 첨부파일 섹션에서 제외
+  const inlineUrls = new Set(
+    [...(post.content?.matchAll(/\[img:[^\]]*\]\(([^)]+)\)/g) ?? [])].map((m) => m[1])
+  )
+  const allAttachments = Array.isArray(post.attachments)
+    ? (post.attachments as Attachment[])
+    : []
+  const remainingAttachments = allAttachments.filter((att) => !inlineUrls.has(att.url))
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -86,19 +141,21 @@ export default async function PostDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* 본문 */}
+          {/* 본문 (인라인 이미지 포함) */}
           <div className="px-8 py-6">
-            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {post.content}
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+              {renderPostContent(post.content)}
             </div>
           </div>
 
-          {/* 첨부파일 */}
-          {Array.isArray(post.attachments) && post.attachments.length > 0 && (
+          {/* 본문에 삽입되지 않은 나머지 첨부파일 */}
+          {remainingAttachments.length > 0 && (
             <div className="px-8 py-5 border-t border-gray-50">
-              <p className="text-xs font-semibold text-gray-500 mb-3">첨부파일 ({post.attachments.length})</p>
+              <p className="text-xs font-semibold text-gray-500 mb-3">
+                첨부파일 ({remainingAttachments.length})
+              </p>
               <ul className="space-y-2">
-                {(post.attachments as { url: string; name: string; type: string }[]).map((att, idx) => {
+                {remainingAttachments.map((att, idx) => {
                   const isImage = att.type?.startsWith('image/')
                   return (
                     <li key={idx}>
@@ -106,7 +163,7 @@ export default async function PostDetailPage({ params }: Props) {
                         <div className="mb-2">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={att.url}
+                            src={convertDriveUrl(att.url)}
                             alt={att.name}
                             className="max-w-full rounded-lg border border-gray-100 max-h-96 object-contain"
                           />

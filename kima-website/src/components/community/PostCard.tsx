@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { PostType } from '@prisma/client'
+import { convertDriveUrl } from '@/lib/utils'
 
 type PostWithRelations = {
   id: string
@@ -8,6 +9,7 @@ type PostWithRelations = {
   createdAt: Date
   author: { id: string; name: string | null }
   category: { id: string; name: string; slug: string }
+  attachments?: import('@prisma/client').Prisma.JsonValue
 }
 
 interface PostCardProps {
@@ -26,12 +28,25 @@ function formatDate(date: Date) {
 export function PostCard({ post, categoryType }: PostCardProps) {
   const isNotice = post.type === 'NOTICE'
 
+  const attList = Array.isArray(post.attachments)
+    ? (post.attachments as { url: string; name: string; type: string }[])
+    : []
+  const firstImage = attList.find((a) => a.type?.startsWith('image/'))
+
   return (
     <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0 group">
       {isNotice && (
         <span className="shrink-0 mt-0.5 px-2 py-0.5 rounded text-xs font-bold bg-[#1B3A6B] text-white">
           공지
         </span>
+      )}
+      {firstImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={convertDriveUrl(firstImage.url)}
+          alt={firstImage.name}
+          className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
+        />
       )}
       <div className="flex-1 min-w-0">
         <Link
