@@ -10,7 +10,9 @@ export interface Resource {
   title: string
   description: string | null
   content?: string | null
+  thumbnail?: string | null
   driveUrl: string
+  fileUrls?: string[]
   fileType: string | null
   accessLevel: AccessLevel
   section?: string | null
@@ -178,8 +180,17 @@ function ResourceRow({
   return (
     <div className={cn('py-4 px-2 transition-colors', accessible ? 'hover:bg-gray-50' : 'opacity-60')}>
       <div className="flex items-start gap-3">
-        {/* 썸네일 */}
-        <DriveThumbnail driveUrl={resource.driveUrl} title={resource.title} />
+        {/* 썸네일: 사용자 지정 이미지 우선, 없으면 Drive 미리보기 */}
+        {resource.thumbnail ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={resource.thumbnail}
+            alt={resource.title}
+            className="w-12 h-16 rounded-md border border-gray-200 object-cover flex-shrink-0"
+          />
+        ) : (
+          <DriveThumbnail driveUrl={resource.driveUrl} title={resource.title} />
+        )}
 
         {/* 제목 + 메타 */}
         <div className="flex-1 min-w-0">
@@ -246,22 +257,33 @@ function ResourceRow({
 
         {/* 열기 / 잠금 */}
         {accessible ? (
-          <a
-            href={resource.driveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#1B3A6B] text-white hover:bg-[#142d54] transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
-            </svg>
-            열기
-          </a>
+          <div className="flex flex-col gap-1 flex-shrink-0">
+            <a
+              href={resource.driveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#1B3A6B] text-white hover:bg-[#142d54] transition-colors whitespace-nowrap"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              파일 1
+            </a>
+            {(resource.fileUrls ?? []).map((url, i) => (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                파일 {i + 2}
+              </a>
+            ))}
+          </div>
         ) : (
           <a
             href={

@@ -68,6 +68,7 @@ export async function PATCH(
       data: {
         ...(parsed.data.title !== undefined && { title: parsed.data.title }),
         ...(parsed.data.content !== undefined && { content: parsed.data.content }),
+        ...(parsed.data.thumbnail !== undefined && { thumbnail: parsed.data.thumbnail ?? null }),
         ...(parsed.data.attachments !== undefined && { attachments: parsed.data.attachments }),
       },
     })

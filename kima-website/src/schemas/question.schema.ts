@@ -9,6 +9,7 @@ export const questionSchema = z.object({
   content: z
     .string()
     .min(10, '내용은 10자 이상 입력해주세요'),
+  thumbnail: z.string().url().optional().nullable(),
   attachments: z.array(attachmentSchema).optional(),
 })
 

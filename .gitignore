@@ -38,3 +38,4 @@ yarn-error.log*
 
 # Cloudflare Wrangler local cache
 .wrangler/
+.gstack/

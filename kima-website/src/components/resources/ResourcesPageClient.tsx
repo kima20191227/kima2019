@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ResourceList } from './ResourceList'
 import type { Resource } from './ResourceList'
+import { ThumbnailUpload } from '@/components/ui/ThumbnailUpload'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 type ResourceSection = 'KIMA' | 'MINISTRY' | 'PUBLIC'
 
@@ -45,7 +48,9 @@ interface FormFields {
   title: string
   description: string
   content: string
+  thumbnail: string | null
   driveUrl: string
+  fileUrls: string[]
   accessLevel: string
   categoryId: string
   targetSection: ResourceSection
@@ -60,7 +65,9 @@ function makeInitialFields(
     title: resource?.title ?? '',
     description: resource?.description ?? '',
     content: resource?.content ?? '',
+    thumbnail: resource?.thumbnail ?? null,
     driveUrl: resource?.driveUrl ?? '',
+    fileUrls: resource?.fileUrls ?? [],
     accessLevel: resource?.accessLevel ?? DEFAULT_ACCESS_LEVEL[pageSection],
     categoryId: resource?.category?.id ?? preselectedCategoryId ?? '',
     targetSection: (resource?.section as ResourceSection) ?? pageSection,
@@ -91,10 +98,7 @@ function ResourceForm({
   const [fields, setFields] = useState<FormFields>(() =>
     makeInitialFields(pageSection, preselectedCategoryId, editing),
   )
-  const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file')
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [fileUploading, setFileUploading] = useState(false)
 
   const set = <K extends keyof FormFields>(k: K, v: FormFields[K]) =>
     setFields((prev) => ({ ...prev, [k]: v }))
@@ -103,44 +107,44 @@ function ResourceForm({
   const originalSection = (editing?.section as ResourceSection) ?? pageSection
   const sectionChanged = editing && fields.targetSection !== originalSection
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploadError('')
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch('/api/upload/resource', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const json = await res.json()
-      if (!res.ok) {
-        setUploadError((json as { error?: string }).error ?? '업로드 실패')
-        return
-      }
-
-      const { url } = json as { url: string }
-      setFields((prev) => ({
-        ...prev,
-        driveUrl: url,
-        title: prev.title || file.name.replace(/\.[^.]+$/, ''),
-      }))
-    } catch {
-      setUploadError('업로드 중 오류가 발생했습니다.')
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
+  // 파일 첨부 변경 핸들러: 첫 파일 → driveUrl, 나머지 → fileUrls
+  const handleFilesChange = (files: AttachedFile[], isUploading: boolean) => {
+    setFileUploading(isUploading)
+    if (files.length === 0) {
+      setFields((prev) => ({ ...prev, driveUrl: '', fileUrls: [] }))
+      return
     }
+    const [first, ...rest] = files
+    setFields((prev) => ({
+      ...prev,
+      driveUrl: first.url,
+      fileUrls: rest.map((f) => f.url),
+      title: prev.title || first.name.replace(/\.[^.]+$/, ''),
+    }))
   }
+
+  // 수정 모드: 기존 파일들을 AttachedFile 형태로 변환
+  const initialFiles: AttachedFile[] = editing
+    ? [
+        ...(editing.driveUrl ? [{ url: editing.driveUrl, name: '기존 파일 1', type: 'application/octet-stream' }] : []),
+        ...(editing.fileUrls ?? []).map((url, i) => ({
+          url,
+          name: `기존 파일 ${i + 2}`,
+          type: 'application/octet-stream',
+        })),
+      ]
+    : []
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6 space-y-4">
       <h3 className="font-semibold text-gray-800">{editing ? '자료 수정' : '새 자료 등록'}</h3>
+
+      {/* 썸네일 */}
+      <ThumbnailUpload
+        value={fields.thumbnail}
+        onChange={(url) => set('thumbnail', url)}
+        label="대표 이미지 (선택)"
+      />
 
       {/* 제목 */}
       <div>
@@ -181,98 +185,15 @@ function ResourceForm({
         />
       </div>
 
-      {/* 파일 업로드 / URL 입력 토글 (신규 등록) */}
-      {!editing && (
-        <div>
-          <div className="flex gap-2 mb-2">
-            <button
-              type="button"
-              onClick={() => setUploadMode('file')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                uploadMode === 'file'
-                  ? 'bg-[#1B3A6B] text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              파일 업로드
-            </button>
-            <button
-              type="button"
-              onClick={() => setUploadMode('url')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                uploadMode === 'url'
-                  ? 'bg-[#1B3A6B] text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              URL 직접 입력
-            </button>
-          </div>
-
-          {uploadMode === 'file' ? (
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                파일 선택 (구글 드라이브에 자동 저장)
-              </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                aria-label="업로드할 파일 선택"
-                onChange={handleFileUpload}
-                disabled={uploading || isPending}
-                className="hidden"
-              />
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading || isPending}
-                  className="px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
-                >
-                  {uploading ? '업로드 중...' : '파일 선택'}
-                </button>
-                <span className="text-sm text-gray-500 truncate max-w-xs">
-                  {fields.driveUrl
-                    ? '✓ 업로드 완료'
-                    : uploading
-                      ? '구글 드라이브에 저장 중...'
-                      : '선택된 파일 없음'}
-                </span>
-              </div>
-              {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
-              {fields.driveUrl && (
-                <p className="text-xs text-green-600 mt-1 truncate">{fields.driveUrl}</p>
-              )}
-            </div>
-          ) : (
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
-              <input
-                type="url"
-                value={fields.driveUrl}
-                onChange={(e) => set('driveUrl', e.target.value)}
-                placeholder="https://drive.google.com/..."
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
-                disabled={isPending}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 수정 모드: URL 입력 */}
-      {editing && (
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
-          <input
-            type="url"
-            value={fields.driveUrl}
-            onChange={(e) => set('driveUrl', e.target.value)}
-            placeholder="https://drive.google.com/..."
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
-            disabled={isPending}
-          />
-        </div>
+      {/* 파일 첨부 (다중) */}
+      <FileAttachmentZone
+        key={editing?.id ?? 'new'}
+        initialFiles={initialFiles}
+        onChange={handleFilesChange}
+        label="파일 첨부 * (이미지·PDF·문서 등, 여러 파일 가능)"
+      />
+      {fields.driveUrl && (
+        <p className="text-xs text-green-600 -mt-2">✓ {fields.fileUrls.length + 1}개 파일 준비됨</p>
       )}
 
       {/* 자료 위치 (수정 모드에서만 표시) */}
@@ -347,16 +268,14 @@ function ResourceForm({
         <button
           type="button"
           onClick={() => onSubmit(fields)}
-          disabled={isPending || uploading}
+          disabled={isPending || fileUploading}
           className="px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
         >
           {isPending
-            ? editing
-              ? '수정 중…'
-              : '등록 중…'
-            : editing
-              ? '수정 완료'
-              : '등록'}
+            ? editing ? '수정 중…' : '등록 중…'
+            : fileUploading
+              ? '업로드 중…'
+              : editing ? '수정 완료' : '등록'}
         </button>
         <button
           type="button"
@@ -413,7 +332,7 @@ export function ResourcesPageClient({
 
   const handleSubmit = (fields: FormFields) => {
     if (!fields.title.trim() || !fields.driveUrl.trim()) {
-      setFormError('제목과 파일(또는 드라이브 URL)은 필수입니다.')
+      setFormError('제목과 파일은 필수입니다. 파일을 업로드하거나 URL을 입력해주세요.')
       return
     }
     setFormError('')
@@ -425,7 +344,9 @@ export function ResourcesPageClient({
 
       const body: Record<string, unknown> = {
         title: fields.title.trim(),
+        thumbnail: fields.thumbnail ?? null,
         driveUrl: fields.driveUrl.trim(),
+        fileUrls: fields.fileUrls,
         accessLevel: fields.accessLevel,
         ...(fields.description.trim() ? { description: fields.description.trim() } : {}),
         ...(fields.content.trim() ? { content: fields.content.trim() } : { content: null }),

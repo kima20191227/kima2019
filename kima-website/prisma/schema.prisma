@@ -151,7 +151,9 @@ model Resource {
   title        String
   description  String?
   content      String?         // 본문 내용 (선택)
+  thumbnail    String?         // 대표 이미지 URL (선택)
   driveUrl     String
+  fileUrls     String[]        @default([])  // 추가 첨부파일 URLs
   fileType     String?
   section      ResourceSection @default(PUBLIC)
   accessLevel  AccessLevel     @default(MEMBER)
@@ -372,6 +374,7 @@ model Question {
   id          String         @id @default(cuid())
   title       String
   content     String
+  thumbnail   String?        // 대표 이미지 URL (선택)
   attachments Json?
   status      QuestionStatus @default(PENDING)
   isPublished Boolean        @default(true)

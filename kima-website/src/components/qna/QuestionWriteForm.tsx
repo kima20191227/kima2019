@@ -1,15 +1,17 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
-import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { ThumbnailUpload } from '@/components/ui/ThumbnailUpload'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 interface InitialData {
   id?: string
   title?: string
   content?: string
-  attachments?: PhotoAttachment[]
+  thumbnail?: string | null
+  attachments?: { url: string; name: string; type: string }[]
 }
 
 interface Props {
@@ -21,21 +23,13 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [content, setContent] = useState(initialData?.content ?? '')
-  const [attachments, setAttachments] = useState<PhotoAttachment[]>([])
+  const [thumbnail, setThumbnail] = useState<string | null>(initialData?.thumbnail ?? null)
+  const [attachments, setAttachments] = useState<AttachedFile[]>(
+    (initialData?.attachments ?? []).map((a) => ({ url: a.url, name: a.name, type: a.type })),
+  )
   const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  function insertImageInContent(text: string) {
-    const ta = textareaRef.current
-    if (!ta) {
-      setContent((prev) => prev + text)
-      return
-    }
-    const pos = ta.selectionStart ?? content.length
-    setContent(content.slice(0, pos) + text + content.slice(pos))
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -61,6 +55,7 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
         body: JSON.stringify({
           title: title.trim(),
           content: content.trim(),
+          thumbnail: thumbnail ?? null,
           attachments,
         }),
       })
@@ -105,7 +100,6 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
           내용 <span className="text-red-500">*</span>
         </label>
         <textarea
-          ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="질문 내용을 자세히 입력해주세요 (10자 이상)"
@@ -115,18 +109,22 @@ export function QuestionWriteForm({ initialData, mode }: Props) {
         <p className="mt-1 text-xs text-gray-400 text-right">{content.length}자</p>
       </div>
 
-      {/* 이미지 첨부 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">이미지 첨부 (선택)</label>
-        <PhotoUploadZone
-          initialAttachments={initialData?.attachments}
-          onAttachmentsChange={(atts, uploading) => {
-            setAttachments(atts)
-            setIsUploading(uploading)
-          }}
-          onInsertImage={insertImageInContent}
-        />
-      </div>
+      {/* 대표 이미지 */}
+      <ThumbnailUpload
+        value={thumbnail}
+        onChange={setThumbnail}
+        label="대표 이미지 (선택)"
+      />
+
+      {/* 파일 첨부 */}
+      <FileAttachmentZone
+        initialFiles={attachments}
+        onChange={(files, uploading) => {
+          setAttachments(files)
+          setIsUploading(uploading)
+        }}
+        label="파일 첨부 (선택) — 이미지·PDF·문서 등 모든 파일"
+      />
 
       {/* 에러 */}
       {error && (
