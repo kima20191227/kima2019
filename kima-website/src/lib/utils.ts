@@ -45,10 +45,11 @@ const MIME_TO_EXT: Record<string, string> = {
 }
 
 /**
- * Google Drive 공유 링크를 <img>에서 바로 표시 가능한 thumbnail URL로 변환.
- * - /file/d/{ID}/view  →  thumbnail?id={ID}&sz=w1200
- * - /file/d/{ID}/preview  →  thumbnail?id={ID}&sz=w1200
- * - open?id={ID}  →  thumbnail?id={ID}&sz=w1200
+ * Google Drive 공유 링크를 <img>에서 바로 표시 가능한 고해상도 thumbnail URL로 변환.
+ * - /file/d/{ID}/view  →  thumbnail?id={ID}&sz=w4096
+ * - /file/d/{ID}/preview  →  thumbnail?id={ID}&sz=w4096
+ * - open?id={ID}  →  thumbnail?id={ID}&sz=w4096
+ * - thumbnail?id={ID}&sz=...  →  thumbnail?id={ID}&sz=w4096 (크기 업그레이드)
  * 이미 변환된 URL 또는 다른 호스트 URL은 그대로 반환.
  */
 export function convertDriveUrl(url: string): string {
@@ -57,11 +58,15 @@ export function convertDriveUrl(url: string): string {
 
   const fileMatch = trimmed.match(/drive\.google\.com\/file\/d\/([^/?#]+)/)
   if (fileMatch) {
-    return `https://drive.google.com/thumbnail?id=${fileMatch[1]}&sz=w1200`
+    return `https://drive.google.com/thumbnail?id=${fileMatch[1]}&sz=w4096`
   }
   const openMatch = trimmed.match(/drive\.google\.com\/open\?id=([^&]+)/)
   if (openMatch) {
-    return `https://drive.google.com/thumbnail?id=${openMatch[1]}&sz=w1200`
+    return `https://drive.google.com/thumbnail?id=${openMatch[1]}&sz=w4096`
+  }
+  const thumbnailMatch = trimmed.match(/drive\.google\.com\/thumbnail\?id=([^&]+?)(?:&|$)/)
+  if (thumbnailMatch) {
+    return `https://drive.google.com/thumbnail?id=${thumbnailMatch[1]}&sz=w4096`
   }
   return trimmed
 }

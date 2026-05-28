@@ -59,11 +59,13 @@ const NAV_ITEMS: NavItem[] = [
     href: '/story',
     label: '현장스토리',
     children: [
-      { href: '/story',              label: '현장스토리 홈',     desc: '사역현장 이야기·기도 요청·행사 홍보 모음' },
-      { href: '/story/news',         label: 'KIMA 뉴스',         desc: '외부 언론 기사·뉴스 링크 모음', dividerBefore: true },
-      { href: '/story/media',        label: 'KIMA 행사&영상',    desc: 'KIMA가 주관·참여한 행사들의 사진·영상' },
-      { href: '/story/columns',      label: '이주민 사역 칼럼',  desc: '이주민 사역 현장에서 온 칼럼', dividerBefore: true },
-      { href: '/story/qna',          label: 'Q&A 게시판',        desc: '이주민 사역 질문과 답변' },
+      { href: '/story/field',        label: '사역현장 이야기',      desc: '회원들이 직접 나누는 현장 사역 이야기' },
+      { href: '/story/event-promo',  label: '이주민사역&행사 홍보', desc: '이주민 사역 관련 행사를 소개하고 알립니다' },
+      { href: '/story/prayer',       label: '중보기도 요청',        desc: '함께 기도해요. 기도가 현장을 바꿉니다' },
+      { href: '/story/news',         label: 'KIMA 뉴스',            desc: '외부 언론 기사·뉴스 링크 모음', dividerBefore: true },
+      { href: '/story/media',        label: 'KIMA 행사&영상',       desc: 'KIMA가 주관·참여한 행사들의 사진·영상' },
+      { href: '/story/columns',      label: '이주민 사역 칼럼',     desc: '이주민 사역 현장에서 온 칼럼', dividerBefore: true },
+      { href: '/story/qna',          label: 'Q&A 게시판',           desc: '이주민 사역 질문과 답변' },
     ],
   },
   {

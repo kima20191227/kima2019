@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { convertDriveUrl, convertDriveUrls } from '@/lib/utils'
-import Image from 'next/image'
+import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
+import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
 
 interface StoryData {
   id: string
@@ -21,6 +21,17 @@ interface StoryData {
 
 export function EventPromoEditForm({ story }: { story: StoryData }) {
   const router = useRouter()
+
+  const initialAttachments: PhotoAttachment[] = (() => {
+    const all = story.images.length > 0 ? story.images : (story.thumbnail ? [story.thumbnail] : [])
+    return all.map((url, idx) => ({
+      url,
+      name: `image-${idx + 1}`,
+      type: 'image/jpeg',
+      isCover: url === story.thumbnail || idx === 0,
+    }))
+  })()
+
   const [form, setForm] = useState({
     title: story.title,
     content: story.content,
@@ -28,11 +39,11 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
     authorName: story.authorName ?? '',
     eventLocation: story.eventLocation ?? '',
     websiteUrl: story.linkUrl ?? '',
-    thumbnailUrl: story.thumbnail ?? '',
-    imageUrls: story.images.join('\n'),
     videoUrls: story.videoUrls.join('\n'),
     tags: story.tags.join(', '),
   })
+  const [storyImages, setStoryImages] = useState<PhotoAttachment[]>(initialAttachments)
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,10 +52,11 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
     setSubmitting(true)
     setError('')
 
-    const images = form.imageUrls.split('\n').map((v) => v.trim()).filter(Boolean)
+    const images = storyImages.map((a) => a.url)
+    const coverImage = storyImages.find((a) => a.isCover)
+    const thumbnail = coverImage?.url ?? images[0] ?? null
     const videoUrls = form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean)
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean)
-    const thumbnail = form.thumbnailUrl.trim() || images[0] || null
 
     try {
       const res = await fetch(`/api/stories/${story.id}`, {
@@ -155,38 +167,19 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
         <p className="text-xs text-gray-400 mt-1">행사 공식 홈페이지, 신청 폼, SNS 링크 등을 입력하세요.</p>
       </div>
 
-      {/* 대표 이미지 URL */}
+      {/* 이미지 업로드 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">대표 이미지 URL (선택)</label>
-        <input
-          type="url"
-          maxLength={500}
-          value={form.thumbnailUrl}
-          onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
-          onBlur={(e) => setForm((f) => ({ ...f, thumbnailUrl: convertDriveUrl(e.target.value) }))}
-          placeholder="예: https://i.imgur.com/abc123.jpg 또는 구글 드라이브 공유 링크"
-          className={inputCls}
+        <label className="block text-sm font-medium text-gray-700 mb-2">행사 사진 (선택)</label>
+        <PhotoUploadZone
+          initialAttachments={initialAttachments}
+          onAttachmentsChange={(atts, uploading) => {
+            setStoryImages(atts)
+            setIsUploading(uploading)
+          }}
         />
-        <p className="text-xs text-gray-400 mt-1">구글 드라이브 공유 링크를 붙여넣으면 자동으로 표시 가능한 주소로 변환됩니다.</p>
-        {form.thumbnailUrl && (
-          <div className="mt-2 max-w-xs rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex justify-center relative h-48">
-            <Image src={form.thumbnailUrl} alt="미리보기" fill className="object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          </div>
-        )}
-      </div>
-
-      {/* 이미지 URL */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">이미지 링크 (선택, 여러 개는 줄바꿈)</label>
-        <textarea
-          rows={3}
-          value={form.imageUrls}
-          onChange={(e) => setForm({ ...form, imageUrls: e.target.value })}
-          onBlur={(e) => setForm((f) => ({ ...f, imageUrls: convertDriveUrls(e.target.value) }))}
-          placeholder={`이미지 URL을 한 줄씩 입력하세요\n첫 번째 이미지가 대표 이미지로 사용됩니다`}
-          className={`${inputCls} resize-none font-mono`}
-        />
-        <p className="text-xs text-gray-400 mt-1">구글 드라이브 공유 링크를 그대로 붙여넣으면 자동으로 변환됩니다.</p>
+        <p className="text-xs text-gray-400 mt-1.5">
+          &apos;대표 설정&apos; 버튼을 눌러 대표 이미지를 지정하거나 첫 번째 사진이 자동으로 대표 이미지가 됩니다.
+        </p>
       </div>
 
       {/* 동영상 링크 */}
@@ -225,10 +218,10 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
         </button>
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || isUploading}
           className="flex-1 py-3 bg-[#1B3A6B] text-white font-semibold rounded-lg hover:bg-[#15305a] transition-colors disabled:opacity-50"
         >
-          {submitting ? '저장 중...' : '수정 완료'}
+          {isUploading ? '업로드 중...' : submitting ? '저장 중...' : '수정 완료'}
         </button>
       </div>
     </form>
