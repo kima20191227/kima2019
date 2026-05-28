@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
 import { convertDriveUrl } from '@/lib/utils'
+import { EventPromoGallery } from '@/components/story/EventPromoGallery'
 
 const VideoEmbed = nextDynamic(
   () => import('@/components/story/VideoEmbed').then((m) => m.VideoEmbed),
@@ -82,17 +82,12 @@ export default async function EventPromoDetailPage({ params }: Props) {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-10">
-        {/* 대표 이미지 */}
-        {story.thumbnail && (
-          <div className="rounded-xl overflow-hidden bg-gray-50 relative w-full h-96">
-            <Image
-              src={convertDriveUrl(story.thumbnail)}
-              alt={story.title}
-              fill
-              className="object-contain"
-            />
-          </div>
-        )}
+        {/* 대표 이미지 + 갤러리 (라이트박스 포함) */}
+        <EventPromoGallery
+          thumbnail={story.thumbnail ? convertDriveUrl(story.thumbnail) : null}
+          images={story.images.map(convertDriveUrl)}
+          title={story.title}
+        />
 
         {/* 본문 */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
@@ -100,30 +95,6 @@ export default async function EventPromoDetailPage({ params }: Props) {
             {story.content}
           </div>
         </div>
-
-        {/* 이미지 갤러리 */}
-        {story.images.length > 0 && (
-          <section>
-            <h2 className="text-base font-semibold text-gray-700 mb-3">행사 사진</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {story.images.map((src, i) => {
-                const displaySrc = convertDriveUrl(src)
-                return (
-                  <a key={i} href={displaySrc} target="_blank" rel="noopener noreferrer" title={`행사 사진 ${i + 1}`}>
-                    <div className="relative w-full h-36">
-                      <Image
-                        src={displaySrc}
-                        alt={`행사 사진 ${i + 1}`}
-                        fill
-                        className="object-cover rounded-lg hover:opacity-90 transition-opacity"
-                      />
-                    </div>
-                  </a>
-                )
-              })}
-            </div>
-          </section>
-        )}
 
         {/* 동영상 */}
         {story.videoUrls.length > 0 && (
