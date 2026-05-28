@@ -19,9 +19,9 @@ export async function Header() {
             <Image
               src="/images/kima-logo.png"
               alt="KIMA 한국이주민선교연합회"
-              width={160}
-              height={56}
-              className="h-14 w-auto"
+              width={200}
+              height={70}
+              className="h-[4.5rem] w-auto"
               priority
             />
           </Link>
