@@ -66,7 +66,7 @@ export default async function OrgEditPage({ params }: { params: Promise<{ id: st
           <p className="text-sm text-gray-500 mt-1">단체 정보를 수정하고 저장해주세요. 수정한 내용은 즉시 반영됩니다.</p>
         </div>
 
-        <OrgEditClient orgId={editId} initial={initial} currentImage={currentImage} />
+        <OrgEditClient orgId={editId} routeId={id} initial={initial} currentImage={currentImage} />
       </div>
     </div>
   )

@@ -27,11 +27,12 @@ interface EditData {
 
 interface Props {
   orgId: number | string
+  routeId: string
   initial: EditData
   currentImage: string | null
 }
 
-export function OrgEditClient({ orgId, initial, currentImage }: Props) {
+export function OrgEditClient({ orgId, routeId, initial, currentImage }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -108,8 +109,11 @@ export function OrgEditClient({ orgId, initial, currentImage }: Props) {
       })
       const json = await res.json()
       if (res.ok) {
-        setMessage({ ok: true, text: '저장되었습니다.' })
+        setMessage({ ok: true, text: '저장되었습니다. 상세 페이지로 이동합니다...' })
         router.refresh()
+        setTimeout(() => {
+          router.push(`/network/mission-map/${routeId}`)
+        }, 800)
       } else {
         setMessage({ ok: false, text: json.error ?? '저장 실패' })
       }
@@ -371,10 +375,29 @@ export function OrgEditClient({ orgId, initial, currentImage }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/network/mission-map/${routeId}`)}
           className="px-6 py-2 border border-gray-300 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
         >
           취소
+        </button>
+      </div>
+
+      {/* ── 하단 네비게이션 ──────────────────────── */}
+      <div className="pt-6 border-t border-gray-100 flex items-center gap-4 text-sm">
+        <button
+          type="button"
+          onClick={() => router.push(`/network/mission-map/${routeId}`)}
+          className="flex items-center gap-1 text-[#1B3A6B] hover:underline font-medium"
+        >
+          ← 상세보기로 돌아가기
+        </button>
+        <span className="text-gray-300">|</span>
+        <button
+          type="button"
+          onClick={() => router.push('/network/mission-map')}
+          className="flex items-center gap-1 text-gray-500 hover:text-[#1B3A6B] hover:underline"
+        >
+          목록으로 돌아가기
         </button>
       </div>
     </div>
