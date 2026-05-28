@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import Image from 'next/image'
 import { auth } from '@/lib/auth'
+import { convertDriveUrl } from '@/lib/utils'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -57,7 +58,7 @@ export default async function EventPromoPage() {
                     {(story.thumbnail || story.images[0]) && (
                       <div className="md:w-52 md:h-40 w-full h-48 shrink-0 bg-gray-50 overflow-hidden relative">
                         <Image
-                          src={story.thumbnail || story.images[0]}
+                          src={convertDriveUrl(story.thumbnail || story.images[0])}
                           alt={story.title}
                           fill
                           className="object-contain"

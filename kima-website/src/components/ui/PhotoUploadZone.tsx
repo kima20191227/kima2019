@@ -54,7 +54,7 @@ export function PhotoUploadZone({ initialAttachments, onAttachmentsChange, onIns
   useEffect(() => {
     const done = items
       .filter((i) => i.status === 'done' && i.serverUrl)
-      .map((i) => ({ url: i.serverUrl!, name: i.name, type: i.mimeType, isCover: i.isCover }))
+      .map((i) => ({ url: convertDriveUrl(i.serverUrl!), name: i.name, type: i.mimeType, isCover: i.isCover }))
     const isUploading = items.some((i) => i.status === 'uploading')
     onAttachmentsChange(done, isUploading)
   }, [items]) // eslint-disable-line react-hooks/exhaustive-deps
