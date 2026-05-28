@@ -29,6 +29,8 @@ export default async function NewsPage() {
     source: item.source,
     publishedAt: item.publishedAt ? item.publishedAt.toISOString() : null,
     authorId: item.authorId,
+    thumbnail: item.thumbnail,
+    videoUrls: item.videoUrls,
   }))
 
   return (
