@@ -22,23 +22,18 @@ export function EventPromoGallery({ thumbnail, images, title }: Props) {
 
   return (
     <>
-      {/* 대표 이미지 */}
+      {/* 대표 이미지 — 원본 비율로 전체 표시 */}
       {thumbnail && (
         <div
-          className="rounded-xl overflow-hidden bg-gray-50 relative w-full h-96 cursor-zoom-in"
+          className="rounded-xl overflow-hidden bg-gray-50 cursor-zoom-in group"
           onClick={() => setLightboxIndex(0)}
         >
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={thumbnail}
             alt={title}
-            fill
-            className="object-contain hover:scale-[1.02] transition-transform duration-200"
+            className="w-full h-auto block group-hover:brightness-95 transition-[filter] duration-200"
           />
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-            <span className="bg-black/40 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
-              클릭하여 크게 보기
-            </span>
-          </div>
         </div>
       )}
 
@@ -53,6 +48,8 @@ export function EventPromoGallery({ thumbnail, images, title }: Props) {
                 <button
                   key={i}
                   type="button"
+                  title={`행사 사진 ${i + 1} 크게 보기`}
+                  aria-label={`행사 사진 ${i + 1} 크게 보기`}
                   onClick={() => setLightboxIndex(lightboxIdx)}
                   className="relative w-full h-36 rounded-lg overflow-hidden bg-gray-100 cursor-zoom-in group"
                 >
