@@ -133,7 +133,9 @@ export default async function HomePage() {
                                   alt={story.title}
                                   fill
                                   sizes="(min-width: 768px) 50vw, 100vw"
-                                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                  className={type === 'EVENT_PROMO'
+                                    ? 'object-contain'
+                                    : 'object-cover transition-transform duration-300 group-hover:scale-105'}
                                 />
                                 {/* 카테고리 컬러 바 */}
                                 <div className={`absolute bottom-0 left-0 right-0 h-1 ${topCls}`} />
