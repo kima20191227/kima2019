@@ -38,48 +38,6 @@ function formatDate(date: Date) {
 
 type Attachment = { url: string; name: string; type: string }
 
-function renderPostContent(content: string) {
-  const imgPattern = /\[img:([^\]]*)\]\(([^)]+)\)/g
-  const nodes: React.ReactNode[] = []
-  let lastIndex = 0
-  let match: RegExpExecArray | null
-
-  while ((match = imgPattern.exec(content)) !== null) {
-    if (match.index > lastIndex) {
-      nodes.push(
-        <span key={`t${lastIndex}`} className="whitespace-pre-wrap">
-          {content.slice(lastIndex, match.index)}
-        </span>
-      )
-    }
-    const name = match[1]
-    const url = match[2]
-    nodes.push(
-      <div key={`i${match.index}`} className="my-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={convertDriveUrl(url)}
-          alt={name}
-          className="max-w-full rounded-lg border border-gray-100 shadow-sm"
-        />
-        {name && <p className="text-xs text-gray-400 mt-1">{name}</p>}
-      </div>
-    )
-    lastIndex = match.index + match[0].length
-  }
-
-  if (lastIndex < content.length) {
-    nodes.push(
-      <span key={`t${lastIndex}`} className="whitespace-pre-wrap">
-        {content.slice(lastIndex)}
-      </span>
-    )
-  }
-
-  return nodes.length > 0
-    ? nodes
-    : [<span key="all" className="whitespace-pre-wrap">{content}</span>]
-}
 
 export default async function PostDetailPage({ params }: Props) {
   const { type, slug, id } = await params
@@ -118,7 +76,11 @@ export default async function PostDetailPage({ params }: Props) {
   const fileAttachments = remainingAttachments.filter((att) => !att.type?.startsWith('image/'))
 
   const contentText = post.content?.replace(/\[img:[^\]]*\]\([^)]+\)/g, '').trim() ?? ''
-  const hasContentToShow = contentText.length > 0 || (post.content?.includes('[img:') ?? false)
+  const inlineImages = [...(post.content?.matchAll(/\[img:([^\]]*)\]\(([^)]+)\)/g) ?? [])].map((m) => ({
+    name: m[1],
+    url: convertDriveUrl(m[2]),
+  }))
+  const allImages = [...inlineImages, ...imageAttachments]
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -166,18 +128,18 @@ export default async function PostDetailPage({ params }: Props) {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
-        {/* 이미지 갤러리 */}
-        {imageAttachments.length > 0 && (
-          <PostAttachmentGallery images={imageAttachments} />
-        )}
-
-        {/* 본문 */}
-        {hasContentToShow && (
+        {/* 본문 텍스트 */}
+        {contentText.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-              {renderPostContent(post.content)}
+              <span className="whitespace-pre-wrap">{contentText}</span>
             </div>
           </div>
+        )}
+
+        {/* 이미지 갤러리 (인라인 이미지 + 첨부 이미지) */}
+        {allImages.length > 0 && (
+          <PostAttachmentGallery images={allImages} />
         )}
 
         {/* 비이미지 첨부파일 */}

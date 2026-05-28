@@ -82,19 +82,23 @@ export default async function EventPromoDetailPage({ params }: Props) {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-10">
-        {/* 대표 이미지 + 갤러리 (라이트박스 포함) */}
-        <EventPromoGallery
-          thumbnail={story.thumbnail ? convertDriveUrl(story.thumbnail) : null}
-          images={story.images.map(convertDriveUrl)}
-          title={story.title}
-        />
-
         {/* 본문 */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">
-            {story.content}
+        {story.content && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {story.content}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* 대표 이미지 + 갤러리 (라이트박스 포함) */}
+        {(story.thumbnail || story.images.length > 0) && (
+          <EventPromoGallery
+            thumbnail={story.thumbnail ? convertDriveUrl(story.thumbnail) : null}
+            images={story.images.map(convertDriveUrl)}
+            title={story.title}
+          />
+        )}
 
         {/* 동영상 */}
         {story.videoUrls.length > 0 && (
