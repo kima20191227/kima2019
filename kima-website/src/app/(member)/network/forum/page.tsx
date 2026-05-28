@@ -2,7 +2,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getEventType } from '@/lib/eventTypes'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { ARCHIVE_RECORDS } from '../archive/data'
+import { ForumArchiveForm } from '@/components/admin/ForumArchiveForm'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -22,16 +24,24 @@ type RecordItem = {
   theme?: string | null
   hasContent: boolean
   photo?: string | null
+  isPublished: boolean
+}
+
+function isOfficer(role?: string | null) {
+  return role === 'ADMIN' || role === 'OFFICER'
 }
 
 export default async function ForumPage() {
-  // DB records (FORUM, published)
+  const session = await auth()
+  const canManage = isOfficer(session?.user?.role)
+
+  // DB records — 임원/관리자는 비공개 포함 전체 조회
   const dbRecords = await prisma.forumArchive.findMany({
-    where: { type: 'FORUM', isPublished: true },
+    where: { type: 'FORUM', ...(canManage ? {} : { isPublished: true }) },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true, seq: true, date: true, title: true, description: true, location: true, theme: true,
-      photos: true, videoUrls: true,
+      photos: true, videoUrls: true, isPublished: true,
       _count: { select: { schedules: true, materials: true } },
     },
   }).catch(() => [])
@@ -43,6 +53,7 @@ export default async function ForumPage() {
     location: r.location, theme: r.theme,
     hasContent: r._count.schedules > 0 || r._count.materials > 0 || r.photos.length > 0 || r.videoUrls.length > 0,
     photo: r.photos[0] ?? null,
+    isPublished: r.isPublished,
   }))
 
   const fromStatic: RecordItem[] = ARCHIVE_RECORDS
@@ -52,6 +63,7 @@ export default async function ForumPage() {
       location: r.location, theme: r.theme,
       hasContent: !!(r.scheduleItems?.length || r.materials?.length || r.photos?.length || r.videoUrl),
       photo: r.photos?.[0] ?? null,
+      isPublished: true,
     }))
 
   const records = [...fromDB, ...fromStatic]
@@ -108,7 +120,16 @@ export default async function ForumPage() {
 
         {/* 역대 포럼 목록 */}
         <section>
-          <h2 className="text-lg font-bold text-[#1B3A6B] mb-4">역대 포럼 기록</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-[#1B3A6B]">역대 포럼 기록</h2>
+            {canManage && (
+              <ForumArchiveForm
+                mode="create"
+                defaultType="FORUM"
+                triggerLabel="포럼 자료 등록"
+              />
+            )}
+          </div>
           {records.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">
               등록된 기록이 없습니다.
@@ -153,6 +174,9 @@ export default async function ForumPage() {
                         )}
                         {record.hasContent && (
                           <span className="text-xs bg-green-50 text-green-600 px-1.5 py-0.5 rounded">자료 있음</span>
+                        )}
+                        {canManage && !record.isPublished && (
+                          <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">비공개</span>
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-800 text-sm group-hover:text-[#1B3A6B] transition-colors">

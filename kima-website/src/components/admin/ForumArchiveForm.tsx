@@ -39,6 +39,8 @@ interface InitialData {
 interface Props {
   mode?: 'create' | 'edit'
   initialData?: InitialData
+  defaultType?: ForumType
+  triggerLabel?: string
   onClose?: () => void
 }
 
@@ -47,7 +49,7 @@ const FILE_TYPES = ['PDF', 'PPT', 'DOCX', 'HWP', 'VIDEO', 'LINK', 'ZIP', '기타
 const emptySchedule = (): ScheduleItem => ({ time: '', title: '', speaker: '' })
 const emptyMaterial = (): MaterialItem => ({ title: '', fileType: 'PDF', url: '' })
 
-export function ForumArchiveForm({ mode = 'create', initialData, onClose }: Props) {
+export function ForumArchiveForm({ mode = 'create', initialData, defaultType, triggerLabel, onClose }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -56,7 +58,7 @@ export function ForumArchiveForm({ mode = 'create', initialData, onClose }: Prop
 
   const [form, setForm] = useState({
     seq: initialData?.seq ?? '',
-    type: (initialData?.type ?? 'LISTENING_CALL') as ForumType,
+    type: (initialData?.type ?? defaultType ?? 'LISTENING_CALL') as ForumType,
     title: initialData?.title ?? '',
     date: initialData?.date ?? '',
     location: initialData?.location ?? '',
@@ -257,7 +259,7 @@ export function ForumArchiveForm({ mode = 'create', initialData, onClose }: Prop
       onClick={handleOpen}
       className="flex items-center gap-2 px-4 py-2 bg-[#1B3A6B] text-white text-sm font-medium rounded-lg hover:bg-[#15306b] transition-colors"
     >
-      + 새 아카이브 등록
+      + {triggerLabel ?? '새 자료 등록'}
     </button>
   )
 

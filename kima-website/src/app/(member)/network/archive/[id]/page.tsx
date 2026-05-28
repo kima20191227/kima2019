@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { ARCHIVE_RECORDS } from '../data'
 import { ForumArchiveForm } from '@/components/admin/ForumArchiveForm'
+import { ForumArchiveDeleteButton } from '@/components/admin/ForumArchiveDeleteButton'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -164,16 +165,22 @@ function ArchiveDetailView({
                 ? '관리자 모드 — 이 페이지의 자료를 편집할 수 있습니다.'
                 : '이 항목은 정적 데이터입니다. 관리자 패널에서 새로 등록하면 자료를 올릴 수 있습니다.'}
             </p>
-            <div className="shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               {editData ? (
-                <ForumArchiveForm
-                  mode="edit"
-                  initialData={{
-                    ...editData,
-                    schedules: editData.schedules.map((s) => ({ ...s, speaker: s.speaker ?? null })),
-                    materials: editData.materials.map((m) => ({ title: m.title, fileType: m.fileType, url: m.url })),
-                  }}
-                />
+                <>
+                  <ForumArchiveForm
+                    mode="edit"
+                    initialData={{
+                      ...editData,
+                      schedules: editData.schedules.map((s) => ({ ...s, speaker: s.speaker ?? null })),
+                      materials: editData.materials.map((m) => ({ title: m.title, fileType: m.fileType, url: m.url })),
+                    }}
+                  />
+                  <ForumArchiveDeleteButton
+                    archiveId={editData.id}
+                    redirectTo={backHref}
+                  />
+                </>
               ) : (
                 <Link
                   href={`/admin/forum-archives`}
