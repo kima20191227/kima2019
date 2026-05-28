@@ -32,3 +32,9 @@ yarn-error.log*
 # bkit internal
 .bkit/runtime/
 .bkit/snapshots/
+
+# Claude Code
+.claude/
+
+# Cloudflare Wrangler local cache
+.wrangler/
