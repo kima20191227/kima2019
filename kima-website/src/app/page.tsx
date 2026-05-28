@@ -195,23 +195,29 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {dbEvents.length > 0 ? dbEvents.map((event) => (
-              <Card key={event.id} className="flex items-center gap-6 p-5">
-                <div className="shrink-0 w-14 text-center">
-                  <div className="text-xs font-semibold text-[#C8922A]">
-                    {event.scheduledAt.toLocaleDateString('ko-KR', { month: 'long' })}
+            {dbEvents.length > 0 ? dbEvents.map((event, idx) => (
+              <Link key={event.id} href={`/network/schedule/${event.id}`}>
+                <Card
+                  hover
+                  className={`flex items-center gap-6 p-5 cursor-pointer${idx === 0 ? ' event-nearest' : ''}`}
+                >
+                  <div className="shrink-0 w-14 text-center">
+                    <div className="text-xs font-semibold text-[#C8922A]">
+                      {event.scheduledAt.toLocaleDateString('ko-KR', { month: 'long' })}
+                    </div>
+                    <div className="text-3xl font-bold text-[#1B3A6B] leading-none">
+                      {event.scheduledAt.getDate()}
+                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-[#1B3A6B] leading-none">
-                    {event.scheduledAt.getDate()}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[#1A1A1A] text-sm">{event.title}</p>
+                    {event.description && (
+                      <p className="mt-1 text-xs text-gray-500 line-clamp-1">{event.description}</p>
+                    )}
+                    <p className="mt-1.5 text-xs text-[#1B3A6B] font-medium">상세보기 →</p>
                   </div>
-                </div>
-                <div>
-                  <p className="font-semibold text-[#1A1A1A] text-sm">{event.title}</p>
-                  {event.description && (
-                    <p className="mt-1 text-xs text-gray-500 line-clamp-1">{event.description}</p>
-                  )}
-                </div>
-              </Card>
+                </Card>
+              </Link>
             )) : (
               <p className="col-span-2 text-center text-gray-400 py-10">예정된 일정이 없습니다.</p>
             )}

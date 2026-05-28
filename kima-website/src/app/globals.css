@@ -37,3 +37,13 @@ input::placeholder,
 textarea::placeholder {
   color: #9ca3af;
 }
+
+/* 가장 가까운 일정 카드 깜빡임 — opacity만 사용 (GPU compositor-only) */
+@keyframes event-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+.event-nearest {
+  animation: event-blink 1.4s ease-in-out infinite;
+  will-change: opacity;
+}
