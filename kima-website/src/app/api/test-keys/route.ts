@@ -6,18 +6,7 @@
  */
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-
-/** Cloudflare 바인딩 우선 → process.env fallback */
-function cfEnv(key: string): string | undefined {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getCloudflareContext } = require('@opennextjs/cloudflare')
-    const ctx = getCloudflareContext() as { env?: Record<string, string | undefined> }
-    const val = ctx?.env?.[key]
-    if (val) return val
-  } catch { /* 로컬 환경 — 무시 */ }
-  return process.env[key]
-}
+import { cfEnv } from '@/lib/cfEnv'
 
 function check(value: string | undefined): '✅ 설정됨' | '❌ 미설정' {
   return value && value.trim().length > 0 ? '✅ 설정됨' : '❌ 미설정'

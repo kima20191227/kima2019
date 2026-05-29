@@ -6,6 +6,8 @@
  * - Cloudflare Pages Edge Runtime / Next.js Edge Runtime 호환
  */
 
+import { cfEnv } from './cfEnv'
+
 // ─── 타입 정의 ────────────────────────────────────────────────────────────────
 
 export interface RawArticle {
@@ -259,8 +261,8 @@ export async function fetchNaverNews(
   display = 20,
   filterKeywords: string[] = [],
 ): Promise<RawArticle[]> {
-  const clientId     = process.env.NAVER_NEWS_CLIENT_ID     ?? ''
-  const clientSecret = process.env.NAVER_NEWS_CLIENT_SECRET ?? ''
+  const clientId     = cfEnv('NAVER_NEWS_CLIENT_ID')     ?? ''
+  const clientSecret = cfEnv('NAVER_NEWS_CLIENT_SECRET') ?? ''
 
   if (!clientId || !clientSecret) {
     console.warn('[newsCollector] NAVER_NEWS_CLIENT_ID/SECRET 환경변수 미설정')

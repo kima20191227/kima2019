@@ -7,6 +7,7 @@
  */
 
 import type { RawArticle } from './newsCollector'
+import { cfEnv } from './cfEnv'
 
 // ─── 타입 정의 ────────────────────────────────────────────────────────────────
 
@@ -140,7 +141,7 @@ function buildPrompt(article: RawArticle): string {
 export async function processArticleWithAI(
   article: RawArticle,
 ): Promise<ProcessedArticle | null> {
-  const apiKey = process.env.GEMINI_API_KEY ?? ''
+  const apiKey = cfEnv('GEMINI_API_KEY') ?? ''
   if (!apiKey) {
     console.warn('[aiSummarizer] GEMINI_API_KEY 환경변수 미설정')
     return null
