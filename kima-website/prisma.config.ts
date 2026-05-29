@@ -10,5 +10,7 @@ export default defineConfig({
   },
   datasource: {
     url: process.env.DATABASE_URL,
+    // prisma db push/migrate 용 직접 연결 (세션 모드 pooler — DDL 지원)
+    directUrl: process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL,
   },
 })
