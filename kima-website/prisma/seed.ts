@@ -136,6 +136,23 @@ async function main() {
 }
 
 async function seedNews() {
+  const NEWS_CATEGORIES = [
+    { key: 'LAW', label: '법령·정책', colorClass: 'bg-blue-100 text-blue-700', keywords: ['법령', '법률', '정책', '제도', '출입국', '체류', '비자', '법무부', '시행령'], order: 10 },
+    { key: 'STATISTICS', label: '통계·연구', colorClass: 'bg-violet-100 text-violet-700', keywords: ['통계', '연구', '조사', '보고서', '인구', '지표', '실태조사'], order: 20 },
+    { key: 'MULTICULTURAL', label: '다문화가족', colorClass: 'bg-pink-100 text-pink-700', keywords: ['다문화가족', '다문화 가정', '다문화가정', '다문화 자녀', '다문화자녀', '결혼이민자', '가족센터', '방문교육', '자조모임'], order: 30 },
+    { key: 'MIGRANT_WORKER', label: '이주노동자', colorClass: 'bg-amber-100 text-amber-700', keywords: ['이주노동자', '외국인근로자', '외국인 근로자', '고용허가제', '고용허가', '노동자', '근로자', 'E-9', 'H-2'], order: 40 },
+    { key: 'STUDENT', label: '유학생', colorClass: 'bg-emerald-100 text-emerald-700', keywords: ['유학생', '외국인학생', '외국인 학생', '다문화학생', '국제학생', '한국어교육'], order: 50 },
+    { key: 'OTHER', label: '기타', colorClass: 'bg-gray-100 text-gray-600', keywords: [], order: 999 },
+  ]
+
+  for (const category of NEWS_CATEGORIES) {
+    await prisma.newsCategoryConfig.upsert({
+      where: { key: category.key },
+      update: { ...category, isEnabled: true, isSystem: true },
+      create: { ...category, isEnabled: true, isSystem: true },
+    })
+  }
+
   // ── NewsSettings (싱글턴, id=1) ──────────────────────────────────────────
   await prisma.newsSettings.upsert({
     where:  { id: 1 },

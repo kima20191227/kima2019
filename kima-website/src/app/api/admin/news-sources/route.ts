@@ -2,20 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
+import { ensureDefaultNewsCategories } from '@/lib/newsCategories'
 
 function isAdmin(role?: string | null) {
   return role === 'ADMIN'
 }
 
 const sourceSchema = z.object({
-  name:            z.string().min(1).max(100),
-  url:             z.string().url(),
-  rssUrl:          z.string().url().nullable().optional(),
-  apiType:         z.enum(['rss', 'naver', 'scraping']).default('rss'),
-  isEnabled:       z.boolean().default(true),
-  keywords:        z.array(z.string()).default([]),
-  defaultCategory: z.enum(['LAW','STATISTICS','MULTICULTURAL','MIGRANT_WORKER','STUDENT','OTHER']).default('OTHER'),
-  order:           z.number().int().default(0),
+  name: z.string().min(1).max(100),
+  url: z.string().url(),
+  rssUrl: z.string().url().nullable().optional(),
+  apiType: z.enum(['rss', 'naver', 'scraping']).default('rss'),
+  isEnabled: z.boolean().default(true),
+  keywords: z.array(z.string()).default([]),
+  defaultCategory: z.string().min(1).max(40).default('OTHER'),
+  order: z.number().int().default(0),
 })
 
 export async function GET() {
@@ -33,13 +34,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
   }
   try {
+    await ensureDefaultNewsCategories()
     const body = await request.json()
     const parsed = sourceSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: '입력값이 올바르지 않습니다.' }, { status: 400 })
     }
+
     const dup = await prisma.newsSource.findUnique({ where: { name: parsed.data.name } })
     if (dup) return NextResponse.json({ error: '이미 사용 중인 소스명입니다.' }, { status: 409 })
+
+    const category = await prisma.newsCategoryConfig.findUnique({ where: { key: parsed.data.defaultCategory } })
+    if (!category) return NextResponse.json({ error: '존재하지 않는 뉴스 카테고리입니다.' }, { status: 400 })
 
     const source = await prisma.newsSource.create({ data: parsed.data })
     return NextResponse.json({ source }, { status: 201 })

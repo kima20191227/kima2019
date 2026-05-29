@@ -11,13 +11,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import type { NewsCategory } from '@prisma/client'
+import { getNewsCategories } from '@/lib/newsCategories'
 
 const ROLE_WEIGHT: Record<string, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
-
-const VALID_CATEGORIES = new Set<NewsCategory>([
-  'LAW', 'STATISTICS', 'MULTICULTURAL', 'MIGRANT_WORKER', 'STUDENT', 'OTHER',
-])
 
 export async function GET(request: NextRequest) {
   // 일반회원(MEMBER) 이상만 접근 허용
@@ -31,10 +27,12 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
+  const categories = await getNewsCategories()
+  const validCategoryKeys = new Set(categories.map((category) => category.key))
 
   const rawCategory = (searchParams.get('category') ?? 'all').toUpperCase()
-  const category    = rawCategory !== 'ALL' && VALID_CATEGORIES.has(rawCategory as NewsCategory)
-    ? (rawCategory as NewsCategory)
+  const category    = rawCategory !== 'ALL' && validCategoryKeys.has(rawCategory)
+    ? rawCategory
     : undefined
 
   const page  = Math.max(1, parseInt(searchParams.get('page')  ?? '1',  10) || 1)

@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import type { Metadata } from 'next'
-import type { NewsCategory } from '@prisma/client'
 import { NewsCategoryTabs } from '@/components/news/NewsCategoryTabs'
 import { NewsCard } from '@/components/news/NewsCard'
 import type { NewsCardItem } from '@/components/news/NewsCard'
+import { getNewsCategories } from '@/lib/newsCategories'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,10 +19,6 @@ function isMemberOrAbove(role?: string | null) {
 
 const PAGE_SIZE = 12
 const BASE_PATH = '/network/news'
-
-const VALID_CATEGORIES = new Set<NewsCategory>([
-  'LAW', 'STATISTICS', 'MULTICULTURAL', 'MIGRANT_WORKER', 'STUDENT', 'OTHER',
-])
 
 export async function generateMetadata({
   searchParams,
@@ -105,11 +101,13 @@ export default async function NetworkNewsPage({
   }
 
   const { category: rawCategory, page: rawPage } = await searchParams
+  const categories = await getNewsCategories()
+  const validCategoryKeys = new Set(categories.map((category) => category.key))
 
   const category = rawCategory?.toUpperCase()
   const validCategory =
-    category && VALID_CATEGORIES.has(category as NewsCategory)
-      ? (category as NewsCategory)
+    category && validCategoryKeys.has(category)
+      ? category
       : undefined
 
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
@@ -178,7 +176,7 @@ export default async function NetworkNewsPage({
 
         {/* 카테고리 탭 */}
         <Suspense fallback={<div className="h-10 bg-gray-100 rounded animate-pulse mb-6" />}>
-          <NewsCategoryTabs currentCategory={validCategory ?? 'ALL'} />
+          <NewsCategoryTabs currentCategory={validCategory ?? 'ALL'} categories={categories} />
         </Suspense>
 
         {/* 결과 건수 */}
@@ -200,7 +198,7 @@ export default async function NetworkNewsPage({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
-              <NewsCard key={item.id} item={item} />
+              <NewsCard key={item.id} item={item} categories={categories} />
             ))}
           </div>
         )}

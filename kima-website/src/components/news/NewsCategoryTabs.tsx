@@ -3,47 +3,39 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { cn } from '@/lib/utils'
-
-type CategoryKey = 'ALL' | 'LAW' | 'STATISTICS' | 'MULTICULTURAL' | 'MIGRANT_WORKER' | 'STUDENT' | 'OTHER'
-
-const TABS: { key: CategoryKey; label: string }[] = [
-  { key: 'ALL',            label: '전체' },
-  { key: 'LAW',            label: '법령·정책' },
-  { key: 'STATISTICS',     label: '통계·연구' },
-  { key: 'MULTICULTURAL',  label: '다문화가족' },
-  { key: 'MIGRANT_WORKER', label: '이주노동자' },
-  { key: 'STUDENT',        label: '유학생' },
-  { key: 'OTHER',          label: '기타' },
-]
+import type { NewsCategoryConfig } from '@/lib/newsCategoryConfig'
 
 interface Props {
   currentCategory?: string
+  categories: NewsCategoryConfig[]
 }
 
-export function NewsCategoryTabs({ currentCategory }: Props) {
-  const router      = useRouter()
-  const pathname    = usePathname()
+export function NewsCategoryTabs({ currentCategory, categories }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const active = (currentCategory?.toUpperCase() || 'ALL') as CategoryKey
+  const active = currentCategory?.toUpperCase() || 'ALL'
 
   const handleClick = useCallback(
-    (key: CategoryKey) => {
+    (key: string) => {
       const params = new URLSearchParams(searchParams.toString())
       if (key === 'ALL') {
         params.delete('category')
       } else {
         params.set('category', key)
       }
-      params.delete('page')   // 탭 변경 시 첫 페이지로 리셋
+      params.delete('page')
       router.push(`${pathname}?${params.toString()}`)
     },
     [router, pathname, searchParams],
   )
 
+  const tabs = [{ key: 'ALL', label: '전체' }, ...categories.map(({ key, label }) => ({ key, label }))]
+
   return (
     <div className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-200 mb-6">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = tab.key === active
         return (
           <button

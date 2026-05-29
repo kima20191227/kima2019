@@ -17,6 +17,7 @@ export interface RawArticle {
   sourceName: string
   publishedAt: Date
   keywords: string[]   // 일치한 필터 키워드 목록
+  defaultCategory?: string
 }
 
 interface NaverNewsItem {

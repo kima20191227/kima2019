@@ -450,7 +450,7 @@ model News {
   rawContent     String?      // 원문 내용 (스크래핑)
   sourceUrl      String       @unique
   sourceName     String       // 출처 매체명
-  category       NewsCategory @default(OTHER)
+  category       String       @default("OTHER")
   publishedAt    DateTime
   isVisible      Boolean      @default(true)   // 관리자 노출 여부
   relevanceScore Float?       // AI 관련도 점수 (0.0 ~ 1.0)
@@ -472,10 +472,22 @@ model NewsSource {
   apiType         String        @default("rss")  // rss | scraping | api
   isEnabled       Boolean       @default(true)
   keywords        String[]      // 필터링 키워드 (포함 여부 판단)
-  defaultCategory NewsCategory  @default(OTHER)
+  defaultCategory String        @default("OTHER")
   order           Int           @default(0)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+model NewsCategoryConfig {
+  key        String   @id
+  label      String
+  colorClass String   @default("bg-gray-100 text-gray-600")
+  keywords   String[]
+  order      Int      @default(0)
+  isEnabled  Boolean  @default(true)
+  isSystem   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // 뉴스 자동화 설정 (싱글턴 — id 항상 1)

@@ -1,55 +1,40 @@
-import type { NewsCategory } from '@prisma/client'
-
-// ─── 카테고리 메타 ────────────────────────────────────────────────────────────
-
-const CATEGORY_META: Record<
-  NewsCategory,
-  { label: string; className: string }
-> = {
-  LAW:            { label: '법령·정책',  className: 'bg-blue-100 text-blue-700' },
-  STATISTICS:     { label: '통계·연구',  className: 'bg-violet-100 text-violet-700' },
-  MULTICULTURAL:  { label: '다문화가족', className: 'bg-pink-100 text-pink-700' },
-  MIGRANT_WORKER: { label: '이주노동자', className: 'bg-amber-100 text-amber-700' },
-  STUDENT:        { label: '유학생',     className: 'bg-emerald-100 text-emerald-700' },
-  OTHER:          { label: '기타',       className: 'bg-gray-100 text-gray-600' },
-}
-
-// ─── 타입 ─────────────────────────────────────────────────────────────────────
+import { getNewsCategoryMeta, type NewsCategoryConfig } from '@/lib/newsCategoryConfig'
 
 export interface NewsCardItem {
-  id:             string
-  title:          string
-  summary:        string | null
-  sourceUrl:      string
-  sourceName:     string
-  category:       NewsCategory
-  publishedAt:    Date | string
+  id: string
+  title: string
+  summary: string | null
+  sourceUrl: string
+  sourceName: string
+  category: string
+  publishedAt: Date | string
   relevanceScore: number | null
-  keywords:       string[]
+  keywords: string[]
 }
 
-// ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
-
-export function NewsCard({ item }: { item: NewsCardItem }) {
-  const meta = CATEGORY_META[item.category] ?? CATEGORY_META.OTHER
+export function NewsCard({
+  item,
+  categories,
+}: {
+  item: NewsCardItem
+  categories: NewsCategoryConfig[]
+}) {
+  const meta = getNewsCategoryMeta(categories, item.category)
 
   const date = new Date(item.publishedAt).toLocaleDateString('ko-KR', {
-    year:  'numeric',
+    year: 'numeric',
     month: 'long',
-    day:   'numeric',
+    day: 'numeric',
   })
 
-  // AI 관련도: 0.0~1.0 → 백분율 표시
   const relevance = item.relevanceScore != null
     ? Math.round(item.relevanceScore * 100)
     : null
 
   return (
     <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#C8922A]/40 transition-all p-5 flex flex-col gap-3">
-
-      {/* 상단: 배지 + 관련도 */}
       <div className="flex items-center justify-between gap-2">
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${meta.className}`}>
+        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${meta.colorClass}`}>
           {meta.label}
         </span>
         {relevance !== null && (
@@ -62,12 +47,10 @@ export function NewsCard({ item }: { item: NewsCardItem }) {
         )}
       </div>
 
-      {/* 제목 */}
       <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
         {item.title}
       </h3>
 
-      {/* AI 요약 */}
       {item.summary && (
         <div className="bg-[#F8F9FA] rounded-lg px-3.5 py-2.5 border-l-2 border-[#1B3A6B]/30">
           <p className="text-xs font-semibold text-[#1B3A6B] mb-1">AI 요약</p>
@@ -77,7 +60,6 @@ export function NewsCard({ item }: { item: NewsCardItem }) {
         </div>
       )}
 
-      {/* 키워드 */}
       {item.keywords.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {item.keywords.slice(0, 4).map((kw) => (
@@ -91,7 +73,6 @@ export function NewsCard({ item }: { item: NewsCardItem }) {
         </div>
       )}
 
-      {/* 하단: 출처 + 날짜 + 링크 */}
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 mt-auto">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs text-gray-500 font-medium truncate">{item.sourceName}</span>

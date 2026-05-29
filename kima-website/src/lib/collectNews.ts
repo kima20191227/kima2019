@@ -6,8 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { fetchRSSFeed, fetchNaverNews, deduplicateArticles } from '@/lib/newsCollector'
 import { processBatch } from '@/lib/aiSummarizer'
 import type { RawArticle } from '@/lib/newsCollector'
-import type { NewsCategory } from '@prisma/client'
 import { cfEnv } from '@/lib/cfEnv'
+import { getNewsCategories } from '@/lib/newsCategories'
 
 export interface CollectResult {
   message?: string
@@ -40,10 +40,13 @@ export async function runNewsCollection(): Promise<CollectResult> {
     return { ...empty, message: '자동 수집이 비활성화 상태입니다.', durationMs: Date.now() - startAt }
   }
 
-  const sources = await prisma.newsSource.findMany({
-    where:   { isEnabled: true },
-    orderBy: { order: 'asc' },
-  })
+  const [sources, categories] = await Promise.all([
+    prisma.newsSource.findMany({
+      where:   { isEnabled: true },
+      orderBy: { order: 'asc' },
+    }),
+    getNewsCategories(),
+  ])
 
   if (sources.length === 0) {
     return { ...empty, message: '활성화된 뉴스 소스가 없습니다.', durationMs: Date.now() - startAt }
@@ -78,8 +81,13 @@ export async function runNewsCollection(): Promise<CollectResult> {
         articles = await fetchRSSFeed(src.rssUrl, src.name, keywords, maxPerSource)
       }
 
-      sourceStats.push({ name: src.name, type: src.apiType, fetched: articles.length })
-      allRaw.push(...articles)
+      const taggedArticles = articles.map((article) => ({
+        ...article,
+        defaultCategory: src.defaultCategory,
+      }))
+
+      sourceStats.push({ name: src.name, type: src.apiType, fetched: taggedArticles.length })
+      allRaw.push(...taggedArticles)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       sourceStats.push({ name: src.name, type: src.apiType, fetched: 0, error: msg })
@@ -103,7 +111,7 @@ export async function runNewsCollection(): Promise<CollectResult> {
     }
   }
 
-  const processed = await processBatch(newArticles)
+  const processed = await processBatch(newArticles, undefined, categories)
 
   let saved = 0
   if (processed.length > 0) {
@@ -114,7 +122,7 @@ export async function runNewsCollection(): Promise<CollectResult> {
         rawContent:     null,
         sourceUrl:      art.url,
         sourceName:     art.sourceName,
-        category:       art.category as NewsCategory,
+        category:       art.category,
         publishedAt:    art.publishedAt,
         isVisible:      true,
         relevanceScore: art.relevanceScore / 100,
