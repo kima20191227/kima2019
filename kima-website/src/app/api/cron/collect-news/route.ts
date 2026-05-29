@@ -7,8 +7,8 @@
  * 실행: 매일 UTC 23:00 (KST 08:00)
  */
 
-export const runtime = 'edge'
-
+// Prisma(pg) 의존성으로 Node.js 런타임 필요 — edge 선언 제거
+// newsCollector.ts / aiSummarizer.ts 자체는 Edge 호환이나 Prisma 저장 단계에서 Node.js 필요
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchRSSFeed, fetchNaverNews, deduplicateArticles } from '@/lib/newsCollector'

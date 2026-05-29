@@ -8,8 +8,7 @@
  *   limit     정수, default 20, max 50
  */
 
-export const runtime = 'edge'
-
+// Prisma(pg) 의존성으로 Node.js 런타임 필요 — edge 선언 제거
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { NewsCategory } from '@prisma/client'
