@@ -51,10 +51,13 @@ interface GeminiResponse {
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────────
 
-const GEMINI_MODEL    = 'gemini-1.5-flash'
+const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash-lite'
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 const RELEVANCE_MIN   = 50
 const TIMEOUT_MS      = 30_000
+const FALLBACK_RETRY_MS = 60_000
+
+let geminiFallbackUntil = 0
 const BATCH_DELAY_MS  = 4_000   // Gemini 무료 티어: 분당 15회 제한 방지 (4초)
 
 // 카테고리 한글 → enum 매핑
@@ -86,6 +89,27 @@ function parseCategory(raw: string): NewsCategory {
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(Math.max(Number(n) || 0, min), max)
+}
+
+function getGeminiModel(): string {
+  return cfEnv('GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL
+}
+
+function enableFallbackTemporarily() {
+  geminiFallbackUntil = Date.now() + FALLBACK_RETRY_MS
+}
+
+function fallbackArticle(article: RawArticle): ProcessedArticle {
+  return {
+    title:          article.title,
+    summary:        (article.summary || article.title).slice(0, 500).trim(),
+    url:            article.url,
+    sourceName:     article.sourceName,
+    publishedAt:    article.publishedAt,
+    category:       'OTHER',
+    relevanceScore: RELEVANCE_MIN,
+    keywords:       article.keywords.slice(0, 5),
+  }
 }
 
 async function fetchWithTimeout(
@@ -144,10 +168,14 @@ export async function processArticleWithAI(
   const apiKey = cfEnv('GEMINI_API_KEY') ?? ''
   if (!apiKey) {
     console.warn('[aiSummarizer] GEMINI_API_KEY 환경변수 미설정')
-    return null
+    return fallbackArticle(article)
   }
 
-  const url = `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`
+  if (Date.now() < geminiFallbackUntil) {
+    return fallbackArticle(article)
+  }
+
+  const url = `${GEMINI_API_BASE}/${getGeminiModel()}:generateContent?key=${apiKey}`
 
   try {
     const res = await fetchWithTimeout(
@@ -175,20 +203,22 @@ export async function processArticleWithAI(
     if (!res.ok) {
       const body = await res.text().catch(() => '')
       console.error(`[aiSummarizer] Gemini ${res.status}: ${body.slice(0, 200)}`)
-      return null
+      if ([403, 404, 429].includes(res.status)) enableFallbackTemporarily()
+      return fallbackArticle(article)
     }
 
     const data = (await res.json()) as GeminiResponse
 
     if (data.error) {
       console.error('[aiSummarizer] Gemini error:', data.error.message)
-      return null
+      if ([403, 404, 429].includes(data.error.code)) enableFallbackTemporarily()
+      return fallbackArticle(article)
     }
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     if (!text) {
       console.warn('[aiSummarizer] 빈 응답:', article.url)
-      return null
+      return fallbackArticle(article)
     }
 
     const parsed = JSON.parse(text) as Partial<AIResponse>
@@ -219,7 +249,8 @@ export async function processArticleWithAI(
     } else {
       console.error('[aiSummarizer] 오류:', article.url, msg)
     }
-    return null
+    enableFallbackTemporarily()
+    return fallbackArticle(article)
   }
 }
 

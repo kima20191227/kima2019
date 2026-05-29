@@ -312,7 +312,7 @@ export function NewsSettingsForm() {
             {...register('aiProvider')}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30 w-56"
           >
-            <option value="gemini">Google Gemini (gemini-1.5-flash)</option>
+            <option value="gemini">Google Gemini (gemini-2.0-flash-lite)</option>
             <option value="openai">OpenAI (GPT-4o-mini)</option>
             <option value="claude">Claude (Anthropic)</option>
             <option value="none">AI 분석 사용 안 함</option>
