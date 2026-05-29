@@ -1,0 +1,262 @@
+/**
+ * aiSummarizer.ts
+ * Edge Runtime 전용 AI 기사 분석기
+ * - openai 패키지 사용 금지, fetch API 직접 호출
+ * - Cloudflare Pages Edge Runtime / Next.js Edge Runtime 호환
+ */
+
+import type { RawArticle } from './newsCollector'
+
+// ─── 타입 정의 ────────────────────────────────────────────────────────────────
+
+export type NewsCategory =
+  | 'LAW'            // 법령·정책
+  | 'STATISTICS'     // 통계·연구
+  | 'MULTICULTURAL'  // 다문화가족
+  | 'MIGRANT_WORKER' // 이주노동자
+  | 'STUDENT'        // 유학생
+  | 'OTHER'          // 기타
+
+export interface ProcessedArticle {
+  title: string
+  summary: string          // AI 생성 한국어 요약 (3-4문장)
+  url: string
+  sourceName: string
+  publishedAt: Date
+  category: NewsCategory
+  relevanceScore: number   // 0-100
+  keywords: string[]       // 3-5개
+}
+
+/** AI 응답 JSON 구조 */
+interface AIResponse {
+  relevance:  number        // 0-100
+  summary:    string
+  category:   string
+  keywords:   string[]
+}
+
+/** OpenAI Chat Completions API 응답 최소 타입 */
+interface OpenAIResponse {
+  choices: Array<{
+    message: {
+      content: string | null
+    }
+    finish_reason: string
+  }>
+  error?: { message: string; type: string }
+}
+
+// ─── 상수 ─────────────────────────────────────────────────────────────────────
+
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
+const MODEL          = 'gpt-4o-mini'
+const RELEVANCE_MIN  = 50   // 이 점수 미만이면 null 반환
+const TIMEOUT_MS     = 30_000
+const BATCH_DELAY_MS = 1_200  // OpenAI 속도 제한 방지
+
+// 카테고리 한글 → enum 매핑
+const CATEGORY_MAP: Record<string, NewsCategory> = {
+  '법령':      'LAW',
+  '정책':      'LAW',
+  '통계':      'STATISTICS',
+  '연구':      'STATISTICS',
+  '다문화가족':'MULTICULTURAL',
+  '다문화':    'MULTICULTURAL',
+  '이주노동자':'MIGRANT_WORKER',
+  '유학생':    'STUDENT',
+  '기타':      'OTHER',
+}
+
+// ─── 내부 유틸리티 ────────────────────────────────────────────────────────────
+
+function parseCategory(raw: string): NewsCategory {
+  const trimmed = raw?.trim() ?? ''
+  // 직접 enum 값으로 들어온 경우
+  const enumValues: NewsCategory[] = [
+    'LAW', 'STATISTICS', 'MULTICULTURAL', 'MIGRANT_WORKER', 'STUDENT', 'OTHER',
+  ]
+  if (enumValues.includes(trimmed as NewsCategory)) return trimmed as NewsCategory
+
+  // 한글 레이블 매핑
+  for (const [label, value] of Object.entries(CATEGORY_MAP)) {
+    if (trimmed.includes(label)) return value
+  }
+  return 'OTHER'
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(Math.max(Number(n) || 0, min), max)
+}
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  ms: number,
+): Promise<Response> {
+  const ctrl  = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), ms)
+  try {
+    return await fetch(url, { ...options, signal: ctrl.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// ─── 시스템 프롬프트 ──────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `당신은 한국의 이주민·다문화 정책 전문 편집자입니다.
+뉴스 기사를 분석하여 이주민·외국인·다문화 관련성을 평가하고, 핵심 내용을 요약합니다.
+
+반드시 유효한 JSON 객체만 반환하십시오. 다른 텍스트는 포함하지 마십시오.`
+
+function buildUserPrompt(article: RawArticle): string {
+  const content = [article.title, article.summary].filter(Boolean).join('\n\n')
+  return `다음 뉴스 기사를 분석하십시오.
+
+제목: ${article.title}
+출처: ${article.sourceName}
+내용: ${content.slice(0, 1200)}
+
+다음 형식의 JSON을 반환하십시오:
+{
+  "relevance": <이주민·외국인·다문화 관련성 점수 0-100. 직접 관련 없으면 낮게>,
+  "summary": "<3-4문장 한국어 요약. 이주민·다문화 관점에서 핵심만>",
+  "category": "<다음 중 하나: 법령 | 통계 | 다문화가족 | 이주노동자 | 유학생 | 기타>",
+  "keywords": ["<키워드1>", "<키워드2>", "<키워드3>"]
+}
+
+판단 기준:
+- 90-100: 이주민·외국인·다문화 정책이 기사의 핵심 주제
+- 70-89: 이주민·다문화 내용이 기사의 주요 부분
+- 50-69: 이주민·다문화 내용이 일부 포함
+- 50 미만: 관련성 낮음 (이 경우에도 JSON 형식 유지)`
+}
+
+// ─── 공개 함수 ────────────────────────────────────────────────────────────────
+
+/**
+ * 기사 1건을 AI로 분석
+ * - 관련성 50 미만이면 null 반환
+ * - API 오류 / 타임아웃 시 null 반환
+ */
+export async function processArticleWithAI(
+  article: RawArticle,
+): Promise<ProcessedArticle | null> {
+  const apiKey = process.env.OPENAI_API_KEY ?? ''
+  if (!apiKey) {
+    console.warn('[aiSummarizer] OPENAI_API_KEY 환경변수 미설정')
+    return null
+  }
+
+  try {
+    const res = await fetchWithTimeout(
+      OPENAI_API_URL,
+      {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model:           MODEL,
+          response_format: { type: 'json_object' },
+          max_tokens:      512,
+          temperature:     0.3,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user',   content: buildUserPrompt(article) },
+          ],
+        }),
+        cache: 'no-store',
+      },
+      TIMEOUT_MS,
+    )
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      console.error(`[aiSummarizer] OpenAI ${res.status}: ${body.slice(0, 200)}`)
+      return null
+    }
+
+    const data = (await res.json()) as OpenAIResponse
+
+    if (data.error) {
+      console.error('[aiSummarizer] OpenAI error:', data.error.message)
+      return null
+    }
+
+    const content = data.choices?.[0]?.message?.content ?? ''
+    if (!content) {
+      console.warn('[aiSummarizer] 빈 응답:', article.url)
+      return null
+    }
+
+    const parsed = JSON.parse(content) as Partial<AIResponse>
+
+    const relevance = clamp(parsed.relevance ?? 0, 0, 100)
+    if (relevance < RELEVANCE_MIN) return null
+
+    const keywords = Array.isArray(parsed.keywords)
+      ? parsed.keywords.slice(0, 5).map(String)
+      : article.keywords.slice(0, 5)
+
+    return {
+      title:          article.title,
+      summary:        (parsed.summary ?? article.summary ?? '').trim(),
+      url:            article.url,
+      sourceName:     article.sourceName,
+      publishedAt:    article.publishedAt,
+      category:       parseCategory(parsed.category ?? ''),
+      relevanceScore: relevance,
+      keywords,
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('abort') || msg.toLowerCase().includes('timeout')) {
+      console.error('[aiSummarizer] OpenAI 타임아웃 (30s):', article.url)
+    } else if (msg.includes('JSON')) {
+      console.error('[aiSummarizer] JSON 파싱 오류:', article.url, msg)
+    } else {
+      console.error('[aiSummarizer] 오류:', article.url, msg)
+    }
+    return null
+  }
+}
+
+/**
+ * 기사 배열을 순차적으로 AI 처리 (배치)
+ * - 기사 간 1200ms 딜레이로 OpenAI 속도 제한 방지
+ * - null 결과(관련성 낮음 / 오류)는 제외하고 반환
+ *
+ * @param articles   처리할 기사 목록
+ * @param onProgress 진행 콜백 (선택) — (current, total, result) 호출
+ */
+export async function processBatch(
+  articles: RawArticle[],
+  onProgress?: (
+    current: number,
+    total: number,
+    result: ProcessedArticle | null,
+  ) => void,
+): Promise<ProcessedArticle[]> {
+  const results: ProcessedArticle[] = []
+
+  for (let i = 0; i < articles.length; i++) {
+    const result = await processArticleWithAI(articles[i])
+    if (result) results.push(result)
+
+    onProgress?.(i + 1, articles.length, result)
+
+    // 마지막 기사가 아니면 딜레이
+    if (i < articles.length - 1) {
+      await sleep(BATCH_DELAY_MS)
+    }
+  }
+
+  return results
+}
