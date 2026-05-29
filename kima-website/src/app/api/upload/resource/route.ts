@@ -1,9 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { uploadFileToDrive } from '@/lib/googleDrive'
+import { cfEnv } from '@/lib/cfEnv'
 
 const MAX_FILE_SIZE_MB = 100
-const DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
+const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
+
+type GoogleServiceAccountKey = {
+  client_email?: string
+  private_key?: string
+}
+
+function parseServiceAccountKey(raw: string | undefined): GoogleServiceAccountKey {
+  if (!raw) return {}
+
+  const candidates = [raw.trim()]
+  try {
+    candidates.push(Buffer.from(raw.trim(), 'base64').toString('utf8'))
+  } catch {
+    // The value was not base64 encoded.
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as GoogleServiceAccountKey
+      return {
+        client_email: parsed.client_email,
+        private_key: parsed.private_key,
+      }
+    } catch {
+      // Try the next representation.
+    }
+  }
+
+  return {}
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,12 +57,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL ?? ''
-    const privateKey  = process.env.GOOGLE_PRIVATE_KEY ?? ''
+    const serviceAccount = parseServiceAccountKey(cfEnv('GOOGLE_SERVICE_ACCOUNT_KEY'))
+    const folderId = cfEnv('GOOGLE_DRIVE_RESOURCE_FOLDER_ID') ?? DEFAULT_DRIVE_FOLDER_ID
+    const clientEmail = cfEnv('GOOGLE_CLIENT_EMAIL') ?? serviceAccount.client_email ?? ''
+    const privateKey  = cfEnv('GOOGLE_PRIVATE_KEY') ?? serviceAccount.private_key ?? ''
 
     if (!clientEmail || !privateKey) {
       return NextResponse.json(
-        { error: 'Google 서비스 계정 설정이 필요합니다. (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY)' },
+        { error: 'Google 서비스 계정 설정이 필요합니다. (GOOGLE_SERVICE_ACCOUNT_KEY 또는 GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY)' },
         { status: 500 }
       )
     }
@@ -39,7 +72,7 @@ export async function POST(request: NextRequest) {
     const mimeType = file.type || 'application/octet-stream'
     const buffer = Buffer.from(await file.arrayBuffer())
     const driveUrl = await uploadFileToDrive(buffer, file.name, mimeType, {
-      folderId: DRIVE_FOLDER_ID,
+      folderId,
       clientEmail,
       privateKey,
     })

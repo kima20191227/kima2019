@@ -4,9 +4,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { runNewsCollection } from '@/lib/collectNews'
+import { cfEnv } from '@/lib/cfEnv'
 
 export async function GET(request: NextRequest) {
-  const token = process.env.CRON_SECRET_TOKEN ?? process.env.CRON_SECRET ?? ''
+  const token = cfEnv('CRON_SECRET_TOKEN') ?? cfEnv('CRON_SECRET') ?? ''
   const authHeader = request.headers.get('authorization')
   if (!token || authHeader !== `Bearer ${token}`) {
     return NextResponse.json({ error: '인증 실패' }, { status: 401 })

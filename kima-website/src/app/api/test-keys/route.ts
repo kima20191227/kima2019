@@ -6,7 +6,7 @@
  */
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { cfEnv } from '@/lib/cfEnv'
+import { cfEnv, cfEnvSource, hasCloudflareEnv } from '@/lib/cfEnv'
 
 function check(value: string | undefined): '✅ 설정됨' | '❌ 미설정' {
   return value && value.trim().length > 0 ? '✅ 설정됨' : '❌ 미설정'
@@ -28,6 +28,20 @@ export async function GET() {
 
   const result = {
     timestamp: new Date().toISOString(),
+    runtime: {
+      hasCloudflareEnv: hasCloudflareEnv() ? 'yes' : 'no',
+      sources: {
+        GEMINI_API_KEY: cfEnvSource('GEMINI_API_KEY'),
+        NAVER_NEWS_CLIENT_ID: cfEnvSource('NAVER_NEWS_CLIENT_ID'),
+        NAVER_NEWS_CLIENT_SECRET: cfEnvSource('NAVER_NEWS_CLIENT_SECRET'),
+        CRON_SECRET_TOKEN: cfEnvSource('CRON_SECRET_TOKEN'),
+        GOOGLE_SERVICE_ACCOUNT_KEY: cfEnvSource('GOOGLE_SERVICE_ACCOUNT_KEY'),
+        GOOGLE_DRIVE_RESOURCE_FOLDER_ID: cfEnvSource('GOOGLE_DRIVE_RESOURCE_FOLDER_ID'),
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: cfEnvSource('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'),
+        KAKAO_CLIENT_ID: cfEnvSource('KAKAO_CLIENT_ID'),
+        NAVER_CLIENT_ID: cfEnvSource('NAVER_CLIENT_ID'),
+      },
+    },
 
     // ── 데이터베이스 ─────────────────────────────────────────────
     database: {
