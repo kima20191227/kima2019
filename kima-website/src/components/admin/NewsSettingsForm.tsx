@@ -95,7 +95,7 @@ export function NewsSettingsForm() {
           isEnabled:          settings.isEnabled,
           collectHour:        settings.collectHour,
           collectMinute:      settings.collectMinute,
-          aiProvider:         (settings.aiProvider as 'claude' | 'openai' | 'none'),
+          aiProvider:         (settings.aiProvider as 'gemini' | 'claude' | 'openai' | 'none'),
           relevanceThreshold: Math.round(settings.relevanceThreshold * 100),  // 0-1 → 0-100
           maxArticlesPerRun:  settings.maxArticlesPerRun,
         })
