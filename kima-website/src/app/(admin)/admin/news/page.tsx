@@ -1,0 +1,335 @@
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import type { Metadata } from 'next'
+import type { NewsCategory } from '@prisma/client'
+import { NewsSettingsForm } from '@/components/admin/NewsSettingsForm'
+
+export const dynamic = 'force-dynamic'
+export const metadata: Metadata = { title: '뉴스 관리 | KIMA 관리자' }
+
+const CATEGORY_LABELS: Record<NewsCategory, string> = {
+  LAW:            '법령·정책',
+  STATISTICS:     '통계·연구',
+  MULTICULTURAL:  '다문화가족',
+  MIGRANT_WORKER: '이주노동자',
+  STUDENT:        '유학생',
+  OTHER:          '기타',
+}
+
+const CATEGORY_COLORS: Record<NewsCategory, string> = {
+  LAW:            'bg-blue-100 text-blue-700',
+  STATISTICS:     'bg-violet-100 text-violet-700',
+  MULTICULTURAL:  'bg-pink-100 text-pink-700',
+  MIGRANT_WORKER: 'bg-amber-100 text-amber-700',
+  STUDENT:        'bg-emerald-100 text-emerald-700',
+  OTHER:          'bg-gray-100 text-gray-600',
+}
+
+type Tab = 'settings' | 'list' | 'sources'
+
+export default async function AdminNewsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; page?: string }>
+}) {
+  // ADMIN 권한 확인
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') redirect('/')
+
+  const { tab: rawTab, page: rawPage } = await searchParams
+  const tab: Tab =
+    rawTab === 'list' || rawTab === 'sources' ? rawTab : 'settings'
+
+  const page      = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
+  const PAGE_SIZE = 20
+  const skip      = (page - 1) * PAGE_SIZE
+
+  // 뉴스 목록 탭용 데이터
+  const [newsTotal, newsItems, sourceCount] = await Promise.all([
+    tab === 'list' ? prisma.news.count() : Promise.resolve(0),
+    tab === 'list'
+      ? prisma.news.findMany({
+          orderBy: { publishedAt: 'desc' },
+          skip,
+          take:    PAGE_SIZE,
+          select:  {
+            id:             true,
+            title:          true,
+            sourceName:     true,
+            category:       true,
+            publishedAt:    true,
+            isVisible:      true,
+            relevanceScore: true,
+          },
+        })
+      : Promise.resolve([]),
+    prisma.newsSource.count(),
+  ])
+
+  // 소스 목록 탭용 데이터
+  const sources =
+    tab === 'sources'
+      ? await prisma.newsSource.findMany({ orderBy: { order: 'asc' } })
+      : []
+
+  const totalPages = Math.ceil(newsTotal / PAGE_SIZE)
+
+  function tabUrl(t: Tab) {
+    return `/admin/news?tab=${t}`
+  }
+  function pageUrl(p: number) {
+    return `/admin/news?tab=list&page=${p}`
+  }
+
+  return (
+    <div>
+      {/* 헤더 */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-[#1B3A6B]">이주민·다문화 뉴스 관리</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            자동 수집 설정, 뉴스 목록 관리, 수집 소스 관리
+          </p>
+        </div>
+        <Link
+          href="/data/news"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-[#1B3A6B] hover:underline flex items-center gap-1"
+        >
+          공개 페이지 보기 →
+        </Link>
+      </div>
+
+      {/* 탭 */}
+      <div className="flex gap-1 border-b border-gray-200 mb-6">
+        {(
+          [
+            { key: 'settings' as Tab, label: '수집 설정' },
+            { key: 'list'     as Tab, label: `뉴스 목록 (${tab === 'list' ? newsTotal.toLocaleString() : '…'})` },
+            { key: 'sources'  as Tab, label: `소스 관리 (${sourceCount})` },
+          ] as const
+        ).map(({ key, label }) => (
+          <Link
+            key={key}
+            href={tabUrl(key)}
+            className={`px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              tab === key
+                ? 'border-[#1B3A6B] text-[#1B3A6B]'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+
+      {/* ── 수집 설정 탭 ────────────────────────────────────────────────── */}
+      {tab === 'settings' && <NewsSettingsForm />}
+
+      {/* ── 뉴스 목록 탭 ────────────────────────────────────────────────── */}
+      {tab === 'list' && (
+        <div>
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-16">상태</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">제목</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">카테고리</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-24">출처</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-20 hidden sm:table-cell">관련도</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-28 hidden md:table-cell">발행일</th>
+                  <th className="w-10" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {newsItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-gray-400">
+                      수집된 뉴스가 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  newsItems.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className={`w-2 h-2 rounded-full inline-block ${item.isVisible ? 'bg-green-400' : 'bg-gray-300'}`} />
+                      </td>
+                      <td className="px-4 py-3 max-w-xs">
+                        <p className="font-medium text-gray-800 truncate">{item.title}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[item.category]}`}>
+                          {CATEGORY_LABELS[item.category]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 truncate max-w-[96px]">
+                        {item.sourceName}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">
+                        {item.relevanceScore != null
+                          ? `${Math.round(item.relevanceScore * 100)}%`
+                          : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-400 hidden md:table-cell">
+                        {new Date(item.publishedAt).toLocaleDateString('ko-KR')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <ToggleVisibleButton id={item.id} isVisible={item.isVisible} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 페이지네이션 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 mt-6">
+              {page > 1 && (
+                <Link href={pageUrl(page - 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
+                  ← 이전
+                </Link>
+              )}
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                const mid = Math.min(Math.max(page, 4), totalPages - 3)
+                const n = Math.max(1, mid - 3) + i
+                if (n > Math.min(totalPages, Math.max(1, mid - 3) + 6)) return null
+                return (
+                  <Link
+                    key={n}
+                    href={pageUrl(n)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm ${
+                      n === page ? 'bg-[#1B3A6B] text-white' : 'border border-gray-200 hover:bg-gray-50 text-gray-600'
+                    }`}
+                  >
+                    {n}
+                  </Link>
+                )
+              })}
+              {page < totalPages && (
+                <Link href={pageUrl(page + 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
+                  다음 →
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 소스 관리 탭 ────────────────────────────────────────────────── */}
+      {tab === 'sources' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              RSS·API 소스 {sourceCount}개 등록됨
+            </p>
+            <AddSourceButton />
+          </div>
+
+          {sources.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400">
+              <p className="text-2xl mb-2">📡</p>
+              <p>등록된 소스가 없습니다.</p>
+              <p className="text-sm mt-1">오른쪽 상단 버튼으로 소스를 추가하세요.</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 w-12">상태</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">소스명</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 w-20">유형</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 w-24 hidden md:table-cell">기본 카테고리</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">키워드</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {sources.map((src) => (
+                    <tr key={src.id} className="hover:bg-gray-50/60">
+                      <td className="px-4 py-3">
+                        <span className={`w-2 h-2 rounded-full inline-block ${src.isEnabled ? 'bg-green-400' : 'bg-gray-300'}`} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-800">{src.name}</p>
+                        <p className="text-xs text-gray-400 truncate max-w-xs">{src.rssUrl ?? src.url}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-mono uppercase">
+                          {src.apiType}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[src.defaultCategory as NewsCategory] ?? ''}`}>
+                          {CATEGORY_LABELS[src.defaultCategory as NewsCategory] ?? src.defaultCategory}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {(src.keywords as string[]).slice(0, 4).map((kw) => (
+                            <span key={kw} className="px-1.5 py-0.5 rounded bg-[#1B3A6B]/5 text-[#1B3A6B] text-xs">
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-400">
+            * 소스 추가/편집 기능은 다음 업데이트에서 제공됩니다. 현재는 Prisma Studio 또는 직접 DB에서 관리하세요.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── 인라인 클라이언트 컴포넌트들 ────────────────────────────────────────────
+
+function ToggleVisibleButton({ id, isVisible }: { id: string; isVisible: boolean }) {
+  return (
+    <form
+      action={async () => {
+        'use server'
+        const { auth: authFn } = await import('@/lib/auth')
+        const { prisma: db }   = await import('@/lib/prisma')
+        const session = await authFn()
+        if (session?.user?.role !== 'ADMIN') return
+        await db.news.update({
+          where: { id },
+          data:  { isVisible: !isVisible },
+        })
+      }}
+    >
+      <button
+        type="submit"
+        title={isVisible ? '비공개로 전환' : '공개로 전환'}
+        className={`text-xs px-2 py-1 rounded transition-colors ${
+          isVisible
+            ? 'text-gray-400 hover:text-red-500'
+            : 'text-gray-300 hover:text-green-500'
+        }`}
+      >
+        {isVisible ? '숨김' : '공개'}
+      </button>
+    </form>
+  )
+}
+
+function AddSourceButton() {
+  return (
+    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 text-xs text-gray-400 cursor-not-allowed">
+      + 소스 추가 (준비 중)
+    </span>
+  )
+}
