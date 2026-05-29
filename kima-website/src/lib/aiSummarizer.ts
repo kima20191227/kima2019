@@ -62,8 +62,15 @@ const STRONG_RELEVANCE_TERMS = [
   '외국인학생',
   '난민',
   '체류',
+  '체류외국인',
   '비자',
   '출입국',
+  '법령',
+  '법무부',
+  '외국인정책',
+  '통계',
+  '통계청',
+  '실태조사',
   '외국인주민',
   '외국인 주민',
   '이민자',
@@ -115,10 +122,6 @@ function estimateFallbackRelevance(article: RawArticle): number {
   const broadHits = BROAD_RELEVANCE_TERMS.filter((term) =>
     haystack.includes(term.toLowerCase()),
   ).length
-
-  if (article.defaultCategory && article.defaultCategory !== 'OTHER' && broadHits > 0) {
-    return RELEVANCE_MIN
-  }
 
   return 0
 }

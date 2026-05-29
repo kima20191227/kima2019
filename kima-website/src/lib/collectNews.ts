@@ -29,9 +29,10 @@ async function fetchNaverSourceArticles(
 
   const perKeyword = Math.max(3, Math.ceil(maxItems / keywords.length))
   const batches = await Promise.all(
-    keywords.map((keyword) =>
-      fetchNaverNews(keyword, sourceName, perKeyword, [keyword]),
-    ),
+    keywords.map((keyword) => {
+      const filterTerms = keyword.split(/\s+/).filter(Boolean)
+      return fetchNaverNews(keyword, sourceName, perKeyword, filterTerms)
+    }),
   )
 
   return deduplicateArticles(batches.flat()).slice(0, maxItems)
