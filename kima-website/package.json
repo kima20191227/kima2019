@@ -19,6 +19,7 @@
     "db:generate": "prisma generate",
     "news:backfill-categories": "tsx scripts/backfill-news-categories.ts --apply",
     "news:hide-duplicates": "tsx scripts/hide-duplicate-news.ts --apply",
+    "news:refresh-summaries": "tsx scripts/refresh-truncated-news-summaries.ts --apply",
     "news:seed-government-sources": "tsx scripts/seed-government-news-sources.ts",
     "db:studio": "prisma studio",
     "build:cf": "opennextjs-cloudflare build",

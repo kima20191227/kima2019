@@ -1,11 +1,18 @@
 import { prisma } from '@/lib/prisma'
-import { fetchRSSFeed, fetchNaverNews, deduplicateArticles } from '@/lib/newsCollector'
+import {
+  fetchRSSFeed,
+  fetchNaverNews,
+  fetchArticleSummaryPreview,
+  deduplicateArticles,
+} from '@/lib/newsCollector'
 import { processBatch, type ProcessedArticle } from '@/lib/aiSummarizer'
 import type { RawArticle } from '@/lib/newsCollector'
 import { cfEnv } from '@/lib/cfEnv'
 import { getNewsCategories } from '@/lib/newsCategories'
 
 const DEFAULT_NAVER_QUERY = '이주민 다문화'
+const ARTICLE_SUMMARY_ENRICH_LIMIT = 18
+const ARTICLE_SUMMARY_ENRICH_CONCURRENCY = 3
 
 export interface CollectResult {
   message?: string
@@ -49,6 +56,38 @@ function normalizeArticleTitle(title: string): string {
     .replace(/\.\.\./g, '')
     .replace(/[^\p{L}\p{N}]+/gu, '')
     .toLowerCase()
+}
+
+function hasTruncatedText(input: string): boolean {
+  return /(\.\.\.|…)/.test(input)
+}
+
+async function enrichArticleSummaries(articles: RawArticle[]): Promise<RawArticle[]> {
+  const enriched = [...articles]
+  const candidates = articles
+    .map((article, index) => ({ article, index }))
+    .filter(({ article }) => hasTruncatedText(article.summary))
+    .slice(0, ARTICLE_SUMMARY_ENRICH_LIMIT)
+
+  let cursor = 0
+  const workers = Array.from(
+    { length: Math.min(ARTICLE_SUMMARY_ENRICH_CONCURRENCY, candidates.length) },
+    async () => {
+      while (cursor < candidates.length) {
+        const current = candidates[cursor++]
+        const preview = await fetchArticleSummaryPreview(current.article.url)
+        if (preview.length > current.article.summary.length && !hasTruncatedText(preview)) {
+          enriched[current.index] = {
+            ...current.article,
+            summary: preview,
+          }
+        }
+      }
+    },
+  )
+
+  await Promise.all(workers)
+  return enriched
 }
 
 function deduplicateProcessedArticles(articles: ProcessedArticle[]): ProcessedArticle[] {
@@ -175,8 +214,10 @@ export async function runNewsCollection(): Promise<CollectResult> {
     }
   }
 
+  const enrichedArticles = await enrichArticleSummaries(newArticles)
+
   const processed = deduplicateProcessedArticles(
-    await processBatch(newArticles, undefined, categories),
+    await processBatch(enrichedArticles, undefined, categories),
   )
 
   let saved = 0

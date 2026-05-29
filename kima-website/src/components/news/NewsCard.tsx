@@ -47,14 +47,14 @@ export function NewsCard({
         )}
       </div>
 
-      <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
+      <h3 className="text-sm font-semibold text-gray-900 leading-snug">
         {item.title}
       </h3>
 
       {item.summary && (
         <div className="bg-[#F8F9FA] rounded-lg px-3.5 py-2.5 border-l-2 border-[#1B3A6B]/30">
           <p className="text-xs font-semibold text-[#1B3A6B] mb-1">AI 요약</p>
-          <p className="text-xs text-gray-600 leading-relaxed">
+          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line break-words">
             {item.summary}
           </p>
         </div>

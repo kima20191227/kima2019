@@ -172,7 +172,7 @@ export default async function NetworkNewsPage({
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* 카테고리 탭 */}
         <Suspense fallback={<div className="h-10 bg-gray-100 rounded animate-pulse mb-6" />}>
@@ -196,7 +196,7 @@ export default async function NetworkNewsPage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {items.map((item) => (
               <NewsCard key={item.id} item={item} categories={categories} />
             ))}

@@ -61,8 +61,98 @@ function stripHtml(input: string): string {
     .replace(/&rsquo;/g, "'")
     .replace(/&ldquo;/g, '"')
     .replace(/&rdquo;/g, '"')
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_match, code) => String.fromCharCode(parseInt(code, 16)))
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function hasTruncatedText(input: string): boolean {
+  return /(\.\.\.|…)/.test(input)
+}
+
+function decodeJsonString(input: string): string {
+  try {
+    return JSON.parse(`"${input.replace(/"/g, '\\"')}"`)
+  } catch {
+    return input
+  }
+}
+
+function extractMetaContent(html: string, name: string): string {
+  const re = new RegExp(
+    `<meta[^>]+(?:property|name)=["']${name}["'][^>]+content=["']([^"']+)["'][^>]*>`,
+    'i',
+  )
+  const alt = new RegExp(
+    `<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${name}["'][^>]*>`,
+    'i',
+  )
+  return stripHtml(re.exec(html)?.[1] ?? alt.exec(html)?.[1] ?? '')
+}
+
+function extractJsonLdArticleBody(html: string): string {
+  const match = html.match(/"articleBody"\s*:\s*"((?:\\.|[^"\\]){80,5000})"/i)
+  return match ? stripHtml(decodeJsonString(match[1])) : ''
+}
+
+function extractParagraphPreview(html: string): string {
+  const matches = [...html.matchAll(/<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/gi)]
+  const paragraphs = matches
+    .map((match) => stripHtml(match[1]))
+    .filter((text) => isUsefulArticlePreview(text))
+    .slice(0, 4)
+
+  return paragraphs.join(' ')
+}
+
+function isUsefulArticlePreview(text: string): boolean {
+  if (text.length < 80) return false
+  if (/[{}]|\$\{|\.substring|byteLen|function\s*\(|var\s+|const\s+/i.test(text)) return false
+  if (/internet explorer|browser|최신 브라우저|사용을 권장|구독|저작권|무단전재|copyright/i.test(text)) return false
+  return true
+}
+
+export async function fetchArticleSummaryPreview(url: string): Promise<string> {
+  if (!/^https?:\/\//i.test(url)) return ''
+
+  try {
+    const res = await fetchWithTimeout(
+      url,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 KIMA-NewsBot/1.0 (+https://kima2019.org)',
+          Accept: 'text/html,application/xhtml+xml,*/*',
+        },
+        cache: 'no-store',
+      },
+      5_000,
+    )
+
+    if (!res.ok) return ''
+
+    const contentType = res.headers.get('content-type') ?? ''
+    if (!contentType.includes('html') && !contentType.includes('text')) return ''
+
+    const html = (await res.text()).slice(0, 300_000)
+    const candidates = [
+      extractJsonLdArticleBody(html),
+      extractMetaContent(html, 'og:description'),
+      extractMetaContent(html, 'description'),
+      extractParagraphPreview(html),
+    ]
+      .map((text) => stripHtml(text))
+      .filter((text) => isUsefulArticlePreview(text))
+      .sort((a, b) => {
+        const aScore = (hasTruncatedText(a) ? -1000 : 0) + a.length
+        const bScore = (hasTruncatedText(b) ? -1000 : 0) + b.length
+        return bScore - aScore
+      })
+
+    return candidates[0]?.slice(0, 1000).trim() ?? ''
+  } catch {
+    return ''
+  }
 }
 
 /**
