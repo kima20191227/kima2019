@@ -130,7 +130,7 @@ export default function DataPage() {
         <section>
           <h2 className="text-xl font-bold text-[#1B3A6B] mb-5">이주민·다문화 뉴스</h2>
           <Link
-            href="/data/news"
+            href="/network/news"
             className="group block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#C8922A]/40 transition-all overflow-hidden"
           >
             <div className="flex items-stretch">
