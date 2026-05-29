@@ -6,10 +6,8 @@
  * 인증: Authorization: Bearer <CRON_SECRET_TOKEN>
  * 실행: 매일 UTC 23:00 (KST 08:00)
  *
- * ※ Cloudflare Pages 배포 시 nodejs_compat 플래그 필요
+ * ※ Prisma(pg) 의존성으로 Node.js 런타임 필요 — edge 선언 제거
  */
-export const runtime = 'edge'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchRSSFeed, fetchNaverNews, deduplicateArticles } from '@/lib/newsCollector'
