@@ -12,7 +12,7 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-[1200] bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 flex-wrap">
+        <div className="flex items-center justify-between h-16 md:h-20">
 
           {/* Logo — 서버에서 렌더, JS 불필요 */}
           <Link href="/" className="flex items-center shrink-0">

@@ -252,64 +252,139 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
         </button>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu — 전체화면 오버레이 (페이지 콘텐츠와 겹치지 않음) */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 py-2 w-full">
-          {NAV_ITEMS.filter((item) => !item.minWeight || roleWeight >= item.minWeight).map((item) => {
-            const hasChildren = item.children && item.children.length > 1
-            const expanded    = mobileExpanded === item.href
-            return (
-              <div key={item.href}>
-                <div className="flex items-center justify-between">
-                  <Link href={item.href}
-                    className="flex-1 px-3 py-2.5 text-sm font-semibold text-gray-800 hover:text-[#1B3A6B]"
-                    onClick={() => { if (!hasChildren) setMobileOpen(false) }}>
-                    {item.label}
-                  </Link>
-                  {hasChildren && (
-                    <button type="button" className="px-3 py-2.5 text-gray-400"
-                      onClick={() => setMobileExpanded(expanded ? null : item.href)}
-                      aria-label={expanded ? '접기' : '펼치기'}>
-                      <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+        <div className="fixed inset-0 z-[1300] flex flex-col bg-white md:hidden">
+
+          {/* 오버레이 상단 바 */}
+          <div className="flex items-center justify-between px-4 h-16 border-b border-gray-100 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/kima-logo.png"
+              alt="KIMA"
+              className="h-11 w-auto cursor-pointer"
+              onClick={() => { setMobileOpen(false); router.push('/') }}
+            />
+            <div className="flex items-center gap-3">
+              {user && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm text-gray-600 max-w-[100px] truncate">{user.name ?? user.email}</span>
+                  <Badge variant={roleToBadgeVariant(user.role)} />
+                </div>
+              )}
+              <button type="button" onClick={() => setMobileOpen(false)}
+                className="p-2 text-gray-500" aria-label="메뉴 닫기">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* 네비게이션 — 스크롤 가능 */}
+          <nav className="flex-1 overflow-y-auto overscroll-contain">
+            {NAV_ITEMS.filter((item) => !item.minWeight || roleWeight >= item.minWeight).map((item) => {
+              const hasChildren = item.children && item.children.length > 1
+              const expanded    = mobileExpanded === item.href
+              return (
+                <div key={item.href} className="border-b border-gray-100 last:border-0">
+                  <div className="flex items-center">
+                    <Link
+                      href={item.href}
+                      className="flex-1 px-5 py-4 text-base font-semibold text-gray-800"
+                      onClick={() => { if (!hasChildren) { setMobileOpen(false) } }}
+                    >
+                      {item.label}
+                    </Link>
+                    {hasChildren && (
+                      <button type="button"
+                        className="px-5 py-4 text-gray-400 shrink-0"
+                        onClick={() => setMobileExpanded(expanded ? null : item.href)}
+                        aria-label={expanded ? '접기' : '펼치기'}
+                      >
+                        <svg className={`w-5 h-5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {hasChildren && expanded && (
+                    <div className="bg-gray-50 border-t border-gray-100">
+                      {item.children!.filter((c) => !(c.requiresPremium && roleWeight < 2)).map((child) => (
+                        <div key={child.href + child.label}>
+                          {child.dividerBefore && <hr className="border-gray-200 mx-4" />}
+                          <button type="button"
+                            className="w-full text-left flex items-center gap-3 px-8 py-3.5 text-sm text-gray-600 active:bg-blue-50 border-b border-gray-100 last:border-0"
+                            onClick={() => {
+                              setMobileOpen(false)
+                              setMobileExpanded(null)
+                              if (child.requiresPremium && !isPremium) { setShowPremium(true); return }
+                              router.push(child.href)
+                            }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#C8922A] shrink-0" />
+                            <span className="flex-1">{child.label}</span>
+                            {child.requiresPremium && !isPremium && (
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">정회원</span>
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-                {hasChildren && expanded && (
-                  <div className="bg-gray-50 rounded-lg mx-3 mb-1">
-                    {item.children!.filter((c) => !(c.requiresPremium && roleWeight < 2)).map((child) => (
-                      <div key={child.href + child.label}>
-                        {child.dividerBefore && (
-                          <hr className="border-gray-200 mx-2" />
-                        )}
-                        <button type="button"
-                          className="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:text-[#1B3A6B] border-b border-gray-100 last:border-0"
-                          onClick={() => {
-                            setMobileOpen(false); setMobileExpanded(null)
-                            if (child.requiresPremium && !isPremium) { setShowPremium(true); return }
-                            router.push(child.href)
-                          }}>
-                          <span className="w-1 h-1 rounded-full bg-[#C8922A] shrink-0" />
-                          {child.label}
-                          {child.requiresPremium && !isPremium && (
-                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium ml-1">정회원</span>
-                          )}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+              )
+            })}
+          </nav>
+
+          {/* 하단 인증 영역 */}
+          <div className="px-5 py-5 border-t border-gray-100 bg-white shrink-0">
+            {user ? (
+              <div className="space-y-2">
+                <Link href="/member/mypage"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 bg-gray-50 rounded-xl"
+                  onClick={() => setMobileOpen(false)}>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  내 프로필
+                </Link>
+                {(user.role === 'ADMIN' || user.role === 'OFFICER') && (
+                  <Link href="/admin"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 bg-gray-50 rounded-xl"
+                    onClick={() => setMobileOpen(false)}>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {user.role === 'ADMIN' ? '관리자 메뉴' : '임원 메뉴'}
+                  </Link>
                 )}
+                <button type="button" onClick={() => signOut({ callbackUrl: '/' })}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 bg-red-50 rounded-xl">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  로그아웃
+                </button>
               </div>
-            )
-          })}
-          {!user && (
-            <Link href="/auth/register" className="block mx-3 mt-2 px-3 py-2 text-sm text-[#1B3A6B] font-medium"
-              onClick={() => setMobileOpen(false)}>
-              회원가입
-            </Link>
-          )}
+            ) : (
+              <div className="flex gap-3">
+                <Link href="/auth/login"
+                  className="flex-1 text-center px-4 py-3 text-sm font-semibold text-[#1B3A6B] border-2 border-[#1B3A6B] rounded-xl"
+                  onClick={() => setMobileOpen(false)}>
+                  로그인
+                </Link>
+                <Link href="/auth/register"
+                  className="flex-1 text-center px-4 py-3 text-sm font-semibold text-white bg-[#1B3A6B] rounded-xl"
+                  onClick={() => setMobileOpen(false)}>
+                  회원가입
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>
