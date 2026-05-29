@@ -14,14 +14,19 @@ GOOGLE_DRIVE_RESOURCE_FOLDER_ID = "1LKzxRWypSnhbZzkGTDhWvhHG7a07r1RF"
 # 배포 명령: npx wrangler deploy src/workers/cron.ts --name kima-cron
 # ─────────────────────────────────────────────
 
-# 뉴스 자동 수집 크론 트리거
-# UTC 23:00 = KST 08:00, 매일 실행
-# 이 설정은 kima-cron Workers에서 사용 (Pages 자체 크론 아님)
-# [[triggers.crons]] 은 Workers 전용 — Pages는 src/workers/cron.ts 참조
-#
-# kima-cron Worker 배포 후 트리거 추가 방법:
-#   Cloudflare 대시보드 → Workers → kima-cron → Triggers → Cron Triggers
-#   → Add Cron Trigger: "0 23 * * *"  (UTC 23:00 = KST 08:00)
+# ─────────────────────────────────────────────
+# Cloudflare Workers Cron 트리거
+# (kima-cron Worker 전용 — Pages 자체 크론 아님)
+# 배포 후 이 설정이 Workers에 적용됨
+# ─────────────────────────────────────────────
+
+# 기존 크론: 매일 KST 09:00 (회원 만료·이벤트 리마인더)
+# cron = "0 0 * * *"
+
+# 뉴스 자동 수집 - 매일 오전 8시 (KST)
+# UTC 23:00 = KST 08:00
+[[triggers.crons]]
+cron = "0 23 * * *"
 
 # ─────────────────────────────────────────────
 # 환경변수 설정 위치

@@ -1,14 +1,15 @@
 /**
- * /api/cron/collect-news
- * 뉴스 자동 수집 크론 엔드포인트
+ * GET /api/cron/collect-news
+ * 이주민·다문화 뉴스 자동 수집 크론 엔드포인트
  *
- * 호출: Cloudflare Workers Cron → src/workers/cron.ts
+ * 호출: Cloudflare Workers Cron (src/workers/cron.ts)
  * 인증: Authorization: Bearer <CRON_SECRET_TOKEN>
  * 실행: 매일 UTC 23:00 (KST 08:00)
+ *
+ * ※ Cloudflare Pages 배포 시 nodejs_compat 플래그 필요
  */
+export const runtime = 'edge'
 
-// Prisma(pg) 의존성으로 Node.js 런타임 필요 — edge 선언 제거
-// newsCollector.ts / aiSummarizer.ts 자체는 Edge 호환이나 Prisma 저장 단계에서 Node.js 필요
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchRSSFeed, fetchNaverNews, deduplicateArticles } from '@/lib/newsCollector'
@@ -16,200 +17,122 @@ import { processBatch } from '@/lib/aiSummarizer'
 import type { RawArticle } from '@/lib/newsCollector'
 import type { NewsCategory } from '@prisma/client'
 
-// ─── 인증 ─────────────────────────────────────────────────────────────────────
-
-function isAuthorized(request: NextRequest): boolean {
-  const token = process.env.CRON_SECRET_TOKEN ?? process.env.CRON_SECRET ?? ''
-  if (!token) return false                              // 환경변수 미설정 시 항상 거부
-  const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? ''
-  return bearer === token
-}
-
-// ─── 타입 ─────────────────────────────────────────────────────────────────────
-
-interface RunResult {
-  collected: number
-  processed: number
-  saved:     number
-  skipped:   number
-  sources:   { name: string; count: number; error?: string }[]
-  durationMs: number
-}
-
-// ─── 메인 핸들러 ──────────────────────────────────────────────────────────────
-
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  // ── 인증 ──────────────────────────────────────────────────────────────────
+  const authHeader    = request.headers.get('authorization')
+  const expectedToken = `Bearer ${process.env.CRON_SECRET_TOKEN}`
+  if (!process.env.CRON_SECRET_TOKEN || authHeader !== expectedToken) {
     return NextResponse.json({ error: '인증 실패' }, { status: 401 })
   }
 
   const startAt = Date.now()
 
-  // ① NewsSettings 조회
-  let settings = await prisma.newsSettings.findUnique({ where: { id: 1 } })
-
-  if (!settings) {
-    // 최초 실행 시 기본값으로 생성
-    settings = await prisma.newsSettings.upsert({
-      where:  { id: 1 },
-      create: { id: 1 },
-      update: {},
-    })
-  }
-
-  if (!settings.isEnabled) {
-    return NextResponse.json({ message: '뉴스 자동 수집이 비활성화되어 있습니다.' })
-  }
-
-  // lastRunStatus 를 'running' 으로 먼저 업데이트
-  await prisma.newsSettings.update({
-    where:  { id: 1 },
-    data:   { lastRunStatus: 'running', lastRunAt: new Date() },
-  })
-
-  const result: RunResult = {
-    collected: 0,
-    processed: 0,
-    saved:     0,
-    skipped:   0,
-    sources:   [],
-    durationMs: 0,
-  }
-
   try {
-    // ② 활성화된 소스 목록 조회
+    // a) NewsSettings 조회
+    const settings = await prisma.newsSettings.findUnique({ where: { id: 1 } })
+
+    // b) 비활성 상태면 조기 종료
+    if (!settings?.isEnabled) {
+      return NextResponse.json({ message: '자동 수집이 비활성화 상태입니다.' })
+    }
+
+    // c) 활성화된 소스 목록 조회
     const sources = await prisma.newsSource.findMany({
       where:   { isEnabled: true },
       orderBy: { order: 'asc' },
     })
 
     if (sources.length === 0) {
-      await updateSettings(1, 'success', 0)
-      return NextResponse.json({ message: '활성화된 뉴스 소스가 없습니다.', ...result })
+      return NextResponse.json({ message: '활성화된 뉴스 소스가 없습니다.', collected: 0, processed: 0 })
     }
 
-    // ③ 최근 30일 이내 이미 저장된 URL 목록 (중복 확인용)
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    // d) 최근 7일 이내 저장된 URL 목록 (중복 방지)
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     const existingUrls = new Set(
       (
         await prisma.news.findMany({
-          select:  { sourceUrl: true },
-          where:   { publishedAt: { gte: cutoff } },
+          select: { sourceUrl: true },
+          where:  { publishedAt: { gte: cutoff } },
         })
       ).map((n) => n.sourceUrl),
     )
 
-    // ④ 각 소스에서 기사 수집
+    // e) 각 소스에서 뉴스 수집
     const allRaw: RawArticle[] = []
+    const maxPerSource = settings?.maxArticlesPerRun ?? 50
 
     for (const src of sources) {
       const keywords = src.keywords as string[]
-
       try {
-        let articles: RawArticle[] = []
-
         if (src.apiType === 'naver') {
           const query = keywords.length ? keywords.join(' ') : '이주민 다문화'
-          articles = await fetchNaverNews(
-            query,
-            src.name,
-            Math.min(settings.maxArticlesPerRun, 50),
-            keywords,
-          )
+          const articles = await fetchNaverNews(query, src.name, Math.min(maxPerSource, 50), keywords)
+          allRaw.push(...articles)
         } else if (src.rssUrl) {
-          articles = await fetchRSSFeed(
-            src.rssUrl,
-            src.name,
-            keywords,
-            settings.maxArticlesPerRun,
-          )
+          const articles = await fetchRSSFeed(src.rssUrl, src.name, keywords, maxPerSource)
+          allRaw.push(...articles)
         }
-
-        result.sources.push({ name: src.name, count: articles.length })
-        allRaw.push(...articles)
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        result.sources.push({ name: src.name, count: 0, error: msg })
-        console.error(`[collect-news] 소스 오류 (${src.name}):`, msg)
+        console.error(`[collect-news] 소스 오류 (${src.name}):`, err)
       }
     }
 
-    // ⑤ URL 중복 제거 (소스 간 + DB 기존 URL)
-    const deduped = deduplicateArticles(allRaw).filter(
+    // f) 중복 제거 — 소스 간 + 최근 7일 DB URL
+    const newArticles = deduplicateArticles(allRaw).filter(
       (a) => !existingUrls.has(a.url),
     )
 
-    result.collected = deduped.length
-    result.skipped   = allRaw.length - deduped.length
+    const collected = newArticles.length
 
-    if (deduped.length === 0) {
+    if (collected === 0) {
       await updateSettings(1, 'success', 0)
-      result.durationMs = Date.now() - startAt
-      return NextResponse.json({ message: '새로운 기사가 없습니다.', ...result })
+      return NextResponse.json({ message: '새로운 기사가 없습니다.', collected: 0, processed: 0 })
     }
 
-    // ⑥ AI 처리 (관련도 점수 + 요약 + 카테고리 + 키워드)
-    const processed = await processBatch(deduped)
-    result.processed = processed.length
+    // g) AI 처리
+    const processed = await processBatch(newArticles)
 
-    // ⑦ DB 저장
+    // h) DB 저장
+    let saved = 0
     if (processed.length > 0) {
-      const rows = processed.map((art) => ({
-        title:          art.title,
-        summary:        art.summary,
-        rawContent:     null,
-        sourceUrl:      art.url,
-        sourceName:     art.sourceName,
-        category:       art.category as NewsCategory,
-        publishedAt:    art.publishedAt,
-        isVisible:      true,
-        relevanceScore: art.relevanceScore / 100,   // 0-100 → 0.0-1.0
-        keywords:       art.keywords,
-      }))
-
-      const created = await prisma.news.createMany({
-        data:          rows,
+      const result = await prisma.news.createMany({
+        data: processed.map((art) => ({
+          title:          art.title,
+          summary:        art.summary,
+          rawContent:     null,
+          sourceUrl:      art.url,
+          sourceName:     art.sourceName,
+          category:       art.category as NewsCategory,
+          publishedAt:    art.publishedAt,
+          isVisible:      true,
+          relevanceScore: art.relevanceScore / 100,  // 0-100 → 0.0-1.0
+          keywords:       art.keywords,
+        })),
         skipDuplicates: true,
       })
-
-      result.saved = created.count
+      saved = result.count
     }
 
-    // ⑧ 설정 업데이트
-    result.durationMs = Date.now() - startAt
-    await updateSettings(1, 'success', result.saved)
+    // i) NewsSettings 업데이트
+    await updateSettings(1, 'success', saved)
 
     return NextResponse.json({
-      message: `${result.saved}건 저장 완료`,
-      ...result,
+      collected,
+      processed: processed.length,
+      saved,
+      durationMs: Date.now() - startAt,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[collect-news] 실행 오류:', msg)
-
     await updateSettings(1, 'failed', 0).catch(() => null)
-
-    result.durationMs = Date.now() - startAt
-    return NextResponse.json(
-      { error: msg, ...result },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
-// ─── 설정 업데이트 헬퍼 ───────────────────────────────────────────────────────
-
-async function updateSettings(
-  id: number,
-  status: 'success' | 'failed',
-  count: number,
-) {
+async function updateSettings(id: number, status: 'success' | 'failed', count: number) {
   await prisma.newsSettings.update({
     where: { id },
-    data:  {
-      lastRunAt:     new Date(),
-      lastRunStatus: status,
-      lastRunCount:  count,
-    },
+    data:  { lastRunAt: new Date(), lastRunStatus: status, lastRunCount: count },
   })
 }
