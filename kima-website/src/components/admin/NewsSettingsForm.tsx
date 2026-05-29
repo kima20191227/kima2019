@@ -11,7 +11,7 @@ const schema = z.object({
   isEnabled:          z.boolean(),
   collectHour:        z.number().int().min(0).max(23),
   collectMinute:      z.number().int().min(0).max(59),
-  aiProvider:         z.enum(['claude', 'openai', 'none']),
+  aiProvider:         z.enum(['gemini', 'claude', 'openai', 'none']),
   relevanceThreshold: z.number().min(0).max(100),
   maxArticlesPerRun:  z.number().int().min(1).max(200),
 })
@@ -261,8 +261,9 @@ export function NewsSettingsForm() {
           <label className="block text-sm font-medium text-gray-700 mb-2">AI 분석 제공자</label>
           <select
             {...register('aiProvider')}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30 w-48"
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30 w-56"
           >
+            <option value="gemini">Google Gemini (gemini-2.0-flash)</option>
             <option value="openai">OpenAI (GPT-4o-mini)</option>
             <option value="claude">Claude (Anthropic)</option>
             <option value="none">AI 분석 사용 안 함</option>

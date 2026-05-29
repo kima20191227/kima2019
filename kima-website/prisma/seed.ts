@@ -146,7 +146,7 @@ async function seedNews() {
       cronTime:           '0 23 * * *',   // UTC 23:00 = KST 08:00
       collectHour:        8,
       collectMinute:      0,
-      aiProvider:         'openai',
+      aiProvider:         'gemini',
       relevanceThreshold: 0.5,            // 50점 이상
       maxArticlesPerRun:  50,
     },

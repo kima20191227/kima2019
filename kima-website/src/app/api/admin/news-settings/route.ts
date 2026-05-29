@@ -11,7 +11,7 @@ const patchSchema = z.object({
   isEnabled:          z.boolean().optional(),
   collectHour:        z.number().int().min(0).max(23).optional(),
   collectMinute:      z.number().int().min(0).max(59).optional(),
-  aiProvider:         z.enum(['claude', 'openai', 'none']).optional(),
+  aiProvider:         z.enum(['gemini', 'claude', 'openai', 'none']).optional(),
   relevanceThreshold: z.number().min(0).max(100).optional(),
   maxArticlesPerRun:  z.number().int().min(1).max(200).optional(),
 })
