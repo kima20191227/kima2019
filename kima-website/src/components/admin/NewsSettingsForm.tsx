@@ -59,6 +59,7 @@ export function NewsSettingsForm() {
   const [loading,     setLoading]     = useState(true)
   const [saveMsg,     setSaveMsg]     = useState('')
   const [collectMsg,  setCollectMsg]  = useState('')
+  const [collectDetail, setCollectDetail] = useState<string>('')
   const [collecting,  setCollecting]  = useState(false)
   const [lastRun,     setLastRun]     = useState<Pick<NewsSettingsData, 'lastRunAt' | 'lastRunStatus' | 'lastRunCount'>>({
     lastRunAt: null, lastRunStatus: null, lastRunCount: null,
@@ -127,11 +128,24 @@ export function NewsSettingsForm() {
   const handleCollectNow = async () => {
     setCollecting(true)
     setCollectMsg('수집 중...')
+    setCollectDetail('')
     try {
       const res  = await fetch('/api/admin/collect-now', { method: 'POST' })
-      const data = await res.json() as { message?: string; saved?: number; collected?: number; error?: string }
+      const data = await res.json() as {
+        message?: string
+        saved?: number
+        collected?: number
+        processed?: number
+        totalFetched?: number
+        sourceStats?: { name: string; type: string; fetched: number; error?: string }[]
+        envStatus?: { GEMINI_API_KEY: boolean; NAVER_NEWS_CLIENT_ID: boolean; NAVER_NEWS_CLIENT_SECRET: boolean }
+        error?: string
+      }
+
       if (res.ok) {
         const saved = data.saved ?? 0
+        const collected = data.collected ?? 0
+        const totalFetched = data.totalFetched ?? 0
         setCollectMsg(`✓ ${data.message ?? `${saved}건 저장 완료`}`)
         setLastRun((prev) => ({
           ...prev,
@@ -139,14 +153,39 @@ export function NewsSettingsForm() {
           lastRunAt:     new Date().toISOString(),
           lastRunCount:  saved,
         }))
+
+        // 상세 진단 정보 구성
+        const lines: string[] = []
+        if (data.envStatus) {
+          const e = data.envStatus
+          if (!e.GEMINI_API_KEY)           lines.push('⚠ GEMINI_API_KEY 미설정')
+          if (!e.NAVER_NEWS_CLIENT_ID)     lines.push('⚠ NAVER_NEWS_CLIENT_ID 미설정')
+          if (!e.NAVER_NEWS_CLIENT_SECRET) lines.push('⚠ NAVER_NEWS_CLIENT_SECRET 미설정')
+        }
+        lines.push(`RSS/API 수집: ${totalFetched}건 → 신규: ${collected}건 → AI처리: ${data.processed ?? 0}건 → 저장: ${saved}건`)
+        if (data.sourceStats) {
+          data.sourceStats.forEach(s => {
+            lines.push(`  • ${s.name}: ${s.fetched}건${s.error ? ` (오류: ${s.error})` : ''}`)
+          })
+        }
+        setCollectDetail(lines.join('\n'))
       } else {
         setCollectMsg(`✗ ${data.error ?? '수집 실패'}`)
+        if (data.envStatus) {
+          const e = data.envStatus
+          const missing = [
+            !e.GEMINI_API_KEY && 'GEMINI_API_KEY',
+            !e.NAVER_NEWS_CLIENT_ID && 'NAVER_NEWS_CLIENT_ID',
+            !e.NAVER_NEWS_CLIENT_SECRET && 'NAVER_NEWS_CLIENT_SECRET',
+          ].filter(Boolean)
+          if (missing.length) setCollectDetail(`미설정 환경변수: ${missing.join(', ')}`)
+        }
       }
     } catch {
       setCollectMsg('✗ 네트워크 오류')
     } finally {
       setCollecting(false)
-      setTimeout(() => setCollectMsg(''), 8000)
+      setTimeout(() => { setCollectMsg(''); setCollectDetail('') }, 15000)
     }
   }
 
@@ -210,6 +249,16 @@ export function NewsSettingsForm() {
           </span>
         )}
       </div>
+
+      {/* 소스별 상세 진단 */}
+      {collectDetail && (
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-600 mb-2">수집 진단 결과</p>
+          <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono leading-relaxed">
+            {collectDetail}
+          </pre>
+        </div>
+      )}
 
       {/* ── 설정 폼 ── */}
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-5">
