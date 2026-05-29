@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import type { Metadata } from 'next'
 import type { NewsCategory } from '@prisma/client'
 import { NewsCategoryTabs } from '@/components/news/NewsCategoryTabs'
@@ -8,6 +9,13 @@ import { NewsCard } from '@/components/news/NewsCard'
 import type { NewsCardItem } from '@/components/news/NewsCard'
 
 export const dynamic = 'force-dynamic'
+
+const ROLE_WEIGHT: Record<string, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
+
+/** 일반회원(MEMBER) 이상 여부 확인 */
+function isMemberOrAbove(role?: string | null) {
+  return (ROLE_WEIGHT[role ?? ''] ?? 0) >= 1
+}
 
 const PAGE_SIZE = 12
 const BASE_PATH = '/network/news'
@@ -34,6 +42,68 @@ export default async function NetworkNewsPage({
 }: {
   searchParams: Promise<{ category?: string; page?: string }>
 }) {
+  // ── 접근 권한 확인 ────────────────────────────────────────────────────────
+  const session = await auth()
+  const isLoggedIn = !!session?.user
+  const hasAccess  = isMemberOrAbove(session?.user?.role)
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA]">
+        {/* 헤더 */}
+        <div className="bg-[#1B3A6B] text-white py-12 px-4">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">AI News</p>
+            <h1 className="text-2xl font-bold">이주민·다문화 뉴스</h1>
+            <p className="mt-2 text-blue-200 text-sm">AI가 매일 수집·요약한 이주민·다문화 관련 최신 뉴스</p>
+          </div>
+        </div>
+
+        {/* 접근 제한 안내 */}
+        <div className="max-w-5xl mx-auto px-4 py-20 flex justify-center">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center max-w-md w-full">
+            <div className="w-16 h-16 rounded-full bg-[#1B3A6B]/10 flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-[#1B3A6B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">회원 전용 콘텐츠입니다</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              이주민·다문화 뉴스는 <strong>일반회원 이상</strong>만 열람하실 수 있습니다.<br />
+              {isLoggedIn
+                ? '현재 계정의 권한으로는 이 페이지에 접근할 수 없습니다.'
+                : '회원가입 후 로그인하시면 무료로 이용하실 수 있습니다.'}
+            </p>
+            <div className="flex flex-col gap-3">
+              {!isLoggedIn && (
+                <>
+                  <Link
+                    href="/auth/register"
+                    className="block w-full py-3 rounded-xl bg-[#1B3A6B] text-white text-sm font-semibold hover:bg-[#142d54] transition-colors"
+                  >
+                    회원가입 하기
+                  </Link>
+                  <Link
+                    href={`/auth/login?callbackUrl=${encodeURIComponent('/network/news')}`}
+                    className="block w-full py-3 rounded-xl border-2 border-[#1B3A6B] text-[#1B3A6B] text-sm font-semibold hover:bg-[#1B3A6B]/5 transition-colors"
+                  >
+                    로그인
+                  </Link>
+                </>
+              )}
+              <Link
+                href="/"
+                className="block w-full py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-gray-50 transition-colors"
+              >
+                홈으로 돌아가기
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const { category: rawCategory, page: rawPage } = await searchParams
 
   const category = rawCategory?.toUpperCase()

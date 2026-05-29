@@ -9,14 +9,27 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import type { NewsCategory } from '@prisma/client'
+
+const ROLE_WEIGHT: Record<string, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
 
 const VALID_CATEGORIES = new Set<NewsCategory>([
   'LAW', 'STATISTICS', 'MULTICULTURAL', 'MIGRANT_WORKER', 'STUDENT', 'OTHER',
 ])
 
 export async function GET(request: NextRequest) {
+  // 일반회원(MEMBER) 이상만 접근 허용
+  const session = await auth()
+  const roleWeight = ROLE_WEIGHT[session?.user?.role ?? ''] ?? 0
+  if (roleWeight < 1) {
+    return NextResponse.json(
+      { success: false, error: '일반회원 이상만 이용할 수 있습니다.' },
+      { status: 401 },
+    )
+  }
+
   const { searchParams } = new URL(request.url)
 
   const rawCategory = (searchParams.get('category') ?? 'all').toUpperCase()
