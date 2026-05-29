@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { convertDriveUrl } from '@/lib/utils'
 
 interface Props {
   value?: string | null
@@ -67,7 +68,12 @@ export function ThumbnailUpload({
       {previewUrl ? (
         <div className="relative w-44 h-28 rounded-xl overflow-hidden border border-gray-200 group bg-gray-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={previewUrl} alt="대표 이미지" className="w-full h-full object-cover" />
+          <img
+            src={convertDriveUrl(previewUrl)}
+            alt="대표 이미지"
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+          />
           {uploading && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />

@@ -184,9 +184,12 @@ function ResourceRow({
         {resource.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={resource.thumbnail}
+            src={getDriveFileId(resource.thumbnail)
+              ? `https://drive.google.com/thumbnail?id=${getDriveFileId(resource.thumbnail)}&sz=w120`
+              : resource.thumbnail}
             alt={resource.title}
             className="w-12 h-16 rounded-md border border-gray-200 object-cover flex-shrink-0"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
           />
         ) : (
           <DriveThumbnail driveUrl={resource.driveUrl} title={resource.title} />
