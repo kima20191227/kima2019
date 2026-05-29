@@ -4,8 +4,8 @@ import type { RawArticle } from '@/lib/newsCollector'
 
 function article(index: number): RawArticle {
   return {
-    title: `Article ${index}`,
-    summary: `Summary ${index}`,
+    title: `Migrant worker article ${index}`,
+    summary: `Foreign worker support summary ${index}`,
     url: `https://example.com/news/${index}`,
     sourceName: 'Test Source',
     publishedAt: new Date('2026-05-29T00:00:00.000Z'),

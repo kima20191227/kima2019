@@ -43,6 +43,23 @@ describe('isMissionRelevantArticle', () => {
     }))).toBe(true)
   })
 
+  it('keeps nationality worker articles as migrant-worker evidence', () => {
+    expect(isMissionRelevantArticle(article({
+      title: '"숙식비 1300만원 내라" 재판 열린 줄도 몰랐던 태국 노동자',
+      summary: '사업장과 숙소 문제로 법적 분쟁을 겪은 이주노동자 사례를 다룬 기사다.',
+      keywords: ['이주노동자'],
+      defaultCategory: 'MIGRANT_WORKER',
+    }))).toBe(true)
+  })
+
+  it('keeps immigration administration articles with labor-ministry context', () => {
+    expect(isMissionRelevantArticle(article({
+      title: '워크숍 다녀오니 입국 금지, 법무-고용부 이중 행정 논란',
+      summary: '고용노동부와 법무부 행정 차이로 노동자가 체류와 입국 문제를 겪은 사례다.',
+      defaultCategory: 'MIGRANT_WORKER',
+    }))).toBe(true)
+  })
+
   it('excludes personal crime articles that are not useful for migrant ministry', () => {
     expect(isMissionRelevantArticle(article({
       title: '"헤어지자" 했다고 여친을 유흥업소녀로 등록한 공무원',
@@ -50,6 +67,16 @@ describe('isMissionRelevantArticle', () => {
       url: 'http://www.inews24.com/view/1972637',
       keywords: ['법무부', '외국인'],
       defaultCategory: 'LAW',
+    }))).toBe(false)
+  })
+
+  it('does not treat search source labels or query keywords as article evidence', () => {
+    expect(isMissionRelevantArticle(article({
+      title: '오늘의 안전 상황',
+      summary: '고가도로 공사장 사고와 재난 대응 현황을 정리한 일반 안전 기사다.',
+      sourceName: '네이버 뉴스 — 이주민',
+      keywords: ['이주민', '지원'],
+      defaultCategory: 'MIGRANT_WORKER',
     }))).toBe(false)
   })
 })

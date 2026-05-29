@@ -44,6 +44,8 @@ const MISSION_CORE_TERMS = [
 ]
 
 const IMMIGRATION_POLICY_TERMS = [
+  '입국',
+  '출국명령',
   '출입국',
   '체류',
   '비자',
@@ -124,6 +126,9 @@ const HARD_EXCLUSION_TERMS = [
   '업소녀',
 ]
 
+const NATIONALITY_WORKER_PATTERN =
+  /(태국|베트남|네팔|캄보디아|미얀마|필리핀|인도네시아|몽골|스리랑카|방글라데시|우즈베키스탄|중국|러시아)\s*(이주)?\s*노동자/
+
 function includesAny(haystack: string, terms: string[]) {
   return terms.some((term) => haystack.includes(term.toLowerCase()))
 }
@@ -136,9 +141,7 @@ export function buildNewsHaystack(article: RawArticle): string {
   return [
     article.title,
     article.summary,
-    article.sourceName,
     article.url,
-    article.keywords.join(' '),
   ].join(' ').toLowerCase()
 }
 
@@ -151,6 +154,7 @@ export function isMissionRelevantArticle(article: RawArticle): boolean {
     return false
   }
   if (includesAny(haystack, MISSION_CORE_TERMS)) return true
+  if (NATIONALITY_WORKER_PATTERN.test(haystack)) return true
 
   return includesAny(haystack, IMMIGRATION_POLICY_TERMS)
     && includesAny(haystack, MINISTRY_CONTEXT_TERMS)
