@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CategoryType } from '@prisma/client'
+import { convertDriveUrl } from '@/lib/utils'
 
 interface Props {
   type: CategoryType
@@ -148,7 +149,7 @@ export function CategoryAddForm({ type }: Props) {
             {flag ? (
               <div className="relative group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={flag} alt="국기" className="w-16 h-11 object-cover rounded border border-gray-200 shadow-sm" />
+                <img src={convertDriveUrl(flag)} alt="국기" className="w-16 h-11 object-cover rounded border border-gray-200 shadow-sm" />
                 <button type="button" onClick={() => setFlag(null)}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600">×</button>
               </div>
@@ -263,7 +264,7 @@ export function CategoryRenameForm({ categoryId, name, slug, type, flag: initial
         {/* 국기 미리보기 */}
         {type === 'LANGUAGE' && (initialFlag ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={initialFlag} alt={`${name} 국기`} className="w-10 h-7 object-cover rounded border border-gray-200 shadow-sm flex-shrink-0" />
+          <img src={convertDriveUrl(initialFlag)} alt={`${name} 국기`} className="w-10 h-7 object-cover rounded border border-gray-200 shadow-sm flex-shrink-0" />
         ) : (
           <div className="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 flex-shrink-0 text-[10px]">국기</div>
         ))}
@@ -316,7 +317,7 @@ export function CategoryRenameForm({ categoryId, name, slug, type, flag: initial
             {newFlag ? (
               <div className="relative group/flag">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={newFlag} alt="국기" className="w-14 h-10 object-cover rounded border border-gray-200 shadow-sm" />
+                <img src={convertDriveUrl(newFlag)} alt="국기" className="w-14 h-10 object-cover rounded border border-gray-200 shadow-sm" />
                 <button type="button" onClick={() => setNewFlag(null)}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600">×</button>
               </div>

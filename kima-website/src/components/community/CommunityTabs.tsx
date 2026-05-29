@@ -16,7 +16,7 @@ type CategorySummary = {
   officerQr: string | null
   createdAt: Date
 }
-import { cn } from '@/lib/utils'
+import { cn, convertDriveUrl } from '@/lib/utils'
 
 const TAB_CONFIG: Array<{ key: CategoryType; label: string; urlKey: string }> = [
   { key: 'REGION', label: '지역별', urlKey: 'region' },
@@ -139,9 +139,10 @@ export function CommunityTabs({ categories }: CommunityTabsProps) {
                 cat.flag ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={cat.flag}
+                    src={convertDriveUrl(cat.flag)}
                     alt={`${cat.name} 국기`}
                     className="w-14 h-10 object-cover rounded shadow-sm"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
                 ) : (
                   (() => {
