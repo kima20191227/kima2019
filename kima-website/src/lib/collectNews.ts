@@ -58,7 +58,8 @@ export async function runNewsCollection(): Promise<CollectResult> {
   )
 
   const allRaw: RawArticle[] = []
-  const maxPerSource = settings?.maxArticlesPerRun ?? 50
+  const maxArticlesPerRun = Math.max(1, settings?.maxArticlesPerRun ?? 50)
+  const maxPerSource = Math.min(maxArticlesPerRun, 50)
   const sourceStats: CollectResult['sourceStats'] = []
 
   for (const src of sources) {
@@ -86,7 +87,9 @@ export async function runNewsCollection(): Promise<CollectResult> {
     }
   }
 
-  const newArticles = deduplicateArticles(allRaw).filter((a) => !existingUrls.has(a.url))
+  const newArticles = deduplicateArticles(allRaw)
+    .filter((a) => !existingUrls.has(a.url))
+    .slice(0, maxArticlesPerRun)
   const collected = newArticles.length
 
   if (collected === 0) {

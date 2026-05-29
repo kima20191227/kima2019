@@ -95,6 +95,10 @@ function getGeminiModel(): string {
   return cfEnv('GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL
 }
 
+function shouldAttemptGemini(): boolean {
+  return !!cfEnv('GEMINI_API_KEY') && Date.now() >= geminiFallbackUntil
+}
+
 function enableFallbackTemporarily() {
   geminiFallbackUntil = Date.now() + FALLBACK_RETRY_MS
 }
@@ -171,7 +175,7 @@ export async function processArticleWithAI(
     return fallbackArticle(article)
   }
 
-  if (Date.now() < geminiFallbackUntil) {
+  if (!shouldAttemptGemini()) {
     return fallbackArticle(article)
   }
 
@@ -273,7 +277,9 @@ export async function processBatch(
     const result = await processArticleWithAI(articles[i])
     if (result) results.push(result)
     onProgress?.(i + 1, articles.length, result)
-    if (i < articles.length - 1) await sleep(BATCH_DELAY_MS)
+    if (i < articles.length - 1 && shouldAttemptGemini()) {
+      await sleep(BATCH_DELAY_MS)
+    }
   }
 
   return results
