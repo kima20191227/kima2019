@@ -1,21 +1,19 @@
 /**
  * Cloudflare Pages 환경변수 읽기 헬퍼
- * getCloudflareContext().env 우선 → process.env fallback
  *
- * 사용 이유:
- *   @opennextjs/cloudflare(cloudflare-node) 환경에서
- *   process.env 패칭이 일부 변수에 적용되지 않는 경우가 있음.
- *   Cloudflare 바인딩에서 직접 읽어 이를 우회한다.
+ * require('@opennextjs/cloudflare') → ESM 패키지라 Cloudflare 번들에서 실패.
+ * 정적 import로 변경: getCloudflareContext()를 직접 import하고,
+ * 로컬/컨텍스트 외부에서 throw되면 process.env로 fallback.
  */
+import { getCloudflareContext } from '@opennextjs/cloudflare'
+
 export function cfEnv(key: string): string | undefined {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getCloudflareContext } = require('@opennextjs/cloudflare')
-    const ctx = getCloudflareContext() as { env?: Record<string, string | undefined> }
-    const val = ctx?.env?.[key]
+    const ctx = getCloudflareContext()
+    const val = (ctx.env as Record<string, string | undefined>)[key]
     if (val) return val
   } catch {
-    // 로컬 개발 환경 또는 getCloudflareContext 미지원 — 무시
+    // 로컬 개발 환경 또는 request context 외부 호출 → process.env fallback
   }
   return process.env[key]
 }
