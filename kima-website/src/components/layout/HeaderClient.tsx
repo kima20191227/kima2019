@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -116,12 +117,29 @@ function PremiumModal({ onClose, onUpgrade }: { onClose: () => void; onUpgrade: 
 
 export function HeaderClient({ user }: { user: SessionUser | null }) {
   const router = useRouter()
-  const [mobileOpen,    setMobileOpen]    = useState(false)
+  const [mobileOpen,     setMobileOpen]     = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
-  const [profileOpen,   setProfileOpen]   = useState(false)
-  const [activeMenu,    setActiveMenu]    = useState<string | null>(null)
-  const [showPremium,   setShowPremium]   = useState(false)
+  const [profileOpen,    setProfileOpen]    = useState(false)
+  const [activeMenu,     setActiveMenu]     = useState<string | null>(null)
+  const [showPremium,    setShowPremium]    = useState(false)
+  const [mounted,        setMounted]        = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Portal 마운트 감지 (SSR 방지)
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
+
+  // 메뉴 열릴 때 배경 스크롤 막기
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
 
   const roleWeight = user?.role ? (ROLE_WEIGHT[user.role] ?? 1) : 0
   const isPremium  = roleWeight >= 2
@@ -252,9 +270,10 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
         </button>
       </div>
 
-      {/* Mobile menu — 전체화면 오버레이 (페이지 콘텐츠와 겹치지 않음) */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-[1300] flex flex-col bg-white md:hidden">
+      {/* Mobile menu — createPortal로 document.body에 직접 마운트
+          (sticky 헤더의 stacking context / carousel transform 충돌 완전 해결) */}
+      {mobileOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-[99999] flex flex-col bg-white">
 
           {/* 오버레이 상단 바 */}
           <div className="flex items-center justify-between px-4 h-16 border-b border-gray-100 shrink-0">
@@ -385,7 +404,8 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
