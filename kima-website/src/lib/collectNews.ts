@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { fetchRSSFeed, fetchNaverNews, deduplicateArticles } from '@/lib/newsCollector'
-import { processBatch } from '@/lib/aiSummarizer'
+import { processBatch, type ProcessedArticle } from '@/lib/aiSummarizer'
 import type { RawArticle } from '@/lib/newsCollector'
 import { cfEnv } from '@/lib/cfEnv'
 import { getNewsCategories } from '@/lib/newsCategories'
@@ -36,6 +36,41 @@ async function fetchNaverSourceArticles(
   )
 
   return deduplicateArticles(batches.flat()).slice(0, maxItems)
+}
+
+function normalizeArticleUrl(url: string): string {
+  return url.replace(/[?#].*$/, '').trim().toLowerCase()
+}
+
+function normalizeArticleTitle(title: string): string {
+  return title
+    .normalize('NFKC')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\.\.\./g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '')
+    .toLowerCase()
+}
+
+function deduplicateProcessedArticles(articles: ProcessedArticle[]): ProcessedArticle[] {
+  const seenUrls = new Set<string>()
+  const seenTitles = new Set<string>()
+  const sorted = [...articles].sort((a, b) => {
+    if (a.relevanceScore !== b.relevanceScore) return b.relevanceScore - a.relevanceScore
+    return b.publishedAt.getTime() - a.publishedAt.getTime()
+  })
+  const deduped: ProcessedArticle[] = []
+
+  for (const article of sorted) {
+    const urlKey = normalizeArticleUrl(article.url)
+    const titleKey = normalizeArticleTitle(article.title)
+    if (seenUrls.has(urlKey) || seenTitles.has(titleKey)) continue
+
+    seenUrls.add(urlKey)
+    seenTitles.add(titleKey)
+    deduped.push(article)
+  }
+
+  return deduped
 }
 
 export async function runNewsCollection(): Promise<CollectResult> {
@@ -76,12 +111,12 @@ export async function runNewsCollection(): Promise<CollectResult> {
   }
 
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  const existingUrls = new Set(
-    (await prisma.news.findMany({
-      select: { sourceUrl: true },
-      where: { publishedAt: { gte: cutoff } },
-    })).map((news) => news.sourceUrl),
-  )
+  const recentNews = await prisma.news.findMany({
+    select: { sourceUrl: true, title: true },
+    where: { publishedAt: { gte: cutoff } },
+  })
+  const existingUrls = new Set(recentNews.map((news) => normalizeArticleUrl(news.sourceUrl)))
+  const existingTitles = new Set(recentNews.map((news) => normalizeArticleTitle(news.title)))
 
   const allRaw: RawArticle[] = []
   const maxArticlesPerRun = Math.max(1, settings.maxArticlesPerRun ?? 50)
@@ -118,7 +153,11 @@ export async function runNewsCollection(): Promise<CollectResult> {
   }
 
   const newArticles = deduplicateArticles(allRaw)
-    .filter((article) => !existingUrls.has(article.url))
+    .filter((article) => {
+      const urlKey = normalizeArticleUrl(article.url)
+      const titleKey = normalizeArticleTitle(article.title)
+      return !existingUrls.has(urlKey) && !existingTitles.has(titleKey)
+    })
     .slice(0, maxArticlesPerRun)
   const collected = newArticles.length
 
@@ -136,7 +175,9 @@ export async function runNewsCollection(): Promise<CollectResult> {
     }
   }
 
-  const processed = await processBatch(newArticles, undefined, categories)
+  const processed = deduplicateProcessedArticles(
+    await processBatch(newArticles, undefined, categories),
+  )
 
   let saved = 0
   if (processed.length > 0) {
