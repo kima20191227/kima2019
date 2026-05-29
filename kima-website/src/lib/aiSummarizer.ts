@@ -50,11 +50,11 @@ interface GeminiResponse {
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────────
 
-const GEMINI_MODEL    = 'gemini-2.0-flash'
+const GEMINI_MODEL    = 'gemini-1.5-flash'
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 const RELEVANCE_MIN   = 50
 const TIMEOUT_MS      = 30_000
-const BATCH_DELAY_MS  = 1_200   // Gemini 무료 티어: 분당 15회 제한 방지
+const BATCH_DELAY_MS  = 4_000   // Gemini 무료 티어: 분당 15회 제한 방지 (4초)
 
 // 카테고리 한글 → enum 매핑
 const CATEGORY_MAP: Record<string, NewsCategory> = {
@@ -224,7 +224,7 @@ export async function processArticleWithAI(
 
 /**
  * 기사 배열을 순차적으로 AI 처리 (배치)
- * - 기사 간 1200ms 딜레이 (Gemini 무료: 분당 15회 제한 방지)
+ * - 기사 간 4000ms 딜레이 (Gemini 무료: 분당 15회 제한 방지)
  * - null 결과는 제외하고 반환
  */
 export async function processBatch(
