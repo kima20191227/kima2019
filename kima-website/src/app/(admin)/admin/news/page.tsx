@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import type { Metadata } from 'next'
 import type { NewsCategory } from '@prisma/client'
 import { NewsSettingsForm } from '@/components/admin/NewsSettingsForm'
+import { NewsSourceManager } from '@/components/admin/NewsSourceManager'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: '뉴스 관리 | KIMA 관리자' }
@@ -223,72 +224,7 @@ export default async function AdminNewsPage({
 
       {/* ── 소스 관리 탭 ────────────────────────────────────────────────── */}
       {tab === 'sources' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              RSS·API 소스 {sourceCount}개 등록됨
-            </p>
-            <AddSourceButton />
-          </div>
-
-          {sources.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400">
-              <p className="text-2xl mb-2">📡</p>
-              <p>등록된 소스가 없습니다.</p>
-              <p className="text-sm mt-1">오른쪽 상단 버튼으로 소스를 추가하세요.</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500 w-12">상태</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">소스명</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500 w-20">유형</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500 w-24 hidden md:table-cell">기본 카테고리</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">키워드</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {sources.map((src) => (
-                    <tr key={src.id} className="hover:bg-gray-50/60">
-                      <td className="px-4 py-3">
-                        <span className={`w-2 h-2 rounded-full inline-block ${src.isEnabled ? 'bg-green-400' : 'bg-gray-300'}`} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-800">{src.name}</p>
-                        <p className="text-xs text-gray-400 truncate max-w-xs">{src.rssUrl ?? src.url}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-mono uppercase">
-                          {src.apiType}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[src.defaultCategory as NewsCategory] ?? ''}`}>
-                          {CATEGORY_LABELS[src.defaultCategory as NewsCategory] ?? src.defaultCategory}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {(src.keywords as string[]).slice(0, 4).map((kw) => (
-                            <span key={kw} className="px-1.5 py-0.5 rounded bg-[#1B3A6B]/5 text-[#1B3A6B] text-xs">
-                              {kw}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <p className="text-xs text-gray-400">
-            * 소스 추가/편집 기능은 다음 업데이트에서 제공됩니다. 현재는 Prisma Studio 또는 직접 DB에서 관리하세요.
-          </p>
-        </div>
+        <NewsSourceManager initialSources={sources as Parameters<typeof NewsSourceManager>[0]['initialSources']} />
       )}
     </div>
   )
@@ -326,10 +262,3 @@ function ToggleVisibleButton({ id, isVisible }: { id: string; isVisible: boolean
   )
 }
 
-function AddSourceButton() {
-  return (
-    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 text-xs text-gray-400 cursor-not-allowed">
-      + 소스 추가 (준비 중)
-    </span>
-  )
-}
