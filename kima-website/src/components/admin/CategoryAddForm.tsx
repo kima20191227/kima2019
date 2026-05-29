@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CategoryType } from '@prisma/client'
 
@@ -36,7 +36,10 @@ export function CategoryAddForm({ type }: Props) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
+  const [flag, setFlag] = useState<string | null>(null)
+  const [flagUploading, setFlagUploading] = useState(false)
   const [error, setError] = useState('')
+  const flagInputRef = useRef<HTMLInputElement>(null)
 
   const handleNameChange = (v: string) => {
     setName(v)
@@ -46,6 +49,20 @@ export function CategoryAddForm({ type }: Props) {
   const handleSlugChange = (v: string) => {
     setSlug(v)
     setSlugTouched(true)
+  }
+
+  const handleFlagSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setFlagUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
+    const json = await res.json() as { url?: string; error?: string }
+    setFlagUploading(false)
+    if (res.ok && json.url) setFlag(json.url)
+    else setError(json.error ?? '국기 이미지 업로드 실패')
   }
 
   const handleSubmit = () => {
@@ -58,7 +75,7 @@ export function CategoryAddForm({ type }: Props) {
       const res = await fetch('/api/admin/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, name: name.trim(), slug: slug.trim() }),
+        body: JSON.stringify({ type, name: name.trim(), slug: slug.trim(), flag }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -68,6 +85,7 @@ export function CategoryAddForm({ type }: Props) {
       setName('')
       setSlug('')
       setSlugTouched(false)
+      setFlag(null)
       setOpen(false)
       router.refresh()
     })
@@ -121,20 +139,43 @@ export function CategoryAddForm({ type }: Props) {
         </div>
       </div>
 
+      {/* 국기 이미지 (언어권만) */}
+      {type === 'LANGUAGE' && (
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">국기 이미지 (선택)</label>
+          <input ref={flagInputRef} type="file" accept="image/*" aria-label="국기 이미지 선택" className="hidden" onChange={handleFlagSelect} />
+          <div className="flex items-center gap-3">
+            {flag ? (
+              <div className="relative group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={flag} alt="국기" className="w-16 h-11 object-cover rounded border border-gray-200 shadow-sm" />
+                <button type="button" onClick={() => setFlag(null)}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600">×</button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => flagInputRef.current?.click()} disabled={flagUploading}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-[#1B3A6B] hover:text-[#1B3A6B] disabled:opacity-50 transition-colors">
+                {flagUploading ? '업로드 중...' : '+ 국기 이미지 업로드'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {error && <p className="text-xs text-red-500">{error}</p>}
 
       <div className="flex gap-2">
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={isPending}
+          disabled={isPending || flagUploading}
           className="px-4 py-1.5 rounded-lg bg-[#1B3A6B] text-white text-xs font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
         >
           {isPending ? '추가 중…' : '추가'}
         </button>
         <button
           type="button"
-          onClick={() => { setOpen(false); setError(''); setName(''); setSlug(''); setSlugTouched(false) }}
+          onClick={() => { setOpen(false); setError(''); setName(''); setSlug(''); setSlugTouched(false); setFlag(null) }}
           className="px-4 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-xs hover:bg-gray-50 transition-colors"
         >
           취소
@@ -151,16 +192,34 @@ interface RenameProps {
   name: string
   slug: string
   type: CategoryType
+  flag?: string | null
 }
 
-export function CategoryRenameForm({ categoryId, name, slug, type }: RenameProps) {
+export function CategoryRenameForm({ categoryId, name, slug, type, flag: initialFlag }: RenameProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [open, setOpen] = useState(false)
   const [newName, setNewName] = useState(name)
   const [newSlug, setNewSlug] = useState(slug)
   const [slugTouched, setSlugTouched] = useState(false)
+  const [newFlag, setNewFlag] = useState<string | null>(initialFlag ?? null)
+  const [flagUploading, setFlagUploading] = useState(false)
   const [error, setError] = useState('')
+  const flagInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFlagSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setFlagUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
+    const json = await res.json() as { url?: string; error?: string }
+    setFlagUploading(false)
+    if (res.ok && json.url) setNewFlag(json.url)
+    else setError(json.error ?? '국기 이미지 업로드 실패')
+  }
 
   function handleNameChange(v: string) {
     setNewName(v)
@@ -170,6 +229,7 @@ export function CategoryRenameForm({ categoryId, name, slug, type }: RenameProps
   function handleOpen() {
     setNewName(name)
     setNewSlug(slug)
+    setNewFlag(initialFlag ?? null)
     setSlugTouched(false)
     setError('')
     setOpen(true)
@@ -185,7 +245,7 @@ export function CategoryRenameForm({ categoryId, name, slug, type }: RenameProps
       const res = await fetch(`/api/admin/categories/${categoryId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), slug: newSlug.trim() }),
+        body: JSON.stringify({ name: newName.trim(), slug: newSlug.trim(), flag: newFlag }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -199,7 +259,14 @@ export function CategoryRenameForm({ categoryId, name, slug, type }: RenameProps
 
   if (!open) {
     return (
-      <div className="flex items-center gap-1.5 group">
+      <div className="flex items-center gap-2 group">
+        {/* 국기 미리보기 */}
+        {type === 'LANGUAGE' && (initialFlag ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={initialFlag} alt={`${name} 국기`} className="w-10 h-7 object-cover rounded border border-gray-200 shadow-sm flex-shrink-0" />
+        ) : (
+          <div className="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 flex-shrink-0 text-[10px]">국기</div>
+        ))}
         <div>
           <p className="text-sm font-medium text-gray-900">{name}</p>
           <p className="text-xs text-gray-400">/{slug}</p>
@@ -207,7 +274,7 @@ export function CategoryRenameForm({ categoryId, name, slug, type }: RenameProps
         <button
           type="button"
           onClick={handleOpen}
-          title="이름 수정"
+          title="수정"
           className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-400 hover:text-[#1B3A6B] hover:bg-gray-100 transition-all"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -219,36 +286,56 @@ export function CategoryRenameForm({ categoryId, name, slug, type }: RenameProps
   }
 
   return (
-    <div className="space-y-2 min-w-[160px]">
-      <div>
+    <div className="space-y-2 min-w-[180px]">
+      <input
+        type="text"
+        value={newName}
+        onChange={(e) => handleNameChange(e.target.value)}
+        disabled={isPending}
+        placeholder="이름"
+        className="w-full text-sm border border-[#1B3A6B] rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+      />
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-gray-400 flex-shrink-0">{type.toLowerCase()}/</span>
         <input
           type="text"
-          value={newName}
-          onChange={(e) => handleNameChange(e.target.value)}
+          value={newSlug}
+          onChange={(e) => { setNewSlug(e.target.value); setSlugTouched(true) }}
           disabled={isPending}
-          placeholder="이름"
-          className="w-full text-sm border border-[#1B3A6B] rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
+          placeholder="slug"
+          className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] min-w-0"
         />
       </div>
-      <div>
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-gray-400 flex-shrink-0">{type.toLowerCase()}/</span>
-          <input
-            type="text"
-            value={newSlug}
-            onChange={(e) => { setNewSlug(e.target.value); setSlugTouched(true) }}
-            disabled={isPending}
-            placeholder="slug"
-            className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] min-w-0"
-          />
+
+      {/* 국기 이미지 (언어권만) */}
+      {type === 'LANGUAGE' && (
+        <div>
+          <p className="text-xs text-gray-400 mb-1">국기 이미지</p>
+          <input ref={flagInputRef} type="file" accept="image/*" aria-label="국기 이미지 선택" className="hidden" onChange={handleFlagSelect} />
+          <div className="flex items-center gap-2">
+            {newFlag ? (
+              <div className="relative group/flag">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={newFlag} alt="국기" className="w-14 h-10 object-cover rounded border border-gray-200 shadow-sm" />
+                <button type="button" onClick={() => setNewFlag(null)}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600">×</button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => flagInputRef.current?.click()} disabled={flagUploading}
+                className="flex items-center gap-1 px-2 py-1.5 border border-dashed border-gray-300 rounded text-xs text-gray-500 hover:border-[#1B3A6B] hover:text-[#1B3A6B] disabled:opacity-50 transition-colors">
+                {flagUploading ? '업로드 중...' : '+ 국기 업로드'}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
       {error && <p className="text-xs text-red-500">{error}</p>}
       <div className="flex gap-1.5">
         <button
           type="button"
           onClick={handleSave}
-          disabled={isPending}
+          disabled={isPending || flagUploading}
           className="px-3 py-1 rounded bg-[#1B3A6B] text-white text-xs hover:bg-[#142d54] disabled:opacity-50"
         >
           {isPending ? '…' : '저장'}

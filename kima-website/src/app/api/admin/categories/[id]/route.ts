@@ -36,6 +36,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 const patchSchema = z.object({
   name:         z.string().min(1).max(50).optional(),
   slug:         z.string().min(1).max(50).regex(/^[a-z0-9-]+$/, 'slug는 소문자, 숫자, 하이픈만 가능합니다').optional(),
+  flag:         z.string().max(2000).nullable().optional(),
   officerName:  z.string().max(100).nullable().optional(),
   officerPhone: z.string().max(20).nullable().optional(),
   officerEmail: z.string().max(200).nullable().optional(),

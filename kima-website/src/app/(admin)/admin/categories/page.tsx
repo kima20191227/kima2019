@@ -18,6 +18,7 @@ const TYPE_LABELS: Record<CategoryType, string> = {
 export default async function AdminCategoriesPage() {
   type CategoryRow = {
     id: string; type: CategoryType; name: string; slug: string; order: number
+    flag: string | null
     officerName: string | null; officerPhone: string | null; officerEmail: string | null
     officerSns: string | null; officerQr: string | null; createdAt: Date
   }
@@ -29,13 +30,14 @@ export default async function AdminCategoriesPage() {
     })
     categories = rows.map(r => ({
       ...r,
+      flag: (r as unknown as { flag?: string | null }).flag ?? null,
       officerPhone: (r as unknown as { officerPhone?: string | null }).officerPhone ?? null,
       officerEmail: (r as unknown as { officerEmail?: string | null }).officerEmail ?? null,
     }))
   } catch {
     const rows = await prisma.category.findMany({
       select: { id: true, type: true, name: true, slug: true, order: true,
-        officerName: true, officerSns: true, officerQr: true, createdAt: true },
+        flag: true, officerName: true, officerSns: true, officerQr: true, createdAt: true },
       orderBy: [{ type: 'asc' }, { order: 'asc' }],
     })
     categories = rows.map(r => ({ ...r, officerPhone: null, officerEmail: null }))
@@ -91,6 +93,7 @@ export default async function AdminCategoriesPage() {
                           name={cat.name}
                           slug={cat.slug}
                           type={cat.type}
+                          flag={cat.flag}
                         />
                       </div>
 

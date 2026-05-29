@@ -15,6 +15,7 @@ export default async function CommunityPage() {
       name: true,
       slug: true,
       order: true,
+      flag: true,
       officerName: true,
       officerSns: true,
       officerQr: true,

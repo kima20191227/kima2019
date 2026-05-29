@@ -101,6 +101,7 @@ model Category {
   name         String
   slug         String       @unique
   order        Int          @default(0)
+  flag         String?      // 국기 이미지 URL (언어권별 사용)
   officerName  String?
   officerPhone String?
   officerEmail String?

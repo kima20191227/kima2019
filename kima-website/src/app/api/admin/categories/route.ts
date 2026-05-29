@@ -11,6 +11,7 @@ const createSchema = z.object({
     .min(1, 'slug를 입력해주세요')
     .max(50)
     .regex(/^[a-z0-9-]+$/, 'slug는 소문자, 숫자, 하이픈(-)만 사용 가능합니다'),
+  flag: z.string().max(2000).nullable().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { type, name, slug } = parsed.data
+    const { type, name, slug, flag } = parsed.data
 
     const existing = await prisma.category.findUnique({ where: { slug } })
     if (existing) {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     const agg = await prisma.category.aggregate({ where: { type }, _max: { order: true } })
 
     const category = await prisma.category.create({
-      data: { type, name, slug, order: (agg._max.order ?? 0) + 1 },
+      data: { type, name, slug, flag: flag ?? null, order: (agg._max.order ?? 0) + 1 },
     })
     return NextResponse.json({ category }, { status: 201 })
   } catch {

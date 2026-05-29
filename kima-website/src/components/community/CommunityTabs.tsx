@@ -10,6 +10,7 @@ type CategorySummary = {
   name: string
   slug: string
   order: number
+  flag?: string | null
   officerName: string | null
   officerSns: string | null
   officerQr: string | null
@@ -109,6 +110,7 @@ export function CommunityTabs({ categories }: CommunityTabsProps) {
       <div className="flex gap-1 border-b border-gray-200 mb-6">
         {TAB_CONFIG.map((tab) => (
           <button
+            type="button"
             key={tab.key}
             onClick={() => handleTabClick(tab.key)}
             className={cn(
@@ -134,21 +136,29 @@ export function CommunityTabs({ categories }: CommunityTabsProps) {
               className="flex flex-col items-center justify-center gap-2 p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:border-[#1B3A6B] hover:shadow-md transition-all group"
             >
               {cat.type === 'LANGUAGE' ? (
-                (() => {
-                  const code = getLanguageFlagCode(cat.slug, cat.name)
-                  return code ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={`https://flagcdn.com/w80/${code}.png`}
-                      alt={`${cat.name} 국기`}
-                      width={56}
-                      height={40}
-                      className="rounded object-cover shadow-sm"
-                    />
-                  ) : (
-                    <span className="text-3xl">🌐</span>
-                  )
-                })()
+                cat.flag ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={cat.flag}
+                    alt={`${cat.name} 국기`}
+                    className="w-14 h-10 object-cover rounded shadow-sm"
+                  />
+                ) : (
+                  (() => {
+                    const code = getLanguageFlagCode(cat.slug, cat.name)
+                    return code ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`https://flagcdn.com/w80/${code}.png`}
+                        alt={`${cat.name} 국기`}
+                        className="w-14 h-10 object-cover rounded shadow-sm"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    ) : (
+                      <span className="text-3xl">🌐</span>
+                    )
+                  })()
+                )
               ) : (
                 <span className="text-3xl">{TYPE_EMOJI[cat.type]}</span>
               )}
