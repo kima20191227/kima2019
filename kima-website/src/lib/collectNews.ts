@@ -8,6 +8,26 @@ import { processBatch } from '@/lib/aiSummarizer'
 import type { RawArticle } from '@/lib/newsCollector'
 import type { NewsCategory } from '@prisma/client'
 
+/**
+ * Cloudflare Pages + OpenNext 환경에서 env 변수 읽기
+ * getCloudflareContext() → process.env 순으로 시도
+ * (Cloudflare Workers 바인딩은 process.env에 직접 없을 수 있음)
+ */
+function getEnv(key: string): string | undefined {
+  // 1) Cloudflare 바인딩 우선 (OpenNext cloudflare-node wrapper)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCloudflareContext } = require('@opennextjs/cloudflare')
+    const ctx = getCloudflareContext() as { env?: Record<string, string | undefined> }
+    const val = ctx?.env?.[key]
+    if (val) return val
+  } catch {
+    // 로컬 개발 환경 또는 getCloudflareContext 미지원 — 무시하고 fallback
+  }
+  // 2) process.env fallback
+  return process.env[key]
+}
+
 export interface CollectResult {
   message?: string
   collected: number
@@ -23,9 +43,9 @@ export async function runNewsCollection(): Promise<CollectResult> {
   const startAt = Date.now()
 
   const envStatus = {
-    GEMINI_API_KEY:          !!process.env.GEMINI_API_KEY,
-    NAVER_NEWS_CLIENT_ID:    !!process.env.NAVER_NEWS_CLIENT_ID,
-    NAVER_NEWS_CLIENT_SECRET:!!process.env.NAVER_NEWS_CLIENT_SECRET,
+    GEMINI_API_KEY:          !!getEnv('GEMINI_API_KEY'),
+    NAVER_NEWS_CLIENT_ID:    !!getEnv('NAVER_NEWS_CLIENT_ID'),
+    NAVER_NEWS_CLIENT_SECRET:!!getEnv('NAVER_NEWS_CLIENT_SECRET'),
   }
 
   const empty: CollectResult = {
