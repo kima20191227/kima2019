@@ -54,7 +54,7 @@ export function NewsCard({
       {item.summary && (
         <div className="bg-[#F8F9FA] rounded-lg px-3.5 py-2.5 border-l-2 border-[#1B3A6B]/30">
           <p className="text-xs font-semibold text-[#1B3A6B] mb-1">AI 요약</p>
-          <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+          <p className="text-xs text-gray-600 leading-relaxed">
             {item.summary}
           </p>
         </div>

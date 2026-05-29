@@ -1,13 +1,11 @@
-/**
- * 뉴스 수집 공유 로직
- * collect-news (cron) / collect-now (admin) 양쪽에서 직접 호출
- */
 import { prisma } from '@/lib/prisma'
 import { fetchRSSFeed, fetchNaverNews, deduplicateArticles } from '@/lib/newsCollector'
 import { processBatch } from '@/lib/aiSummarizer'
 import type { RawArticle } from '@/lib/newsCollector'
 import { cfEnv } from '@/lib/cfEnv'
 import { getNewsCategories } from '@/lib/newsCategories'
+
+const DEFAULT_NAVER_QUERY = '이주민 다문화'
 
 export interface CollectResult {
   message?: string
@@ -20,29 +18,53 @@ export interface CollectResult {
   durationMs: number
 }
 
+async function fetchNaverSourceArticles(
+  sourceName: string,
+  keywords: string[],
+  maxItems: number,
+): Promise<RawArticle[]> {
+  if (keywords.length === 0) {
+    return fetchNaverNews(DEFAULT_NAVER_QUERY, sourceName, maxItems, [])
+  }
+
+  const perKeyword = Math.max(3, Math.ceil(maxItems / keywords.length))
+  const batches = await Promise.all(
+    keywords.map((keyword) =>
+      fetchNaverNews(keyword, sourceName, perKeyword, [keyword]),
+    ),
+  )
+
+  return deduplicateArticles(batches.flat()).slice(0, maxItems)
+}
+
 export async function runNewsCollection(): Promise<CollectResult> {
   const startAt = Date.now()
 
   const envStatus = {
-    GEMINI_API_KEY:          !!cfEnv('GEMINI_API_KEY'),
-    NAVER_NEWS_CLIENT_ID:    !!cfEnv('NAVER_NEWS_CLIENT_ID'),
-    NAVER_NEWS_CLIENT_SECRET:!!cfEnv('NAVER_NEWS_CLIENT_SECRET'),
+    GEMINI_API_KEY: !!cfEnv('GEMINI_API_KEY'),
+    NAVER_NEWS_CLIENT_ID: !!cfEnv('NAVER_NEWS_CLIENT_ID'),
+    NAVER_NEWS_CLIENT_SECRET: !!cfEnv('NAVER_NEWS_CLIENT_SECRET'),
   }
 
   const empty: CollectResult = {
-    collected: 0, processed: 0, saved: 0, totalFetched: 0,
-    sourceStats: [], envStatus, durationMs: 0,
+    collected: 0,
+    processed: 0,
+    saved: 0,
+    totalFetched: 0,
+    sourceStats: [],
+    envStatus,
+    durationMs: 0,
   }
 
   const settings = await prisma.newsSettings.findUnique({ where: { id: 1 } })
 
   if (!settings?.isEnabled) {
-    return { ...empty, message: '자동 수집이 비활성화 상태입니다.', durationMs: Date.now() - startAt }
+    return { ...empty, message: '자동 수집이 비활성화되어 있습니다.', durationMs: Date.now() - startAt }
   }
 
   const [sources, categories] = await Promise.all([
     prisma.newsSource.findMany({
-      where:   { isEnabled: true },
+      where: { isEnabled: true },
       orderBy: { order: 'asc' },
     }),
     getNewsCategories(),
@@ -56,47 +78,46 @@ export async function runNewsCollection(): Promise<CollectResult> {
   const existingUrls = new Set(
     (await prisma.news.findMany({
       select: { sourceUrl: true },
-      where:  { publishedAt: { gte: cutoff } },
-    })).map((n) => n.sourceUrl),
+      where: { publishedAt: { gte: cutoff } },
+    })).map((news) => news.sourceUrl),
   )
 
   const allRaw: RawArticle[] = []
-  const maxArticlesPerRun = Math.max(1, settings?.maxArticlesPerRun ?? 50)
+  const maxArticlesPerRun = Math.max(1, settings.maxArticlesPerRun ?? 50)
   const maxPerSource = Math.min(maxArticlesPerRun, 50)
   const sourceStats: CollectResult['sourceStats'] = []
 
-  for (const src of sources) {
-    const keywords = src.keywords as string[]
+  for (const source of sources) {
+    const keywords = source.keywords as string[]
     try {
       let articles: RawArticle[] = []
 
-      if (src.apiType === 'naver') {
+      if (source.apiType === 'naver') {
         if (!envStatus.NAVER_NEWS_CLIENT_ID || !envStatus.NAVER_NEWS_CLIENT_SECRET) {
-          sourceStats.push({ name: src.name, type: 'naver', fetched: 0, error: 'NAVER 환경변수 미설정' })
+          sourceStats.push({ name: source.name, type: 'naver', fetched: 0, error: 'NAVER 환경변수 미설정' })
           continue
         }
-        const query = keywords.length ? keywords.join(' ') : '이주민 다문화'
-        articles = await fetchNaverNews(query, src.name, Math.min(maxPerSource, 50), keywords)
-      } else if (src.rssUrl) {
-        articles = await fetchRSSFeed(src.rssUrl, src.name, keywords, maxPerSource)
+        articles = await fetchNaverSourceArticles(source.name, keywords, maxPerSource)
+      } else if (source.rssUrl) {
+        articles = await fetchRSSFeed(source.rssUrl, source.name, keywords, maxPerSource)
       }
 
       const taggedArticles = articles.map((article) => ({
         ...article,
-        defaultCategory: src.defaultCategory,
+        defaultCategory: source.defaultCategory,
       }))
 
-      sourceStats.push({ name: src.name, type: src.apiType, fetched: taggedArticles.length })
+      sourceStats.push({ name: source.name, type: source.apiType, fetched: taggedArticles.length })
       allRaw.push(...taggedArticles)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      sourceStats.push({ name: src.name, type: src.apiType, fetched: 0, error: msg })
-      console.error(`[collect-news] 소스 오류 (${src.name}):`, msg)
+      sourceStats.push({ name: source.name, type: source.apiType, fetched: 0, error: msg })
+      console.error(`[collect-news] source error (${source.name}):`, msg)
     }
   }
 
   const newArticles = deduplicateArticles(allRaw)
-    .filter((a) => !existingUrls.has(a.url))
+    .filter((article) => !existingUrls.has(article.url))
     .slice(0, maxArticlesPerRun)
   const collected = newArticles.length
 
@@ -104,9 +125,12 @@ export async function runNewsCollection(): Promise<CollectResult> {
     await updateSettings(1, 'success', 0)
     return {
       message: '새로운 기사가 없습니다.',
-      collected: 0, processed: 0, saved: 0,
+      collected: 0,
+      processed: 0,
+      saved: 0,
       totalFetched: allRaw.length,
-      sourceStats, envStatus,
+      sourceStats,
+      envStatus,
       durationMs: Date.now() - startAt,
     }
   }
@@ -116,17 +140,17 @@ export async function runNewsCollection(): Promise<CollectResult> {
   let saved = 0
   if (processed.length > 0) {
     const result = await prisma.news.createMany({
-      data: processed.map((art) => ({
-        title:          art.title,
-        summary:        art.summary,
-        rawContent:     null,
-        sourceUrl:      art.url,
-        sourceName:     art.sourceName,
-        category:       art.category,
-        publishedAt:    art.publishedAt,
-        isVisible:      true,
-        relevanceScore: art.relevanceScore / 100,
-        keywords:       art.keywords,
+      data: processed.map((article) => ({
+        title: article.title,
+        summary: article.summary,
+        rawContent: null,
+        sourceUrl: article.url,
+        sourceName: article.sourceName,
+        category: article.category,
+        publishedAt: article.publishedAt,
+        isVisible: true,
+        relevanceScore: article.relevanceScore / 100,
+        keywords: article.keywords,
       })),
       skipDuplicates: true,
     })
@@ -136,9 +160,12 @@ export async function runNewsCollection(): Promise<CollectResult> {
   await updateSettings(1, 'success', saved)
 
   return {
-    collected, processed: processed.length, saved,
+    collected,
+    processed: processed.length,
+    saved,
     totalFetched: allRaw.length,
-    sourceStats, envStatus,
+    sourceStats,
+    envStatus,
     durationMs: Date.now() - startAt,
   }
 }
@@ -146,6 +173,6 @@ export async function runNewsCollection(): Promise<CollectResult> {
 async function updateSettings(id: number, status: 'success' | 'failed', count: number) {
   await prisma.newsSettings.update({
     where: { id },
-    data:  { lastRunAt: new Date(), lastRunStatus: status, lastRunCount: count },
+    data: { lastRunAt: new Date(), lastRunStatus: status, lastRunCount: count },
   })
 }
