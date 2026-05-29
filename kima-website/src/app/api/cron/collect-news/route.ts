@@ -16,10 +16,10 @@ import type { RawArticle } from '@/lib/newsCollector'
 import type { NewsCategory } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
-  // ── 인증 ──────────────────────────────────────────────────────────────────
-  const authHeader    = request.headers.get('authorization')
-  const expectedToken = `Bearer ${process.env.CRON_SECRET_TOKEN}`
-  if (!process.env.CRON_SECRET_TOKEN || authHeader !== expectedToken) {
+  // ── 인증 — CRON_SECRET_TOKEN 또는 CRON_SECRET 중 하나라도 설정되면 허용 ───
+  const token = process.env.CRON_SECRET_TOKEN ?? process.env.CRON_SECRET ?? ''
+  const authHeader = request.headers.get('authorization')
+  if (!token || authHeader !== `Bearer ${token}`) {
     return NextResponse.json({ error: '인증 실패' }, { status: 401 })
   }
 
