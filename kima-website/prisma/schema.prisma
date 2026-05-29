@@ -429,3 +429,67 @@ model ColumnPost {
 
   @@index([createdAt])
 }
+
+// ─── 이주민·다문화 뉴스 자동화 ──────────────────────────────────────────────────
+
+// 뉴스 카테고리 분류
+enum NewsCategory {
+  LAW              // 법률·정책
+  STATISTICS       // 통계·연구
+  MULTICULTURAL    // 다문화 일반
+  MIGRANT_WORKER   // 이주노동자
+  STUDENT          // 유학생
+  OTHER            // 기타
+}
+
+// 수집된 개별 뉴스 기사
+model News {
+  id             String       @id @default(cuid())
+  title          String
+  summary        String?      // AI 요약문
+  rawContent     String?      // 원문 내용 (스크래핑)
+  sourceUrl      String       @unique
+  sourceName     String       // 출처 매체명
+  category       NewsCategory @default(OTHER)
+  publishedAt    DateTime
+  isVisible      Boolean      @default(true)   // 관리자 노출 여부
+  relevanceScore Float?       // AI 관련도 점수 (0.0 ~ 1.0)
+  keywords       String[]     // 추출 키워드
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([category])
+  @@index([publishedAt(sort: Desc)])
+  @@index([isVisible, publishedAt(sort: Desc)])
+}
+
+// 뉴스 수집 대상 소스 (RSS / 크롤링)
+model NewsSource {
+  id              String        @id @default(cuid())
+  name            String        @unique
+  url             String        // 홈페이지 URL
+  rssUrl          String?       // RSS 피드 URL (있을 경우)
+  apiType         String        @default("rss")  // rss | scraping | api
+  isEnabled       Boolean       @default(true)
+  keywords        String[]      // 필터링 키워드 (포함 여부 판단)
+  defaultCategory NewsCategory  @default(OTHER)
+  order           Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// 뉴스 자동화 설정 (싱글턴 — id 항상 1)
+model NewsSettings {
+  id                  Int       @id @default(1)
+  isEnabled           Boolean   @default(false)  // 자동 수집 활성화
+  cronTime            String    @default("0 9 * * *")  // cron 표현식
+  collectHour         Int       @default(9)
+  collectMinute       Int       @default(0)
+  aiProvider          String    @default("claude")   // claude | openai | none
+  relevanceThreshold  Float     @default(0.5)        // 관련도 임계값
+  maxArticlesPerRun   Int       @default(50)         // 1회 수집 최대 건수
+  lastRunAt           DateTime?
+  lastRunStatus       String?   // success | error | running
+  lastRunCount        Int?      // 마지막 수집 건수
+  updatedAt           DateTime  @updatedAt
+}
