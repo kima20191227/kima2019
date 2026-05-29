@@ -67,8 +67,29 @@ const GOVERNMENT_NEWS_SOURCES = [
   },
 ]
 
+const EXISTING_SOURCE_UPDATES = [
+  {
+    name: '네이버 뉴스 — 이주민',
+    keywords: ['이주민 다문화', '이주민 외국인', '이주민 지원', '외국인주민', '이민자 사회통합'],
+    defaultCategory: 'OTHER',
+    order: 10,
+  },
+]
+
 async function main() {
   await ensureDefaultNewsCategories()
+
+  for (const source of EXISTING_SOURCE_UPDATES) {
+    await prisma.newsSource.updateMany({
+      where: { name: source.name },
+      data: {
+        keywords: source.keywords,
+        defaultCategory: source.defaultCategory,
+        order: source.order,
+        isEnabled: true,
+      },
+    })
+  }
 
   for (const source of GOVERNMENT_NEWS_SOURCES) {
     await prisma.newsSource.upsert({
@@ -89,7 +110,10 @@ async function main() {
     })
   }
 
-  console.log(JSON.stringify({ upserted: GOVERNMENT_NEWS_SOURCES.length }, null, 2))
+  console.log(JSON.stringify({
+    updated: EXISTING_SOURCE_UPDATES.length,
+    upserted: GOVERNMENT_NEWS_SOURCES.length,
+  }, null, 2))
 }
 
 main()

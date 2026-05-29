@@ -49,6 +49,33 @@ const RELEVANCE_MIN = 50
 const TIMEOUT_MS = 30_000
 const FALLBACK_RETRY_MS = 60_000
 const BATCH_DELAY_MS = 4_000
+const STRONG_RELEVANCE_TERMS = [
+  '다문화',
+  '다문화가족',
+  '다문화 자녀',
+  '결혼이민',
+  '외국인근로',
+  '외국인 근로',
+  '이주노동',
+  '고용허가',
+  '유학생',
+  '외국인학생',
+  '난민',
+  '체류',
+  '비자',
+  '출입국',
+  '외국인주민',
+  '외국인 주민',
+  '이민자',
+  '사회통합',
+  '한국어교육',
+  'multicultural',
+  'migrant worker',
+  'foreign worker',
+  'immigrant',
+  'migration',
+]
+const BROAD_RELEVANCE_TERMS = ['이주민', '외국인', 'migrant', 'foreigner']
 
 let geminiFallbackUntil = 0
 
@@ -68,10 +95,41 @@ function enableFallbackTemporarily() {
   geminiFallbackUntil = Date.now() + FALLBACK_RETRY_MS
 }
 
+function estimateFallbackRelevance(article: RawArticle): number {
+  const haystack = [
+    article.title,
+    article.summary,
+    article.sourceName,
+    article.keywords.join(' '),
+  ].join(' ').toLowerCase()
+
+  const strongHits = STRONG_RELEVANCE_TERMS.filter((term) =>
+    haystack.includes(term.toLowerCase()),
+  ).length
+
+  if (strongHits > 0) {
+    const sourceBoost = article.defaultCategory && article.defaultCategory !== 'OTHER' ? 8 : 0
+    return clamp(62 + strongHits * 6 + sourceBoost, RELEVANCE_MIN, 86)
+  }
+
+  const broadHits = BROAD_RELEVANCE_TERMS.filter((term) =>
+    haystack.includes(term.toLowerCase()),
+  ).length
+
+  if (article.defaultCategory && article.defaultCategory !== 'OTHER' && broadHits > 0) {
+    return RELEVANCE_MIN
+  }
+
+  return 0
+}
+
 function fallbackArticle(
   article: RawArticle,
   categories: NewsCategoryConfig[] = DEFAULT_NEWS_CATEGORIES,
-): ProcessedArticle {
+): ProcessedArticle | null {
+  const relevanceScore = estimateFallbackRelevance(article)
+  if (relevanceScore < RELEVANCE_MIN) return null
+
   return {
     title: article.title,
     summary: (article.summary || article.title).slice(0, 500).trim(),
@@ -79,7 +137,7 @@ function fallbackArticle(
     sourceName: article.sourceName,
     publishedAt: article.publishedAt,
     category: inferNewsCategory(article, categories, article.defaultCategory ?? 'OTHER'),
-    relevanceScore: RELEVANCE_MIN,
+    relevanceScore,
     keywords: article.keywords.slice(0, 5),
   }
 }

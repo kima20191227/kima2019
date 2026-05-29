@@ -226,7 +226,7 @@ async function seedNews() {
       url:             'https://news.naver.com',
       rssUrl:          null,
       apiType:         'naver',
-      keywords:        ['이주민', '다문화', '외국인 근로자'],
+      keywords:        ['이주민 다문화', '이주민 외국인', '이주민 지원', '외국인주민', '이민자 사회통합'],
       defaultCategory: 'OTHER' as const,
       order:           10,
     },
