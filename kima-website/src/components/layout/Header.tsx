@@ -21,7 +21,7 @@ export async function Header() {
               alt="KIMA 한국이주민선교연합회"
               width={200}
               height={70}
-              className="h-[4.5rem] w-auto"
+              className="h-9 md:h-[4.5rem] w-auto"
               priority
             />
           </Link>
