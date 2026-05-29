@@ -29,54 +29,56 @@ const TYPE_EMOJI: Record<CategoryType, string> = {
   TARGET: '🤝',
 }
 
-// 언어권별 국기 이모지 (slug 또는 name으로 조회)
-const LANGUAGE_FLAGS: Record<string, string> = {
+// 언어권별 ISO 국가 코드 (flagcdn.com 이미지 사용)
+const LANGUAGE_FLAG_CODES: Record<string, string> = {
   // slug 기준
-  vietnam:     '🇻🇳',
-  viet:        '🇻🇳',
-  nepal:       '🇳🇵',
-  mongol:      '🇲🇳',
-  mongolia:    '🇲🇳',
-  indonesia:   '🇮🇩',
-  filippin:    '🇵🇭',
-  philippines: '🇵🇭',
-  russia:      '🇷🇺',
-  russian:     '🇷🇺',
-  china:       '🇨🇳',
-  chinese:     '🇨🇳',
-  thai:        '🇹🇭',
-  thailand:    '🇹🇭',
-  srilanka:    '🇱🇰',
-  'sri-lanka': '🇱🇰',
-  myanmar:     '🇲🇲',
-  cambodia:    '🇰🇭',
-  bangladesh:  '🇧🇩',
-  pakistan:    '🇵🇰',
-  uzbekistan:  '🇺🇿',
+  vietnam:     'vn',
+  viet:        'vn',
+  nepal:       'np',
+  mongol:      'mn',
+  mongolia:    'mn',
+  indonesia:   'id',
+  filippin:    'ph',
+  philippines: 'ph',
+  russia:      'ru',
+  russian:     'ru',
+  china:       'cn',
+  chinese:     'cn',
+  thai:        'th',
+  thailand:    'th',
+  srilanka:    'lk',
+  'sri-lanka': 'lk',
+  myanmar:     'mm',
+  cambodia:    'kh',
+  bangladesh:  'bd',
+  pakistan:    'pk',
+  uzbekistan:  'uz',
+  india:       'in',
+  kazakhstan:  'kz',
   // 한국어 name 기준 (fallback)
-  '베트남':    '🇻🇳',
-  '네팔':      '🇳🇵',
-  '몽골':      '🇲🇳',
-  '인도네시아': '🇮🇩',
-  '필리핀':    '🇵🇭',
-  '러시아':    '🇷🇺',
-  '중국':      '🇨🇳',
-  '태국':      '🇹🇭',
-  '스리랑카':  '🇱🇰',
-  '미얀마':    '🇲🇲',
-  '캄보디아':  '🇰🇭',
-  '방글라데시': '🇧🇩',
-  '파키스탄':  '🇵🇰',
-  '우즈베키스탄': '🇺🇿',
-  '인도':      '🇮🇳',
-  '카자흐스탄': '🇰🇿',
+  '베트남':      'vn',
+  '네팔':        'np',
+  '몽골':        'mn',
+  '인도네시아':  'id',
+  '필리핀':      'ph',
+  '러시아':      'ru',
+  '중국':        'cn',
+  '태국':        'th',
+  '스리랑카':    'lk',
+  '미얀마':      'mm',
+  '캄보디아':    'kh',
+  '방글라데시':  'bd',
+  '파키스탄':    'pk',
+  '우즈베키스탄':'uz',
+  '인도':        'in',
+  '카자흐스탄':  'kz',
 }
 
-function getLanguageFlag(slug: string, name: string): string {
+function getLanguageFlagCode(slug: string, name: string): string | null {
   return (
-    LANGUAGE_FLAGS[slug.toLowerCase()] ??
-    LANGUAGE_FLAGS[name] ??
-    '🌐'
+    LANGUAGE_FLAG_CODES[slug.toLowerCase()] ??
+    LANGUAGE_FLAG_CODES[name] ??
+    null
   )
 }
 
@@ -131,11 +133,25 @@ export function CommunityTabs({ categories }: CommunityTabsProps) {
               href={`/community/${urlKey}/${cat.slug}`}
               className="flex flex-col items-center justify-center gap-2 p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:border-[#1B3A6B] hover:shadow-md transition-all group"
             >
-              <span className="text-3xl">
-                {cat.type === 'LANGUAGE'
-                  ? getLanguageFlag(cat.slug, cat.name)
-                  : TYPE_EMOJI[cat.type]}
-              </span>
+              {cat.type === 'LANGUAGE' ? (
+                (() => {
+                  const code = getLanguageFlagCode(cat.slug, cat.name)
+                  return code ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`https://flagcdn.com/w80/${code}.png`}
+                      alt={`${cat.name} 국기`}
+                      width={56}
+                      height={40}
+                      className="rounded object-cover shadow-sm"
+                    />
+                  ) : (
+                    <span className="text-3xl">🌐</span>
+                  )
+                })()
+              ) : (
+                <span className="text-3xl">{TYPE_EMOJI[cat.type]}</span>
+              )}
               <span className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#1B3A6B] transition-colors text-center">
                 {cat.name}
               </span>
