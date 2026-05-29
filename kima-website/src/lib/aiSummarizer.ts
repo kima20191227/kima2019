@@ -12,6 +12,7 @@ import {
   parseNewsCategory,
   type NewsCategoryConfig,
 } from './newsCategoryConfig'
+import { estimateMissionRelevance, isMissionRelevantArticle } from './newsMissionRelevance'
 
 export type NewsCategory = string
 
@@ -49,40 +50,6 @@ const RELEVANCE_MIN = 50
 const TIMEOUT_MS = 30_000
 const FALLBACK_RETRY_MS = 60_000
 const BATCH_DELAY_MS = 4_000
-const STRONG_RELEVANCE_TERMS = [
-  '다문화',
-  '다문화가족',
-  '다문화 자녀',
-  '결혼이민',
-  '외국인근로',
-  '외국인 근로',
-  '이주노동',
-  '고용허가',
-  '유학생',
-  '외국인학생',
-  '난민',
-  '체류',
-  '체류외국인',
-  '비자',
-  '출입국',
-  '법령',
-  '법무부',
-  '외국인정책',
-  '통계',
-  '통계청',
-  '실태조사',
-  '외국인주민',
-  '외국인 주민',
-  '이민자',
-  '사회통합',
-  '한국어교육',
-  'multicultural',
-  'migrant worker',
-  'foreign worker',
-  'immigrant',
-  'migration',
-]
-const BROAD_RELEVANCE_TERMS = ['이주민', '외국인', 'migrant', 'foreigner']
 
 let geminiFallbackUntil = 0
 
@@ -102,35 +69,11 @@ function enableFallbackTemporarily() {
   geminiFallbackUntil = Date.now() + FALLBACK_RETRY_MS
 }
 
-function estimateFallbackRelevance(article: RawArticle): number {
-  const haystack = [
-    article.title,
-    article.summary,
-    article.sourceName,
-    article.keywords.join(' '),
-  ].join(' ').toLowerCase()
-
-  const strongHits = STRONG_RELEVANCE_TERMS.filter((term) =>
-    haystack.includes(term.toLowerCase()),
-  ).length
-
-  if (strongHits > 0) {
-    const sourceBoost = article.defaultCategory && article.defaultCategory !== 'OTHER' ? 8 : 0
-    return clamp(62 + strongHits * 6 + sourceBoost, RELEVANCE_MIN, 86)
-  }
-
-  const broadHits = BROAD_RELEVANCE_TERMS.filter((term) =>
-    haystack.includes(term.toLowerCase()),
-  ).length
-
-  return 0
-}
-
 function fallbackArticle(
   article: RawArticle,
   categories: NewsCategoryConfig[] = DEFAULT_NEWS_CATEGORIES,
 ): ProcessedArticle | null {
-  const relevanceScore = estimateFallbackRelevance(article)
+  const relevanceScore = estimateMissionRelevance(article)
   if (relevanceScore < RELEVANCE_MIN) return null
 
   return {
@@ -185,10 +128,11 @@ function buildPrompt(article: RawArticle, categories: NewsCategoryConfig[]): str
 }
 
 판단 기준:
-- 90-100: 이주민·외국인·다문화 정책의 핵심 주제
-- 70-89: 이주민·다문화 내용이 기사의 주요 부분
-- 50-69: 이주민·다문화 내용이 일부 포함
-- 50 미만: 관련성 낮음`
+- 90-100: 이주민·다문화가족·이주노동자·유학생·난민 사역이나 정책의 핵심 주제
+- 70-89: KIMA 회원 단체가 사역, 상담, 교육, 복지, 법률 지원에 참고할 만한 주요 기사
+- 50-69: 이주민 사역과 간접 관련은 있으나 현장 활용성은 제한적인 기사
+- 50 미만: 스포츠, 연예, 주식, 일반 사건, 개인 범죄 등 선교·다문화사역과 직접 관련 없는 기사
+- 외국인 선수 비자, 연예인/스포츠 기사, 주식시장의 외국인 투자자, 개인적 연애·범죄 사건은 낮게 평가`
 }
 
 export async function processArticleWithAI(
@@ -250,6 +194,7 @@ export async function processArticleWithAI(
     const parsed = JSON.parse(text) as Partial<AIResponse>
     const relevance = clamp(parsed.relevance ?? 0, 0, 100)
     if (relevance < RELEVANCE_MIN) return null
+    if (!isMissionRelevantArticle(article)) return null
 
     const keywords = Array.isArray(parsed.keywords)
       ? parsed.keywords.slice(0, 5).map(String)
