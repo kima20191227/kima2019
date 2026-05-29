@@ -130,6 +130,128 @@ async function main() {
   } else {
     console.log(`Leaders already seeded (${existing} records). Skipping.`)
   }
+
+  // ── 뉴스 시스템 초기 데이터 ─────────────────────────────────────────────
+  await seedNews()
+}
+
+async function seedNews() {
+  // ── NewsSettings (싱글턴, id=1) ──────────────────────────────────────────
+  await prisma.newsSettings.upsert({
+    where:  { id: 1 },
+    update: {},   // 이미 존재하면 덮어쓰지 않음
+    create: {
+      id:                 1,
+      isEnabled:          true,
+      cronTime:           '0 23 * * *',   // UTC 23:00 = KST 08:00
+      collectHour:        8,
+      collectMinute:      0,
+      aiProvider:         'openai',
+      relevanceThreshold: 0.5,            // 50점 이상
+      maxArticlesPerRun:  50,
+    },
+  })
+  console.log('NewsSettings seeded.')
+
+  // ── NewsSource 기본 소스들 ────────────────────────────────────────────────
+  const COMMON_KEYWORDS = ['이주민', '다문화', '외국인', '이주노동자', '유학생']
+
+  const SOURCES = [
+    // ── RSS 소스 ──────────────────────────────────────────────────────────
+    {
+      name:            '법제처 최신법령 RSS',
+      url:             'https://www.law.go.kr',
+      rssUrl:          'https://www.law.go.kr/LSW/rss/rssLsInfoP.do',
+      apiType:         'rss',
+      keywords:        [...COMMON_KEYWORDS, '출입국', '체류', '다문화가족', '외국인근로자'],
+      defaultCategory: 'LAW' as const,
+      order:           1,
+    },
+    {
+      name:            '통계청 보도자료 RSS',
+      url:             'https://kostat.go.kr',
+      rssUrl:          'https://kostat.go.kr/board/rss.do?boardId=0000000001',
+      apiType:         'rss',
+      keywords:        [...COMMON_KEYWORDS, '인구', '이민', '체류외국인'],
+      defaultCategory: 'STATISTICS' as const,
+      order:           2,
+    },
+    {
+      name:            '여성가족부 보도자료 RSS',
+      url:             'https://www.mogef.go.kr',
+      rssUrl:          'https://www.mogef.go.kr/nw/rpd/nw_rpd_s001d.do?rss=Y',
+      apiType:         'rss',
+      keywords:        ['다문화가족', '결혼이민자', '다문화', '외국인'],
+      defaultCategory: 'MULTICULTURAL' as const,
+      order:           3,
+    },
+    {
+      name:            '고용노동부 보도자료 RSS',
+      url:             'https://www.moel.go.kr',
+      rssUrl:          'https://www.moel.go.kr/news/enews/rss/rss.do',
+      apiType:         'rss',
+      keywords:        ['외국인근로자', '이주노동자', 'E-9', 'H-2', '고용허가'],
+      defaultCategory: 'MIGRANT_WORKER' as const,
+      order:           4,
+    },
+    {
+      name:            '교육부 보도자료 RSS',
+      url:             'https://www.moe.go.kr',
+      rssUrl:          'https://www.moe.go.kr/bbs/board.do?bbsId=BBSMSTR_000000000050&searchCondition=rss',
+      apiType:         'rss',
+      keywords:        ['유학생', '외국인학생', '다문화학생', '국제학생'],
+      defaultCategory: 'STUDENT' as const,
+      order:           5,
+    },
+    // ── 네이버 뉴스 API 소스 ──────────────────────────────────────────────
+    {
+      name:            '네이버 뉴스 — 이주민',
+      url:             'https://news.naver.com',
+      rssUrl:          null,
+      apiType:         'naver',
+      keywords:        ['이주민', '다문화', '외국인 근로자'],
+      defaultCategory: 'OTHER' as const,
+      order:           10,
+    },
+    {
+      name:            '네이버 뉴스 — 다문화가족',
+      url:             'https://news.naver.com',
+      rssUrl:          null,
+      apiType:         'naver',
+      keywords:        ['다문화가족', '결혼이민자', '다문화 자녀'],
+      defaultCategory: 'MULTICULTURAL' as const,
+      order:           11,
+    },
+    {
+      name:            '네이버 뉴스 — 이주노동자',
+      url:             'https://news.naver.com',
+      rssUrl:          null,
+      apiType:         'naver',
+      keywords:        ['이주노동자', '외국인근로자', '고용허가제'],
+      defaultCategory: 'MIGRANT_WORKER' as const,
+      order:           12,
+    },
+  ]
+
+  let created = 0
+  for (const src of SOURCES) {
+    await prisma.newsSource.upsert({
+      where:  { name: src.name },
+      update: {},   // 이미 존재하면 덮어쓰지 않음
+      create: {
+        name:            src.name,
+        url:             src.url,
+        rssUrl:          src.rssUrl,
+        apiType:         src.apiType,
+        isEnabled:       true,
+        keywords:        src.keywords,
+        defaultCategory: src.defaultCategory,
+        order:           src.order,
+      },
+    })
+    created++
+  }
+  console.log(`NewsSource seeded: ${created}개`)
 }
 
 main()
