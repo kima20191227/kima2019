@@ -43,6 +43,7 @@ export default async function PrayerPage() {
           </div>
           <Link
             href="/story/prayer/write"
+            prefetch={false}
             className="shrink-0 px-4 py-2 bg-[#C8922A] text-white text-sm font-semibold rounded-lg hover:bg-[#b07d22] transition-colors"
           >
             기도 요청하기

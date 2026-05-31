@@ -7,9 +7,23 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
 ]
 
+function isAllowedOrigin(origin: string, request: NextRequest) {
+  if (ALLOWED_ORIGINS.some((o) => origin.startsWith(o))) return true
+
+  try {
+    const originUrl = new URL(origin)
+    const requestHost = request.headers.get('host')
+
+    if (requestHost && originUrl.host === requestHost) return true
+    return originUrl.hostname === 'localhost' || originUrl.hostname === '127.0.0.1'
+  } catch {
+    return false
+  }
+}
+
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin') ?? ''
-  if (!ALLOWED_ORIGINS.some((o) => origin.startsWith(o))) {
+  if (!isAllowedOrigin(origin, request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

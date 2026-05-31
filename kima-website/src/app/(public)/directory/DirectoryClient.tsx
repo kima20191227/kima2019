@@ -66,6 +66,7 @@ function DirectoryContent({ initialOrgs }: { initialOrgs: Organization[] }) {
             </div>
             <Link
               href="/directory/register"
+              prefetch={false}
               className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#1B3A6B] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#15305a]"
             >
               + 단체 등록

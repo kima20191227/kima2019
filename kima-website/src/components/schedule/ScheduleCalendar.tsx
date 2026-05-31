@@ -67,6 +67,7 @@ const EMPTY_FORM = {
 export function ScheduleCalendar({ events, isLoggedIn, userRole }: Props) {
   const router = useRouter()
   const today = new Date()
+  const [mounted, setMounted] = useState(false)
   const [localEvents, setLocalEvents] = useState<CalendarEvent[]>(events)
   const [viewYear, setViewYear]       = useState(today.getFullYear())
   const [viewMonth, setViewMonth]     = useState(today.getMonth()) // 0-indexed
@@ -82,6 +83,10 @@ export function ScheduleCalendar({ events, isLoggedIn, userRole }: Props) {
   useEffect(() => {
     setLocalEvents(events)
   }, [events])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Build calendar grid for current view month
   const calendarDays = useMemo(() => {
@@ -192,6 +197,26 @@ export function ScheduleCalendar({ events, isLoggedIn, userRole }: Props) {
   }
 
   const inputClass = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]'
+
+  if (!mounted) {
+    return (
+      <div className="flex flex-col lg:flex-row gap-6" aria-busy="true">
+        <div className="lg:w-[420px] shrink-0">
+          <div className="h-[520px] rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <div className="h-14 rounded-t-2xl bg-[#1B3A6B]" />
+            <div className="grid grid-cols-7 gap-px p-5">
+              {Array.from({ length: 35 }).map((_, idx) => (
+                <div key={idx} className="aspect-square rounded-md bg-gray-100" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="h-44 rounded-xl border border-gray-100 bg-white shadow-sm" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">

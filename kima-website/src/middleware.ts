@@ -9,11 +9,8 @@ function hasRole(userRole: string | undefined, required: keyof typeof ROLE_HIERA
   return (ROLE_HIERARCHY[userRole as keyof typeof ROLE_HIERARCHY] ?? 0) >= ROLE_HIERARCHY[required]
 }
 
-// Vercel Edge Runtime에서 req.url이 *.vercel.app 내부 도메인으로 처리되는 문제 방지.
 function getOrigin(req: NextRequest): string {
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL.replace(/\/$/, '')
-
-  const forwardedHost = req.headers.get('x-forwarded-host')
+  const forwardedHost = req.headers.get('x-forwarded-host') ?? req.headers.get('host')
   const forwardedProto = req.headers.get('x-forwarded-proto') ?? 'https'
   if (forwardedHost) return `${forwardedProto}://${forwardedHost}`
 
