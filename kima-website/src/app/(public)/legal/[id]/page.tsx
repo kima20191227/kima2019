@@ -7,7 +7,6 @@ import {
   ACCESS_LEVEL_META,
   LEGAL_CATEGORY_META,
   getAllowedLegalAccessLevels,
-  formatLegalDate,
 } from '@/lib/legalCategories'
 import { LegalDisclaimer } from '@/components/legal/LegalDisclaimer'
 import { LegalSectionBlock } from '@/components/legal/LegalSectionBlock'
@@ -59,25 +58,14 @@ export default async function LegalDetailPage({ params }: PageProps) {
 
   const category = LEGAL_CATEGORY_META[document.category]
   const access = ACCESS_LEVEL_META[document.accessLevel]
-  const effectiveDate = formatLegalDate(document.effectiveDate)
-  const updatedAt = formatLegalDate(document.updatedAt)
-  const sections = document.sections.length > 0
-    ? document.sections
+  const sourceSections = document.sections.filter((section) => section.type === 'SOURCE_LINKS')
+  const sections = sourceSections.length > 0
+    ? sourceSections
     : [
-        {
-          type: 'OVERVIEW' as const,
-          title: '한눈에 보기',
-          content: document.content,
-          accessLevel: 'PUBLIC' as const,
-          authorName: 'KIMA',
-          reviewedAt: document.updatedAt,
-        },
         {
           type: 'SOURCE_LINKS' as const,
           title: '법령 원문 링크',
-          content: document.sourceUrl
-            ? `## 공식 원문 확인\n\n- 국가법령정보센터 원문을 기준으로 최신 조문과 시행일을 확인합니다.`
-            : '공식 원문 링크를 준비 중입니다.',
+          content: '',
           accessLevel: 'PUBLIC' as const,
           authorName: 'KIMA',
           reviewedAt: document.updatedAt,
@@ -118,32 +106,6 @@ export default async function LegalDetailPage({ params }: PageProps) {
       </div>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {document.summary && (
-          <section className="mb-6 rounded-xl bg-amber-50 border border-amber-100 px-5 py-4">
-            <p className="text-xs font-semibold text-[#C8922A] mb-1">실무자용 요약</p>
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-              {document.summary}
-            </p>
-          </section>
-        )}
-
-        <section className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
-            <p className="text-xs text-gray-400">시행일</p>
-            <p className="mt-1 text-sm font-semibold text-gray-800">{effectiveDate ?? '-'}</p>
-          </div>
-          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
-            <p className="text-xs text-gray-400">최종 수정</p>
-            <p className="mt-1 text-sm font-semibold text-gray-800">{updatedAt ?? '-'}</p>
-          </div>
-          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
-            <p className="text-xs text-gray-400">조회수</p>
-            <p className="mt-1 text-sm font-semibold text-gray-800">
-              {(document.viewCount + 1).toLocaleString()}
-            </p>
-          </div>
-        </section>
-
         {sections.map((section) => (
           <LegalSectionBlock
             key={`${section.type}-${section.title}`}

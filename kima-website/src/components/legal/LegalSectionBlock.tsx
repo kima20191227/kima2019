@@ -71,7 +71,6 @@ export function LegalSectionBlock({
 
       {canRead ? (
         <>
-          <LegalMarkdown content={section.content} />
           {section.type === 'SOURCE_LINKS' && sourceUrl && (
             <a
               href={sourceUrl}
@@ -82,7 +81,13 @@ export function LegalSectionBlock({
               국가법령정보센터 원문 보기
             </a>
           )}
-          {(section.authorName || reviewedAt) && (
+          {section.type === 'SOURCE_LINKS' && !sourceUrl && (
+            <p className="text-sm text-gray-500">공식 원문 링크를 준비 중입니다.</p>
+          )}
+          {section.type !== 'SOURCE_LINKS' && (
+            <LegalMarkdown content={section.content} />
+          )}
+          {section.type !== 'SOURCE_LINKS' && (section.authorName || reviewedAt) && (
             <div className="mt-5 flex flex-wrap gap-2 text-xs text-gray-400">
               {section.authorName && <span>작성 {section.authorName}</span>}
               {reviewedAt && <span>검토 {reviewedAt}</span>}

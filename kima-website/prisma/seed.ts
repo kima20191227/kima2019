@@ -140,60 +140,11 @@ type LegalSourceSeed = {
 function buildDefaultLegalSections(document: Pick<LegalDocumentSeed, 'title' | 'content' | 'sourceUrl'>): LegalSectionSeed[] {
   return [
     {
-      type: 'OVERVIEW',
-      title: '한눈에 보기',
-      content: document.content,
-      accessLevel: 'PUBLIC',
-      order: 0,
-      authorName: 'KIMA',
-    },
-    {
       type: 'SOURCE_LINKS',
       title: '법령 원문 링크',
-      content: `## 공식 원문 확인
-
-- [국가법령정보센터에서 ${document.title} 원문 보기](${document.sourceUrl})
-- 법령 개정 여부와 시행일은 국가법령정보센터 원문을 기준으로 확인합니다.
-- 조문 해석이 필요한 경우 변호사 또는 행정사와 상담하시기 바랍니다.
-`,
+      content: `[국가법령정보센터에서 ${document.title} 원문 보기](${document.sourceUrl})`,
       accessLevel: 'PUBLIC',
-      order: 1,
-      authorName: 'KIMA',
-    },
-    {
-      type: 'PRACTICAL_GUIDE',
-      title: '실무 해설',
-      content: `## 사역 현장 확인 포인트
-
-- 상담 전에 대상자의 체류자격, 가족관계, 고용관계, 거주지를 먼저 확인합니다.
-- 신청 절차는 법령 원문뿐 아니라 부처 지침, 지자체 기준, 민원 창구 안내를 함께 확인합니다.
-- 불이익이 예상되는 사안은 서류 제출 전 전문가 검토를 권합니다.
-
-## 자주 묻는 질문
-
-**Q. 법령 요약만으로 상담 결론을 내려도 되나요?**
-
-A. 아닙니다. KIMA 자료는 현장 이해를 돕는 참고 자료이며, 개별 사례는 관할 기관과 전문가 판단을 함께 확인해야 합니다.
-`,
-      accessLevel: 'MEMBER',
-      order: 2,
-      authorName: 'KIMA',
-    },
-    {
-      type: 'EXPERT_MATERIAL',
-      title: '전문 자료',
-      content: `## 전문가 기고 및 사례 분석
-
-이 영역은 변호사, 행정사, 현장 전문가의 검토 자료를 축적하는 정회원 전용 공간입니다.
-
-- 상세 해설서
-- 판례 및 행정심판 사례
-- 복잡한 상담 사례 Q&A
-
-전문 자료는 검토가 완료된 항목부터 순차적으로 업데이트됩니다.
-`,
-      accessLevel: 'PREMIUM',
-      order: 3,
+      order: 0,
       authorName: 'KIMA',
     },
   ]

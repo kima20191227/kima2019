@@ -135,38 +135,22 @@ export async function fetchLawList(keyword: string): Promise<LawRecord[]> {
 function buildDocumentContent(source: LegalSource, title: string) {
   return `# ${title}
 
-이 문서는 공식 출처의 최신성 확인을 돕기 위해 자동 동기화된 법령 항목입니다.
-
-## 공식 출처
+## 법령 원문 링크
 
 - [${source.name}](${source.url})
 
-KIMA 해설은 별도 검토 후 보완됩니다. 최신 조문과 법적 효력이 있는 원문은 국가법령정보센터를 기준으로 확인하세요.
+최신 조문과 법적 효력이 있는 원문은 국가법령정보센터를 기준으로 확인하세요.
 `
 }
 
 function buildDocumentSections(source: LegalSource, title: string) {
   return [
     {
-      type: 'OVERVIEW' as const,
-      title: '한눈에 보기',
-      content: `## 공식 출처 기반 자동 항목
-
-${title}의 최신 여부를 공식 출처 기준으로 확인합니다.
-`,
-      accessLevel: 'PUBLIC' as const,
-      order: 0,
-      authorName: 'KIMA',
-    },
-    {
       type: 'SOURCE_LINKS' as const,
       title: '법령 원문 링크',
-      content: `## 공식 원문
-
-- [${source.name}](${source.url})
-`,
+      content: `[${source.name}](${source.url})`,
       accessLevel: 'PUBLIC' as const,
-      order: 1,
+      order: 0,
       authorName: 'KIMA',
     },
   ]
