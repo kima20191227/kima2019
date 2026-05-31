@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { uploadFileToDrive } from '@/lib/googleDrive'
 import { cfEnv } from '@/lib/cfEnv'
+import { createAdminClient } from '@/lib/supabase'
+import { safeStorageKey } from '@/lib/utils'
+import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
 const MAX_FILE_SIZE_MB = 100
 const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
+const FALLBACK_BUCKET = 'forum-files'
 
 type GoogleServiceAccountKey = {
   client_email?: string
@@ -36,6 +40,40 @@ function parseServiceAccountKey(raw: string | undefined): GoogleServiceAccountKe
   return {}
 }
 
+async function uploadFileToSupabaseFallback(file: File): Promise<{ url: string; fileType: string }> {
+  let buffer = Buffer.from(await file.arrayBuffer())
+  let mimeType = file.type || 'application/octet-stream'
+  let ext = file.name.split('.').pop() ?? 'bin'
+
+  if (isConvertibleImage(mimeType)) {
+    const converted = await convertToWebP(buffer, mimeType)
+    buffer = converted.buffer
+    mimeType = converted.contentType
+    ext = converted.ext
+  }
+
+  const storedFile = {
+    name: file.name.replace(/\.[^.]+$/, `.${ext}`),
+    type: mimeType,
+  }
+  const path = safeStorageKey(storedFile, 'community')
+  const supabase = createAdminClient()
+
+  const { error } = await supabase.storage
+    .from(FALLBACK_BUCKET)
+    .upload(path, buffer, {
+      contentType: mimeType,
+      upsert: false,
+    })
+
+  if (error) {
+    throw new Error(`Supabase Storage 업로드 실패: ${error.message}`)
+  }
+
+  const { data } = supabase.storage.from(FALLBACK_BUCKET).getPublicUrl(path)
+  return { url: data.publicUrl, fileType: mimeType }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
@@ -53,37 +91,46 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       return NextResponse.json(
         { error: `파일 크기는 ${MAX_FILE_SIZE_MB}MB 이하여야 합니다.` },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     const serviceAccount = parseServiceAccountKey(cfEnv('GOOGLE_SERVICE_ACCOUNT_KEY'))
     const folderId = cfEnv('GOOGLE_DRIVE_RESOURCE_FOLDER_ID') ?? DEFAULT_DRIVE_FOLDER_ID
     const clientEmail = cfEnv('GOOGLE_CLIENT_EMAIL') ?? serviceAccount.client_email ?? ''
-    const privateKey  = cfEnv('GOOGLE_PRIVATE_KEY') ?? serviceAccount.private_key ?? ''
+    const privateKey = cfEnv('GOOGLE_PRIVATE_KEY') ?? serviceAccount.private_key ?? ''
 
     if (!clientEmail || !privateKey) {
-      return NextResponse.json(
-        { error: 'Google 서비스 계정 설정이 필요합니다. (GOOGLE_SERVICE_ACCOUNT_KEY 또는 GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY)' },
-        { status: 500 }
-      )
+      const fallback = await uploadFileToSupabaseFallback(file)
+      return NextResponse.json({ ...fallback, storage: 'supabase' })
     }
 
     const mimeType = file.type || 'application/octet-stream'
     const buffer = Buffer.from(await file.arrayBuffer())
-    const driveUrl = await uploadFileToDrive(buffer, file.name, mimeType, {
-      folderId,
-      clientEmail,
-      privateKey,
-    })
 
-    return NextResponse.json({ url: driveUrl })
+    try {
+      const driveUrl = await uploadFileToDrive(buffer, file.name, mimeType, {
+        folderId,
+        clientEmail,
+        privateKey,
+      })
+
+      return NextResponse.json({ url: driveUrl, fileType: mimeType, storage: 'drive' })
+    } catch (driveError) {
+      console.error(
+        '[upload/resource] Google Drive upload failed; falling back to Supabase Storage.',
+        driveError instanceof Error ? driveError.message : driveError,
+      )
+
+      const fallback = await uploadFileToSupabaseFallback(file)
+      return NextResponse.json({ ...fallback, storage: 'supabase' })
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[upload/resource]', msg)
     return NextResponse.json(
       { error: msg || '파일 업로드 중 오류가 발생했습니다.' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
