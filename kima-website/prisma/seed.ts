@@ -495,8 +495,8 @@ async function seedNews() {
     create: {
       id:                 1,
       isEnabled:          true,
-      cronTime:           '0 23 * * *',   // UTC 23:00 = KST 08:00
-      collectHour:        8,
+      cronTime:           '0 0 * * *',   // UTC 00:00 = KST 09:00
+      collectHour:        9,
       collectMinute:      0,
       aiProvider:         'gemini',
       relevanceThreshold: 0.5,            // 50점 이상
