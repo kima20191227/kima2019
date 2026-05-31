@@ -10,6 +10,8 @@ const MAX_FILE_SIZE_MB = 100
 const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
 const FALLBACK_BUCKET = 'forum-files'
 
+export const runtime = 'nodejs'
+
 type GoogleServiceAccountKey = {
   client_email?: string
   private_key?: string

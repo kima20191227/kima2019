@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { uploadResourceFile } from '@/lib/uploadClient'
 
 export interface AttachedFile {
   url: string
@@ -37,12 +38,12 @@ export function FileAttachmentZone({
   className = '',
 }: Props) {
   const [items, setItems] = useState<UploadItem[]>(() =>
-    initialFiles.map((f) => ({
+    initialFiles.map((file) => ({
       id: makeId(),
-      name: f.name,
-      type: f.type,
+      name: file.name,
+      type: file.type,
       status: 'done' as const,
-      url: f.url,
+      url: file.url,
     })),
   )
   const [isDragging, setIsDragging] = useState(false)
@@ -51,9 +52,9 @@ export function FileAttachmentZone({
   const notify = useCallback(
     (updated: UploadItem[]) => {
       const done = updated
-        .filter((i) => i.status === 'done' && i.url)
-        .map((i) => ({ url: i.url!, name: i.name, type: i.type }))
-      const isUploading = updated.some((i) => i.status === 'uploading')
+        .filter((item) => item.status === 'done' && item.url)
+        .map((item) => ({ url: item.url!, name: item.name, type: item.type }))
+      const isUploading = updated.some((item) => item.status === 'uploading')
       onChange(done, isUploading)
     },
     [onChange],
@@ -61,26 +62,23 @@ export function FileAttachmentZone({
 
   const uploadOne = useCallback(
     async (itemId: string, file: File) => {
-      const fd = new FormData()
-      fd.append('file', file)
       try {
-        const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
-        const json = await res.json() as { url?: string; error?: string }
+        const uploaded = await uploadResourceFile(file)
         setItems((prev) => {
-          const next = prev.map((i) =>
-            i.id === itemId
-              ? res.ok
-                ? { ...i, status: 'done' as const, url: json.url! }
-                : { ...i, status: 'error' as const, errorMsg: json.error ?? '업로드 실패' }
-              : i,
+          const next = prev.map((item) =>
+            item.id === itemId
+              ? { ...item, status: 'done' as const, url: uploaded.url, type: uploaded.fileType ?? item.type }
+              : item,
           )
           notify(next)
           return next
         })
-      } catch {
+      } catch (err) {
         setItems((prev) => {
-          const next = prev.map((i) =>
-            i.id === itemId ? { ...i, status: 'error' as const, errorMsg: '네트워크 오류' } : i,
+          const next = prev.map((item) =>
+            item.id === itemId
+              ? { ...item, status: 'error' as const, errorMsg: err instanceof Error ? err.message : '업로드 실패' }
+              : item,
           )
           notify(next)
           return next
@@ -96,16 +94,16 @@ export function FileAttachmentZone({
       setItems((prev) => {
         const remaining = maxFiles - prev.length
         if (remaining <= 0) return prev
-        const newItems: UploadItem[] = files.slice(0, remaining).map((f) => ({
+        const selected = files.slice(0, remaining)
+        const newItems: UploadItem[] = selected.map((file) => ({
           id: makeId(),
-          name: f.name,
-          type: f.type || 'application/octet-stream',
+          name: file.name,
+          type: file.type || 'application/octet-stream',
           status: 'uploading' as const,
         }))
         notify([...prev, ...newItems])
-        // start uploads after state settles
         setTimeout(() => {
-          newItems.forEach((item, i) => uploadOne(item.id, files[i]))
+          newItems.forEach((item, index) => uploadOne(item.id, selected[index]))
         }, 0)
         return [...prev, ...newItems]
       })
@@ -116,7 +114,7 @@ export function FileAttachmentZone({
   const removeItem = useCallback(
     (id: string) => {
       setItems((prev) => {
-        const next = prev.filter((i) => i.id !== id)
+        const next = prev.filter((item) => item.id !== id)
         notify(next)
         return next
       })
@@ -128,7 +126,6 @@ export function FileAttachmentZone({
     <div className={className}>
       <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
 
-      {/* Drop zone */}
       <div
         onDragOver={(e) => {
           e.preventDefault()
@@ -176,12 +173,11 @@ export function FileAttachmentZone({
             <span className="text-[#1B3A6B] underline font-medium">클릭하여 선택</span>
           </p>
           <p className="text-xs text-gray-400">
-            이미지·PDF·문서·영상 등 모든 파일 · 여러 파일 동시 선택 가능 · 최대 {maxFiles}개
+            이미지, PDF, 문서 등 모든 파일 · 이미지 자동 압축 · 최대 {maxFiles}개
           </p>
         </div>
       </div>
 
-      {/* File list */}
       {items.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {items.map((item) => (
@@ -189,7 +185,6 @@ export function FileAttachmentZone({
               key={item.id}
               className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100"
             >
-              {/* File type icon */}
               <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1B3A6B]/10 flex-shrink-0 text-[#1B3A6B]">
                 {item.type.startsWith('image/') ? (
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -214,7 +209,7 @@ export function FileAttachmentZone({
                 <div className="w-4 h-4 border-2 border-[#1B3A6B] border-t-transparent rounded-full animate-spin flex-shrink-0" />
               )}
               {item.status === 'error' && (
-                <span className="text-xs text-red-500 flex-shrink-0 truncate max-w-[100px]">
+                <span className="text-xs text-red-500 flex-shrink-0 truncate max-w-[220px]" title={item.errorMsg}>
                   {item.errorMsg}
                 </span>
               )}

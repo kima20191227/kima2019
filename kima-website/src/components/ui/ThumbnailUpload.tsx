@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { convertDriveUrl } from '@/lib/utils'
+import { uploadResourceFile } from '@/lib/uploadClient'
 
 interface Props {
   value?: string | null
@@ -33,20 +34,12 @@ export function ThumbnailUpload({
       setError('')
 
       try {
-        const fd = new FormData()
-        fd.append('file', file)
-        const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
-        const json = await res.json() as { url?: string; error?: string }
-        if (!res.ok) {
-          setError(json.error ?? '업로드 실패')
-          setPreviewUrl(value ?? null)
-          return
-        }
-        const serverUrl = json.url!
+        const { url: serverUrl } = await uploadResourceFile(file)
         setPreviewUrl(serverUrl)
         onChange(serverUrl)
-      } catch {
-        setError('업로드 중 오류가 발생했습니다.')
+      } catch (err) {
+        URL.revokeObjectURL(localUrl)
+        setError(err instanceof Error ? err.message : '업로드 중 오류가 발생했습니다.')
         setPreviewUrl(value ?? null)
       } finally {
         setUploading(false)
@@ -114,7 +107,7 @@ export function ThumbnailUpload({
         className="hidden"
         onChange={handleFileSelect}
       />
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <p className="text-xs text-red-500 mt-1 max-w-md">{error}</p>}
       <p className="text-xs text-gray-400 mt-1">썸네일로 사용됩니다 (선택사항)</p>
     </div>
   )
