@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { POSITIONS } from './auth.schema'
 
 const REGIONS = [
   '서울',
@@ -13,15 +14,27 @@ const REGIONS = [
   '기타',
 ] as const
 
+const optionalText = (max: number, message: string) =>
+  z.string().trim().max(max, message).optional().or(z.literal(''))
+
 export const updateProfileSchema = z.object({
-  name: z.string().min(2, '이름은 2자 이상 입력해주세요'),
-  organization: z.string().max(100, '단체명은 100자 이하로 입력해주세요').optional(),
-  region: z.enum(REGIONS, { message: '올바른 지역을 선택해주세요' }).optional(),
+  name: z
+    .string()
+    .trim()
+    .min(2, '이름은 2자 이상 입력해주세요')
+    .max(50, '이름은 50자 이하로 입력해주세요'),
+  position: z.enum(POSITIONS, { message: '직분을 선택해주세요' }).optional().or(z.literal('')),
   phone: z
     .string()
-    .regex(/^010-\d{4}-\d{4}$/, '전화번호 형식이 올바르지 않습니다 (예: 010-1234-5678)')
-    .optional()
-    .or(z.literal('')),
+    .trim()
+    .min(1, '전화번호를 입력해주세요')
+    .max(20, '전화번호는 20자 이하로 입력해주세요'),
+  denomination: optionalText(100, '교단명은 100자 이하로 입력해주세요'),
+  organization: optionalText(100, '단체명은 100자 이하로 입력해주세요'),
+  address: optionalText(200, '주소는 200자 이하로 입력해주세요'),
+  region: z.enum(REGIONS, { message: '올바른 지역을 선택해주세요' }).optional().or(z.literal('')),
+  ministryLanguages: z.array(z.string().trim().min(1)).min(1, '사역 언어를 1개 이상 입력해주세요'),
+  ministryTargets: z.array(z.string().trim().min(1)).min(1, '사역 대상을 1개 이상 입력해주세요'),
 })
 
 export const premiumRequestSchema = z.object({

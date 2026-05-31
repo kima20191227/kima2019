@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { PasswordChangeForm } from '@/components/member/PasswordChangeForm'
+import { ProfileEditForm } from '@/components/member/ProfileEditForm'
 import type { Metadata } from 'next'
 import type { UserRole } from '@prisma/client'
 
@@ -71,6 +72,9 @@ export default async function MypagePage() {
               {user.organization && (
                 <p className="text-gray-400 text-xs mt-1">🏢 {user.organization}</p>
               )}
+              {user.phone && (
+                <p className="text-gray-400 text-xs">☎ {user.phone}</p>
+              )}
               {user.region && (
                 <p className="text-gray-400 text-xs">📍 {user.region}</p>
               )}
@@ -113,6 +117,21 @@ export default async function MypagePage() {
             </div>
           )}
         </div>
+
+        <ProfileEditForm
+          user={{
+            email: user.email,
+            name: user.name,
+            position: user.position,
+            phone: user.phone,
+            denomination: user.denomination,
+            organization: user.organization,
+            address: user.address,
+            region: user.region,
+            ministryLanguages: user.ministryLanguages,
+            ministryTargets: user.ministryTargets,
+          }}
+        />
 
         {/* 연동 계정 */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-7">
