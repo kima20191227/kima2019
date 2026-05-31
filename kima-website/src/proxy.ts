@@ -28,6 +28,12 @@ export default auth((req) => {
     }
   }
 
+  if (pathname.startsWith('/legal/sources')) {
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${pathname}`, req.url))
+    }
+  }
+
   if (pathname.startsWith('/resources')) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${pathname}&notice=premium`, req.url))
@@ -53,5 +59,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ['/admin/:path*', '/community/:path*', '/network/:path*', '/resources/:path*', '/member/:path*'],
+  matcher: ['/admin/:path*', '/community/:path*', '/network/:path*', '/resources/:path*', '/member/:path*', '/legal/sources/:path*'],
 }

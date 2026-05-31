@@ -171,6 +171,100 @@ enum AccessLevel {
   PREMIUM
 }
 
+enum LegalCategory {
+  MULTICULTURAL_FAMILY
+  IMMIGRATION
+  VISA_POLICY
+  REFUGEE
+  EMPLOYMENT
+  SOCIAL_WELFARE
+  OTHER
+}
+
+enum LegalSectionType {
+  OVERVIEW
+  SOURCE_LINKS
+  PRACTICAL_GUIDE
+  EXPERT_MATERIAL
+}
+
+enum LegalSourceType {
+  LAW_API
+  RSS
+  WEB
+}
+
+model LegalDocument {
+  id            String        @id @default(cuid())
+  title         String
+  summary       String?
+  content       String
+  category      LegalCategory
+  lawType       String?
+  effectiveDate DateTime?
+  sourceUrl     String?
+  sourceId      String?
+  isLatest      Boolean       @default(true)
+  accessLevel   AccessLevel   @default(PUBLIC)
+  viewCount     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  createdById   String?
+
+  sections      LegalDocumentSection[]
+
+  @@index([category, isLatest])
+  @@index([accessLevel])
+  @@index([effectiveDate])
+  @@index([sourceId])
+  @@index([createdAt])
+}
+
+model LegalSource {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  category      LegalCategory
+  sourceType    LegalSourceType @default(WEB)
+  url           String          @unique
+  apiKeyword    String?
+  isEnabled     Boolean         @default(true)
+  accessLevel   AccessLevel     @default(MEMBER)
+  lastCheckedAt DateTime?
+  lastChangedAt DateTime?
+  lastSyncedAt  DateTime?
+  lastStatus    String?
+  lastError     String?
+  contentHash   String?
+  order         Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([category, isEnabled])
+  @@index([accessLevel])
+  @@index([sourceType])
+  @@index([order])
+}
+
+model LegalDocumentSection {
+  id          String           @id @default(cuid())
+  documentId  String
+  document    LegalDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  type        LegalSectionType
+  title       String
+  content     String
+  accessLevel AccessLevel      @default(PUBLIC)
+  order       Int              @default(0)
+  authorName  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([documentId, order])
+  @@index([accessLevel])
+  @@index([type])
+}
+
 model Event {
   id           String   @id @default(cuid())
   title        String

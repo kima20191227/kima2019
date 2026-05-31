@@ -1,4 +1,12 @@
-import { PrismaClient, CategoryType, LeaderGroup } from '@prisma/client'
+import {
+  PrismaClient,
+  CategoryType,
+  LeaderGroup,
+  type AccessLevel,
+  type LegalCategory,
+  type LegalSourceType,
+  type LegalSectionType,
+} from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
@@ -95,6 +103,331 @@ const LEADERS: LeaderSeed[] = [
   { group: 'NETWORK_CHAIR', order: 2, title: '지역교회네트워크위원장',    name: '김귀희', org: '사랑의 교회, 디아스포라 고문' },
 ]
 
+type LegalDocumentSeed = {
+  title: string
+  category: LegalCategory
+  lawType: string
+  summary: string
+  content: string
+  sourceUrl: string
+  sourceId?: string
+  accessLevel: AccessLevel
+  isLatest?: boolean
+  sections?: LegalSectionSeed[]
+}
+
+type LegalSectionSeed = {
+  type: LegalSectionType
+  title: string
+  content: string
+  accessLevel: AccessLevel
+  order: number
+  authorName?: string
+  reviewedAt?: Date
+}
+
+type LegalSourceSeed = {
+  name: string
+  description: string
+  category: LegalCategory
+  sourceType: LegalSourceType
+  url: string
+  apiKeyword?: string
+  accessLevel: AccessLevel
+  order: number
+}
+
+function buildDefaultLegalSections(document: Pick<LegalDocumentSeed, 'title' | 'content' | 'sourceUrl'>): LegalSectionSeed[] {
+  return [
+    {
+      type: 'OVERVIEW',
+      title: '한눈에 보기',
+      content: document.content,
+      accessLevel: 'PUBLIC',
+      order: 0,
+      authorName: 'KIMA',
+    },
+    {
+      type: 'SOURCE_LINKS',
+      title: '법령 원문 링크',
+      content: `## 공식 원문 확인
+
+- [국가법령정보센터에서 ${document.title} 원문 보기](${document.sourceUrl})
+- 법령 개정 여부와 시행일은 국가법령정보센터 원문을 기준으로 확인합니다.
+- 조문 해석이 필요한 경우 변호사 또는 행정사와 상담하시기 바랍니다.
+`,
+      accessLevel: 'PUBLIC',
+      order: 1,
+      authorName: 'KIMA',
+    },
+    {
+      type: 'PRACTICAL_GUIDE',
+      title: '실무 해설',
+      content: `## 사역 현장 확인 포인트
+
+- 상담 전에 대상자의 체류자격, 가족관계, 고용관계, 거주지를 먼저 확인합니다.
+- 신청 절차는 법령 원문뿐 아니라 부처 지침, 지자체 기준, 민원 창구 안내를 함께 확인합니다.
+- 불이익이 예상되는 사안은 서류 제출 전 전문가 검토를 권합니다.
+
+## 자주 묻는 질문
+
+**Q. 법령 요약만으로 상담 결론을 내려도 되나요?**
+
+A. 아닙니다. KIMA 자료는 현장 이해를 돕는 참고 자료이며, 개별 사례는 관할 기관과 전문가 판단을 함께 확인해야 합니다.
+`,
+      accessLevel: 'MEMBER',
+      order: 2,
+      authorName: 'KIMA',
+    },
+    {
+      type: 'EXPERT_MATERIAL',
+      title: '전문 자료',
+      content: `## 전문가 기고 및 사례 분석
+
+이 영역은 변호사, 행정사, 현장 전문가의 검토 자료를 축적하는 정회원 전용 공간입니다.
+
+- 상세 해설서
+- 판례 및 행정심판 사례
+- 복잡한 상담 사례 Q&A
+
+전문 자료는 검토가 완료된 항목부터 순차적으로 업데이트됩니다.
+`,
+      accessLevel: 'PREMIUM',
+      order: 3,
+      authorName: 'KIMA',
+    },
+  ]
+}
+
+const LEGAL_SOURCES: LegalSourceSeed[] = [
+  {
+    name: '국가법령정보센터 - 다문화가족지원법',
+    description: '다문화가족 지원 정책의 근거 법령 원문',
+    category: 'MULTICULTURAL_FAMILY',
+    sourceType: 'LAW_API',
+    url: 'https://www.law.go.kr/법령/다문화가족지원법',
+    apiKeyword: '다문화가족지원법',
+    accessLevel: 'MEMBER',
+    order: 10,
+  },
+  {
+    name: '국가법령정보센터 - 출입국관리법',
+    description: '입국·출국·체류·외국인등록 관련 기본 법령',
+    category: 'IMMIGRATION',
+    sourceType: 'LAW_API',
+    url: 'https://www.law.go.kr/법령/출입국관리법',
+    apiKeyword: '출입국관리법',
+    accessLevel: 'MEMBER',
+    order: 20,
+  },
+  {
+    name: '국가법령정보센터 - 외국인근로자 고용법',
+    description: '고용허가제와 외국인근로자 고용 절차 관련 법령',
+    category: 'EMPLOYMENT',
+    sourceType: 'LAW_API',
+    url: 'https://www.law.go.kr/법령/외국인근로자의고용등에관한법률',
+    apiKeyword: '외국인근로자의 고용 등에 관한 법률',
+    accessLevel: 'MEMBER',
+    order: 30,
+  },
+  {
+    name: '국가법령정보센터 - 난민법',
+    description: '난민 인정 절차와 난민 신청자 처우 관련 법령',
+    category: 'REFUGEE',
+    sourceType: 'LAW_API',
+    url: 'https://www.law.go.kr/법령/난민법',
+    apiKeyword: '난민법',
+    accessLevel: 'MEMBER',
+    order: 40,
+  },
+  {
+    name: '국가법령정보센터 - 재한외국인 처우 기본법',
+    description: '재한외국인 사회 적응과 처우 개선 관련 기본 법령',
+    category: 'OTHER',
+    sourceType: 'LAW_API',
+    url: 'https://www.law.go.kr/법령/재한외국인처우기본법',
+    apiKeyword: '재한외국인 처우 기본법',
+    accessLevel: 'MEMBER',
+    order: 50,
+  },
+  {
+    name: '국가법령정보센터 - 결혼중개업의 관리에 관한 법률',
+    description: '국제결혼중개업 관리와 이용자 보호 관련 법령',
+    category: 'OTHER',
+    sourceType: 'LAW_API',
+    url: 'https://www.law.go.kr/법령/결혼중개업의관리에관한법률',
+    apiKeyword: '결혼중개업의 관리에 관한 법률',
+    accessLevel: 'MEMBER',
+    order: 60,
+  },
+  {
+    name: '국가법령정보센터 - 국적법',
+    description: '국적 취득·상실·회복 등 국적 관련 기본 법령',
+    category: 'IMMIGRATION',
+    sourceType: 'LAW_API',
+    url: 'https://www.law.go.kr/법령/국적법',
+    apiKeyword: '국적법',
+    accessLevel: 'MEMBER',
+    order: 70,
+  },
+  {
+    name: '법무부 보도자료',
+    description: '비자제도와 출입국 정책 변경 관련 보도자료',
+    category: 'VISA_POLICY',
+    sourceType: 'WEB',
+    url: 'https://www.moj.go.kr/moj/227/subview.do',
+    accessLevel: 'MEMBER',
+    order: 100,
+  },
+  {
+    name: '출입국·외국인정책본부 공지',
+    description: '체류, 사증, 외국인정책 관련 공지사항',
+    category: 'VISA_POLICY',
+    sourceType: 'WEB',
+    url: 'https://www.immigration.go.kr/immigration/1552/subview.do',
+    accessLevel: 'MEMBER',
+    order: 110,
+  },
+  {
+    name: '고용노동부 외국인 고용 공지',
+    description: '외국인근로자 고용허가제와 노동 정책 관련 공지',
+    category: 'EMPLOYMENT',
+    sourceType: 'WEB',
+    url: 'https://www.moel.go.kr',
+    accessLevel: 'MEMBER',
+    order: 120,
+  },
+]
+
+const LEGAL_DOCUMENTS: LegalDocumentSeed[] = [
+  {
+    title: '다문화가족지원법',
+    category: 'MULTICULTURAL_FAMILY',
+    lawType: '법률',
+    summary: '다문화가족의 안정적인 정착과 가족생활 지원을 위한 기본법',
+    content: `# 다문화가족지원법
+
+다문화가족지원법은 다문화가족 구성원이 안정적인 가족생활을 영위하고 사회 구성원으로 함께 살아갈 수 있도록 지원하는 기본 법령입니다.
+
+## 현장 적용 포인트
+
+- 가족센터, 방문교육, 상담, 통번역 등 지원 사업의 근거를 확인할 때 참고합니다.
+- 결혼이민자와 다문화가족 자녀 지원 정책을 설명할 때 기본 자료로 사용할 수 있습니다.
+- 실제 지원 대상과 절차는 지자체와 가족센터 운영 지침을 함께 확인해야 합니다.
+`,
+    sourceUrl: 'https://www.law.go.kr/법령/다문화가족지원법',
+    accessLevel: 'PUBLIC',
+  },
+  {
+    title: '출입국관리법',
+    category: 'IMMIGRATION',
+    lawType: '법률',
+    summary: '외국인의 입국·출국·체류관리에 관한 기본법',
+    content: `# 출입국관리법
+
+출입국관리법은 외국인의 입국, 출국, 체류, 등록, 강제퇴거 등 출입국 행정의 기본 절차를 정한 법령입니다.
+
+## 현장 적용 포인트
+
+- 체류자격, 체류기간, 외국인등록, 체류지 변경 신고 등을 안내할 때 참고합니다.
+- 비자 변경이나 연장 상담 전에는 하위 법령과 출입국 민원 안내를 함께 확인해야 합니다.
+- 개별 사건은 체류자격과 체류 이력에 따라 결론이 달라질 수 있으므로 공식 기관 확인이 필요합니다.
+`,
+    sourceUrl: 'https://www.law.go.kr/법령/출입국관리법',
+    accessLevel: 'PUBLIC',
+  },
+  {
+    title: '외국인 비자제도 변경사항',
+    category: 'VISA_POLICY',
+    lawType: '안내',
+    summary: '체류자격·비자 정책 변경 내용을 현장에서 확인하기 위한 안내 문서',
+    content: `# 외국인 비자제도 변경사항
+
+비자제도는 법령, 시행령, 시행규칙, 법무부 고시와 지침을 통해 수시로 변경될 수 있습니다.
+
+## 현장 적용 포인트
+
+- 유학생, 이주노동자, 결혼이민자, 동포 등 대상별 체류자격 변경 내용을 확인합니다.
+- 상담 시점의 최신 공지와 하이코리아 민원 안내를 함께 확인합니다.
+- 이 문서는 변동 사항을 정리하는 안내 자료이며 최종 판단은 공식 공지를 기준으로 합니다.
+`,
+    sourceUrl: 'https://www.law.go.kr/법령/출입국관리법시행규칙',
+    accessLevel: 'PUBLIC',
+  },
+  {
+    title: '난민법',
+    category: 'REFUGEE',
+    lawType: '법률',
+    summary: '난민 인정 절차와 난민 신청자의 처우에 관한 기본 법령',
+    content: `# 난민법
+
+난민법은 난민 인정 신청, 심사, 이의신청, 난민 신청자와 인정자의 처우에 관한 사항을 정한 법령입니다.
+
+## 현장 적용 포인트
+
+- 난민 신청 절차와 심사 단계, 체류 관련 안내가 필요할 때 참고합니다.
+- 인도적 체류, 난민 인정, 난민 신청자의 권리는 구분해서 설명해야 합니다.
+- 구체적 사건은 전문 법률 상담과 공식 기관 확인이 필요합니다.
+`,
+    sourceUrl: 'https://www.law.go.kr/법령/난민법',
+    accessLevel: 'PUBLIC',
+  },
+  {
+    title: '외국인근로자의 고용 등에 관한 법률',
+    category: 'EMPLOYMENT',
+    lawType: '법률',
+    summary: '고용허가제와 외국인근로자 고용 절차의 기본 법령',
+    content: `# 외국인근로자의 고용 등에 관한 법률
+
+외국인근로자의 고용 등에 관한 법률은 고용허가제, 외국인근로자 도입과 관리, 사업주의 의무 등을 정한 법령입니다.
+
+## 현장 적용 포인트
+
+- E-9 등 고용허가제 대상 근로자 상담 시 기본 구조를 파악하는 데 유용합니다.
+- 사업장 변경, 근로계약, 고용 절차는 고용노동부 안내와 함께 확인해야 합니다.
+- 임금, 산업재해, 퇴직금 등은 근로기준법과 관련 제도를 함께 검토합니다.
+`,
+    sourceUrl: 'https://www.law.go.kr/법령/외국인근로자의고용등에관한법률',
+    accessLevel: 'PUBLIC',
+  },
+  {
+    title: '사회보장기본법',
+    category: 'SOCIAL_WELFARE',
+    lawType: '법률',
+    summary: '사회보장 제도의 기본 원칙과 국가·지자체 책무를 정한 법령',
+    content: `# 사회보장기본법
+
+사회보장기본법은 사회보험, 공공부조, 사회서비스 등 사회보장 제도의 기본 방향과 원칙을 정한 법령입니다.
+
+## 현장 적용 포인트
+
+- 이주민과 다문화가족에게 적용 가능한 복지 제도를 설명할 때 배경 법령으로 참고합니다.
+- 실제 수급 가능 여부는 개별 법령, 체류자격, 거주 요건, 지자체 기준에 따라 달라질 수 있습니다.
+- 긴급지원, 건강보험, 아동·가족 지원 제도와 함께 확인하는 것이 좋습니다.
+`,
+    sourceUrl: 'https://www.law.go.kr/법령/사회보장기본법',
+    accessLevel: 'PUBLIC',
+  },
+  {
+    title: '재한외국인 처우 기본법',
+    category: 'OTHER',
+    lawType: '법률',
+    summary: '재한외국인의 사회 적응과 처우 개선 정책의 기본 법령',
+    content: `# 재한외국인 처우 기본법
+
+재한외국인 처우 기본법은 재한외국인이 한국 사회에 적응하고 능력을 발휘할 수 있도록 하는 정책의 기본 사항을 정한 법령입니다.
+
+## 현장 적용 포인트
+
+- 외국인 주민 지원, 사회통합, 차별 예방, 정책 기본계획의 근거를 확인할 때 참고합니다.
+- 중앙정부와 지방자치단체의 외국인 지원 정책을 이해하는 배경 자료로 사용할 수 있습니다.
+- 실제 지원 사업은 부처별 지침과 지자체 조례를 함께 확인해야 합니다.
+`,
+    sourceUrl: 'https://www.law.go.kr/법령/재한외국인처우기본법',
+    accessLevel: 'PUBLIC',
+  },
+]
+
 async function main() {
   console.log('Seeding categories...')
   for (const cat of CATEGORIES) {
@@ -133,6 +466,8 @@ async function main() {
 
   // ── 뉴스 시스템 초기 데이터 ─────────────────────────────────────────────
   await seedNews()
+  await seedLegalSources()
+  await seedLegalDocuments()
 }
 
 async function seedNews() {
@@ -269,6 +604,96 @@ async function seedNews() {
     created++
   }
   console.log(`NewsSource seeded: ${created}개`)
+}
+
+async function seedLegalDocuments() {
+  console.log('Seeding legal documents...')
+
+  let saved = 0
+  for (const document of LEGAL_DOCUMENTS) {
+    const { sections, ...documentData } = document
+    const sectionData = (sections ?? buildDefaultLegalSections(document)).map((section, index) => ({
+      type: section.type,
+      title: section.title,
+      content: section.content,
+      accessLevel: section.accessLevel,
+      order: section.order ?? index,
+      authorName: section.authorName ?? null,
+      reviewedAt: section.reviewedAt ?? null,
+    }))
+
+    const existing = await prisma.legalDocument.findFirst({
+      where: {
+        title: document.title,
+        category: document.category,
+      },
+      select: { id: true },
+    })
+
+    const data = {
+      ...documentData,
+      isLatest: documentData.isLatest ?? true,
+    }
+
+    if (existing) {
+      await prisma.legalDocument.update({
+        where: { id: existing.id },
+        data,
+      })
+
+      const sectionCount = await prisma.legalDocumentSection.count({
+        where: { documentId: existing.id },
+      })
+      if (sectionCount === 0) {
+        await prisma.legalDocumentSection.createMany({
+          data: sectionData.map((section) => ({
+            ...section,
+            documentId: existing.id,
+          })),
+        })
+      }
+    } else {
+      await prisma.legalDocument.create({
+        data: {
+          ...data,
+          sections: { create: sectionData },
+        },
+      })
+    }
+
+    saved++
+  }
+
+  console.log(`Seeded ${saved} legal documents.`)
+}
+
+async function seedLegalSources() {
+  console.log('Seeding legal sources...')
+
+  let saved = 0
+  for (const source of LEGAL_SOURCES) {
+    await prisma.legalSource.upsert({
+      where: { url: source.url },
+      update: {
+        name: source.name,
+        description: source.description,
+        category: source.category,
+        sourceType: source.sourceType,
+        apiKeyword: source.apiKeyword ?? null,
+        accessLevel: source.accessLevel,
+        isEnabled: true,
+        order: source.order,
+      },
+      create: {
+        ...source,
+        apiKeyword: source.apiKeyword ?? null,
+        isEnabled: true,
+      },
+    })
+    saved++
+  }
+
+  console.log(`Seeded ${saved} legal sources.`)
 }
 
 main()

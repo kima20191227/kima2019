@@ -17,6 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/directory`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/story`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE_URL}/data`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE_URL}/legal`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE_URL}/donate`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE_URL}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
@@ -50,5 +51,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  return [...staticRoutes, ...orgRoutes, ...storyRoutes]
+  const legalTable = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+    SELECT to_regclass('public."LegalDocument"') IS NOT NULL AS "exists"
+  `.catch(() => [])
+
+  const legalDocuments = legalTable[0]?.exists
+    ? await prisma.legalDocument.findMany({
+        where: { accessLevel: 'PUBLIC' },
+        select: { id: true, updatedAt: true, isLatest: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 200,
+      }).catch(() => [])
+    : []
+
+  const legalRoutes: MetadataRoute.Sitemap = legalDocuments.map((document) => ({
+    url: `${BASE_URL}/legal/${document.id}`,
+    lastModified: document.updatedAt,
+    changeFrequency: document.isLatest ? 'monthly' as const : 'yearly' as const,
+    priority: document.isLatest ? 0.6 : 0.3,
+  }))
+
+  return [...staticRoutes, ...orgRoutes, ...storyRoutes, ...legalRoutes]
 }

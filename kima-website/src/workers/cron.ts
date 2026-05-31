@@ -23,6 +23,7 @@ interface Env {
 const DAILY_JOBS = [
   '/api/cron/expiring-members',
   '/api/cron/event-reminders',
+  '/api/cron/sync-legal-sources',
 ] as const
 
 /** UTC 23:00 에 실행되는 뉴스 수집 작업 */
