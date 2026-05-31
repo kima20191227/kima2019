@@ -1,15 +1,25 @@
 /**
  * GET /api/cron/collect-news
- * 이주민·다문화 뉴스 자동 수집 크론 엔드포인트
+ * 이주민·다문화 뉴스 자동 수집 cron endpoint.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { runNewsCollection } from '@/lib/collectNews'
 import { cfEnv } from '@/lib/cfEnv'
 
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+function getAllowedCronTokens(): string[] {
+  return [
+    cfEnv('CRON_SECRET'),
+    cfEnv('CRON_SECRET_TOKEN'),
+  ].filter((value): value is string => !!value)
+}
+
 export async function GET(request: NextRequest) {
-  const token = cfEnv('CRON_SECRET_TOKEN') ?? cfEnv('CRON_SECRET') ?? ''
+  const tokens = getAllowedCronTokens()
   const authHeader = request.headers.get('authorization')
-  if (!token || authHeader !== `Bearer ${token}`) {
+  if (tokens.length === 0 || !tokens.some((token) => authHeader === `Bearer ${token}`)) {
     return NextResponse.json({ error: '인증 실패' }, { status: 401 })
   }
 
