@@ -102,4 +102,34 @@ describe('POST /api/upload/resource', () => {
       storage: 'supabase',
     })
   })
+
+  it('rejects unsafe file types before uploading', async () => {
+    const response = await POST(makeRequest(new File(['<html></html>'], 'page.html', { type: 'text/html' })) as never)
+    const body = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(body.error).toContain('허용되지 않는 파일 형식')
+    expect(mocks.uploadFileToDrive).not.toHaveBeenCalled()
+    expect(mocks.upload).not.toHaveBeenCalled()
+  })
+
+  it('allows common Korean document uploads when the browser sends octet-stream', async () => {
+    mocks.uploadFileToDrive.mockResolvedValue('https://drive.google.com/file/d/file-id/view')
+
+    const response = await POST(makeRequest(new File(['hwp'], 'document.hwp', { type: 'application/octet-stream' })) as never)
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(mocks.uploadFileToDrive).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      'document.hwp',
+      'application/x-hwp',
+      expect.objectContaining({ folderId: 'drive-folder-id' }),
+    )
+    expect(body).toEqual({
+      url: 'https://drive.google.com/file/d/file-id/view',
+      fileType: 'application/x-hwp',
+      storage: 'drive',
+    })
+  })
 })

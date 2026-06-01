@@ -20,6 +20,10 @@ function mask(value: string | undefined): string {
 }
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production' && cfEnv('ENABLE_TEST_KEYS') !== 'true') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   // ADMIN만 접근 허용
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') {

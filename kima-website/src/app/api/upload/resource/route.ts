@@ -9,6 +9,45 @@ import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 const MAX_FILE_SIZE_MB = 100
 const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
 const FALLBACK_BUCKET = 'forum-files'
+const ALLOWED_RESOURCE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/x-hwp',
+  'application/haansofthwp',
+  'application/vnd.hancom.hwp',
+  'application/vnd.hancom.hwpx',
+  'video/mp4',
+  'video/quicktime',
+])
+const RESOURCE_EXTENSION_TO_TYPE: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  heic: 'image/heic',
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  hwp: 'application/x-hwp',
+  hwpx: 'application/vnd.hancom.hwpx',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
+}
 
 export const runtime = 'nodejs'
 
@@ -42,9 +81,19 @@ function parseServiceAccountKey(raw: string | undefined): GoogleServiceAccountKe
   return {}
 }
 
-async function uploadFileToSupabaseFallback(file: File): Promise<{ url: string; fileType: string }> {
+function normalizedResourceMimeType(file: File): string | null {
+  if (ALLOWED_RESOURCE_TYPES.has(file.type)) return file.type
+
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const inferredType = RESOURCE_EXTENSION_TO_TYPE[extension]
+  if (inferredType && (!file.type || file.type === 'application/octet-stream')) return inferredType
+
+  return null
+}
+
+async function uploadFileToSupabaseFallback(file: File, initialMimeType: string): Promise<{ url: string; fileType: string }> {
   let buffer = Buffer.from(await file.arrayBuffer())
-  let mimeType = file.type || 'application/octet-stream'
+  let mimeType = initialMimeType
   let ext = file.name.split('.').pop() ?? 'bin'
 
   if (isConvertibleImage(mimeType)) {
@@ -97,17 +146,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const mimeType = normalizedResourceMimeType(file)
+    if (!mimeType) {
+      return NextResponse.json(
+        { error: '허용되지 않는 파일 형식입니다. 이미지, PDF, 문서, PPT, 텍스트, 영상 파일만 업로드할 수 있습니다.' },
+        { status: 400 },
+      )
+    }
+
     const serviceAccount = parseServiceAccountKey(cfEnv('GOOGLE_SERVICE_ACCOUNT_KEY'))
     const folderId = cfEnv('GOOGLE_DRIVE_RESOURCE_FOLDER_ID') ?? DEFAULT_DRIVE_FOLDER_ID
     const clientEmail = cfEnv('GOOGLE_CLIENT_EMAIL') ?? serviceAccount.client_email ?? ''
     const privateKey = cfEnv('GOOGLE_PRIVATE_KEY') ?? serviceAccount.private_key ?? ''
 
     if (!clientEmail || !privateKey) {
-      const fallback = await uploadFileToSupabaseFallback(file)
+      const fallback = await uploadFileToSupabaseFallback(file, mimeType)
       return NextResponse.json({ ...fallback, storage: 'supabase' })
     }
 
-    const mimeType = file.type || 'application/octet-stream'
     const buffer = Buffer.from(await file.arrayBuffer())
 
     try {
@@ -124,7 +180,7 @@ export async function POST(request: NextRequest) {
         driveError instanceof Error ? driveError.message : driveError,
       )
 
-      const fallback = await uploadFileToSupabaseFallback(file)
+      const fallback = await uploadFileToSupabaseFallback(file, mimeType)
       return NextResponse.json({ ...fallback, storage: 'supabase' })
     }
   } catch (err) {

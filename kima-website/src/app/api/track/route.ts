@@ -1,25 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-
-const ALLOWED_ORIGINS = [
-  'https://kima2019.org',
-  'https://www.kima2019.org',
-  'http://localhost:3000',
-]
-
-function isAllowedOrigin(origin: string, request: NextRequest) {
-  if (ALLOWED_ORIGINS.some((o) => origin.startsWith(o))) return true
-
-  try {
-    const originUrl = new URL(origin)
-    const requestHost = request.headers.get('host')
-
-    if (requestHost && originUrl.host === requestHost) return true
-    return originUrl.hostname === 'localhost' || originUrl.hostname === '127.0.0.1'
-  } catch {
-    return false
-  }
-}
+import { isAllowedOrigin } from '@/lib/allowedOrigin'
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin') ?? ''
