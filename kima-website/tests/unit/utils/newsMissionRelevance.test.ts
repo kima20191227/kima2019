@@ -79,4 +79,22 @@ describe('isMissionRelevantArticle', () => {
       defaultCategory: 'MIGRANT_WORKER',
     }))).toBe(false)
   })
+
+  it('excludes election-campaign statements even when they mention multicultural support', () => {
+    expect(isMissionRelevantArticle(article({
+      title: '김영환 후보, 다문화가족 지원금 지급 공약 발표',
+      summary: '후보는 다문화가족 지원 확대와 외국인 근로자 정착 지원을 공약으로 발표했다.',
+      keywords: ['다문화가족', '지원'],
+      defaultCategory: 'MULTICULTURAL',
+    }))).toBe(false)
+  })
+
+  it('keeps official policy or service news that directly helps migrant ministry', () => {
+    expect(isMissionRelevantArticle(article({
+      title: '법무부, 외국인 체류 지원 제도 개정 시행',
+      summary: '이주노동자와 유학생의 체류 상담, 비자 신청, 지역 정착 지원 절차가 개선된다.',
+      keywords: ['체류', '비자', '지원'],
+      defaultCategory: 'LAW',
+    }))).toBe(true)
+  })
 })

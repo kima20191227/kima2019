@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
+import { convertDriveUrl } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,7 +61,7 @@ export default async function StoryDetailPage({ params }: PageProps) {
           {/* 썸네일 */}
           {story.thumbnail && (
             <div className="relative w-full h-56">
-              <Image src={story.thumbnail} alt={story.title} fill className="object-cover" />
+              <Image src={convertDriveUrl(story.thumbnail)} alt={story.title} fill className="object-cover" />
             </div>
           )}
 
@@ -106,7 +107,7 @@ export default async function StoryDetailPage({ params }: PageProps) {
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-2">
                 {story.images.map((img, i) => (
                   <div key={i} className="relative w-full h-32">
-                    <Image src={img} alt={`${story.title} ${i + 1}`} fill className="object-cover rounded-lg" />
+                    <Image src={convertDriveUrl(img)} alt={`${story.title} ${i + 1}`} fill className="object-cover rounded-lg" />
                   </div>
                 ))}
               </div>

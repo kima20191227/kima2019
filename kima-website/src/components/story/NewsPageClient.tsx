@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { convertDriveUrl } from '@/lib/utils'
+import { uploadResourceFile } from '@/lib/uploadClient'
 
 export interface NewsItem {
   id: string
@@ -23,7 +25,7 @@ function getYoutubeId(url: string): string | null {
 }
 
 function getThumb(item: NewsItem): string | null {
-  if (item.thumbnail) return item.thumbnail
+  if (item.thumbnail) return convertDriveUrl(item.thumbnail)
   if (item.videoUrls.length > 0) {
     const id = getYoutubeId(item.videoUrls[0])
     if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`
@@ -70,13 +72,43 @@ function NewsForm({ editing, onSubmit, onCancel, isPending, error }: {
   const [fields, setFields] = useState<FormState>(() =>
     editing ? toFormState(editing) : EMPTY_FORM,
   )
+  const [thumbnailUploading, setThumbnailUploading] = useState(false)
+  const [thumbnailError, setThumbnailError] = useState('')
+  const [localPreview, setLocalPreview] = useState<string | null>(null)
+  const thumbnailInputRef = useRef<HTMLInputElement>(null)
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setFields((p) => ({ ...p, [k]: v }))
 
   const ytId = fields.youtubeUrl ? getYoutubeId(fields.youtubeUrl) : null
-  const thumbPreview = fields.thumbnail || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null)
+  const thumbPreview = localPreview
+    || (fields.thumbnail ? convertDriveUrl(fields.thumbnail) : '')
+    || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null)
 
   const inp = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]'
+
+  const handleThumbnailFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setThumbnailError('이미지 파일만 선택할 수 있습니다.')
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    setLocalPreview(previewUrl)
+    setThumbnailUploading(true)
+    setThumbnailError('')
+
+    try {
+      const uploaded = await uploadResourceFile(file)
+      set('thumbnail', uploaded.url)
+    } catch (err) {
+      setThumbnailError(err instanceof Error ? err.message : '이미지 업로드에 실패했습니다.')
+    } finally {
+      setThumbnailUploading(false)
+      setLocalPreview(null)
+      URL.revokeObjectURL(previewUrl)
+      if (thumbnailInputRef.current) thumbnailInputRef.current.value = ''
+    }
+  }
 
   return (
     <div className="bg-white rounded-xl border border-[#1B3A6B]/20 shadow-sm p-6 mb-6 space-y-4">
@@ -113,7 +145,42 @@ function NewsForm({ editing, onSubmit, onCancel, isPending, error }: {
         <div>
           <label className="block text-xs text-gray-500 mb-1">썸네일 이미지 URL (선택)</label>
           <input type="url" value={fields.thumbnail} onChange={(e) => set('thumbnail', e.target.value)}
-            placeholder="https://example.com/image.jpg" className={inp} disabled={isPending} />
+            placeholder="https://example.com/image.jpg" className={inp} disabled={isPending || thumbnailUploading} />
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              aria-label="썸네일 이미지 파일 선택"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void handleThumbnailFile(file)
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => thumbnailInputRef.current?.click()}
+              disabled={isPending || thumbnailUploading}
+              className="px-3 py-1.5 rounded-lg border border-[#1B3A6B]/30 text-[#1B3A6B] text-xs font-medium hover:bg-[#1B3A6B]/5 disabled:opacity-50 transition-colors"
+            >
+              {thumbnailUploading ? '업로드 중...' : '로컬 이미지 선택'}
+            </button>
+            {fields.thumbnail && (
+              <button
+                type="button"
+                onClick={() => {
+                  set('thumbnail', '')
+                  setThumbnailError('')
+                }}
+                disabled={isPending || thumbnailUploading}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-xs hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                이미지 제거
+              </button>
+            )}
+          </div>
+          {thumbnailError && <p className="text-xs text-red-500 mt-1">{thumbnailError}</p>}
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">유튜브 URL (선택 — 자동 썸네일)</label>
@@ -146,9 +213,9 @@ function NewsForm({ editing, onSubmit, onCancel, isPending, error }: {
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <div className="flex gap-2">
-        <button type="button" onClick={() => onSubmit(fields)} disabled={isPending}
+        <button type="button" onClick={() => onSubmit(fields)} disabled={isPending || thumbnailUploading}
           className="px-5 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors">
-          {isPending ? (editing ? '수정 중…' : '등록 중…') : editing ? '수정 완료' : '등록'}
+          {thumbnailUploading ? '이미지 업로드 중…' : isPending ? (editing ? '수정 중…' : '등록 중…') : editing ? '수정 완료' : '등록'}
         </button>
         <button type="button" onClick={onCancel}
           className="px-5 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors">
