@@ -6,6 +6,12 @@ import type { UserRole } from '@prisma/client'
 
 const ROLE_WEIGHT: Record<UserRole, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
 
+function hasOwnKey(value: unknown, key: string): boolean {
+  return typeof value === 'object'
+    && value !== null
+    && Object.prototype.hasOwnProperty.call(value, key)
+}
+
 function hasManagePermission(
   section: string,
   uploadedById: string | null,
@@ -52,9 +58,13 @@ export async function PATCH(request: NextRequest, { params }: Context) {
       )
     }
 
+    const updateData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([key]) => hasOwnKey(body, key)),
+    )
+
     const updated = await prisma.resource.update({
       where: { id },
-      data: parsed.data,
+      data: updateData,
       include: { category: { select: { id: true, name: true, slug: true } } },
     })
 

@@ -54,8 +54,8 @@ export async function PATCH(request: NextRequest, { params }: Context) {
         ...(hasKey(body, 'effectiveDate') && { effectiveDate: parsed.data.effectiveDate ?? null }),
         ...(hasKey(body, 'sourceUrl') && { sourceUrl: parsed.data.sourceUrl ?? null }),
         ...(hasKey(body, 'sourceId') && { sourceId: parsed.data.sourceId ?? null }),
-        ...(parsed.data.isLatest !== undefined && { isLatest: parsed.data.isLatest }),
-        ...(parsed.data.accessLevel !== undefined && { accessLevel: parsed.data.accessLevel }),
+        ...(hasKey(body, 'isLatest') && { isLatest: parsed.data.isLatest }),
+        ...(hasKey(body, 'accessLevel') && { accessLevel: parsed.data.accessLevel }),
         ...(hasKey(body, 'sections') && {
           sections: {
             deleteMany: {},
