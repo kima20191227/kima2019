@@ -322,10 +322,7 @@ export function ResourcesPageClient({
   }
 
   const handleEdit = (resource: Resource) => {
-    setEditingResource(resource)
-    setFormOpen(false)
-    setFormError('')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    router.push(`/resources/${resource.id}/edit`)
   }
 
   const handleDeleted = (id: string) => {

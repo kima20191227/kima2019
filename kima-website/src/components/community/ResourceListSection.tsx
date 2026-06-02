@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ResourceUploadForm } from './ResourceUploadForm'
@@ -35,18 +35,10 @@ function AccessBadge({ level }: { level: AccessLevel }) {
   return <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">정회원</span>
 }
 
-interface EditFormState {
-  title: string
-  description: string
-  driveUrl: string
-  accessLevel: string
-}
-
 function ResourceItem({
   resource,
   canAccess,
   canEdit,
-  roleWeight,
   isLoggedIn,
 }: {
   resource: Resource
@@ -56,51 +48,10 @@ function ResourceItem({
   isLoggedIn: boolean
 }) {
   const router = useRouter()
-  const [editing, setEditing] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [editError, setEditError] = useState('')
-  const [form, setForm] = useState<EditFormState>({
-    title: resource.title,
-    description: resource.description ?? '',
-    driveUrl: resource.driveUrl,
-    accessLevel: resource.accessLevel,
-  })
-
-  const set = (k: keyof EditFormState, v: string) => setForm((prev) => ({ ...prev, [k]: v }))
-
-  const handleSave = () => {
-    if (!form.title.trim()) { setEditError('제목을 입력해주세요.'); return }
-    if (!form.driveUrl.trim()) { setEditError('구글 드라이브 URL을 입력해주세요.'); return }
-    if (!form.driveUrl.includes('drive.google.com')) {
-      setEditError('구글 드라이브 링크만 등록 가능합니다 (drive.google.com)'); return
-    }
-    setEditError('')
-
-    startTransition(async () => {
-      const res = await fetch(`/api/resources/${resource.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: form.title.trim(),
-          description: form.description.trim() || undefined,
-          driveUrl: form.driveUrl.trim(),
-          accessLevel: form.accessLevel,
-          categoryId: resource.categoryId ?? undefined,
-        }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        setEditError(data.error ?? '수정에 실패했습니다.')
-        return
-      }
-      setEditing(false)
-      router.refresh()
-    })
-  }
 
   const handleDelete = () => {
     if (!window.confirm(`"${resource.title}" 자료를 삭제하시겠습니까?`)) return
-
     startTransition(async () => {
       const res = await fetch(`/api/resources/${resource.id}`, { method: 'DELETE' })
       if (!res.ok) {
@@ -110,83 +61,6 @@ function ResourceItem({
       }
       router.refresh()
     })
-  }
-
-  if (editing) {
-    return (
-      <div className="border border-[#1B3A6B]/20 rounded-xl p-3 bg-blue-50/50 space-y-2">
-        <div>
-          <label htmlFor={`edit-title-${resource.id}`} className="block text-xs text-gray-500 mb-1">제목 *</label>
-          <input
-            id={`edit-title-${resource.id}`}
-            type="text"
-            value={form.title}
-            onChange={(e) => set('title', e.target.value)}
-            disabled={isPending}
-            placeholder="자료 제목"
-            className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] bg-white"
-          />
-        </div>
-        <div>
-          <label htmlFor={`edit-url-${resource.id}`} className="block text-xs text-gray-500 mb-1">구글 드라이브 URL *</label>
-          <input
-            id={`edit-url-${resource.id}`}
-            type="url"
-            value={form.driveUrl}
-            onChange={(e) => set('driveUrl', e.target.value)}
-            disabled={isPending}
-            placeholder="https://drive.google.com/..."
-            className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] bg-white"
-          />
-        </div>
-        <div>
-          <label htmlFor={`edit-desc-${resource.id}`} className="block text-xs text-gray-500 mb-1">설명 (선택)</label>
-          <input
-            id={`edit-desc-${resource.id}`}
-            type="text"
-            value={form.description}
-            onChange={(e) => set('description', e.target.value)}
-            disabled={isPending}
-            placeholder="간단한 설명"
-            className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B3A6B] bg-white"
-          />
-        </div>
-        {roleWeight >= 3 && (
-          <div>
-            <label htmlFor={`edit-access-${resource.id}`} className="block text-xs text-gray-500 mb-1">접근 등급</label>
-            <select
-              id={`edit-access-${resource.id}`}
-              value={form.accessLevel}
-              onChange={(e) => set('accessLevel', e.target.value)}
-              disabled={isPending}
-              className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-[#1B3A6B]"
-            >
-              <option value="PUBLIC">공개</option>
-              <option value="MEMBER">회원</option>
-              <option value="PREMIUM">정회원</option>
-            </select>
-          </div>
-        )}
-        {editError && <p className="text-xs text-red-500">{editError}</p>}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isPending}
-            className="px-3 py-1 rounded-lg bg-[#1B3A6B] text-white text-xs font-medium hover:bg-[#142d54] disabled:opacity-50 transition-colors"
-          >
-            {isPending ? '저장 중…' : '저장'}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEditing(false); setEditError('') }}
-            className="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 text-xs hover:bg-gray-50 transition-colors"
-          >
-            취소
-          </button>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -203,7 +77,7 @@ function ResourceItem({
           <div className="flex gap-2 mt-1">
             <button
               type="button"
-              onClick={() => setEditing(true)}
+              onClick={() => router.push(`/resources/${resource.id}/edit`)}
               className="text-xs text-[#1B3A6B] hover:underline"
             >
               수정
