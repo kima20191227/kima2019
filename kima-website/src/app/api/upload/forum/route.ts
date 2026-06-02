@@ -4,16 +4,6 @@ import { createAdminClient } from '@/lib/supabase'
 import { safeStorageKey } from '@/lib/utils'
 import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 
-const ALLOWED_TYPES = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic',
-  'application/pdf',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'video/mp4', 'video/quicktime',
-]
-
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
@@ -37,12 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `파일 크기는 ${MAX_MB}MB 이하여야 합니다.` }, { status: 400 })
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: '허용되지 않는 파일 형식입니다. (이미지·PDF·PPT·Word·영상만 가능)' }, { status: 400 })
-    }
-
     let buffer   = Buffer.from(await file.arrayBuffer())
-    let mimeType = file.type
+    let mimeType = file.type || 'application/octet-stream'
     let ext      = file.name.split('.').pop() ?? 'bin'
 
     if (isConvertibleImage(mimeType)) {

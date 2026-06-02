@@ -101,12 +101,6 @@ export async function POST(request: NextRequest) {
     }
 
     const mimeType = normalizedResourceMimeType(file)
-    if (!mimeType) {
-      return NextResponse.json(
-        { error: '허용되지 않는 파일 형식입니다. 이미지, PDF, 문서, PPT, 텍스트, 영상 파일만 업로드할 수 있습니다.' },
-        { status: 400 },
-      )
-    }
 
     const serviceAccount = parseServiceAccountKey(cfEnv('GOOGLE_SERVICE_ACCOUNT_KEY'))
     const folderId = cfEnv('GOOGLE_DRIVE_RESOURCE_FOLDER_ID') ?? DEFAULT_DRIVE_FOLDER_ID
