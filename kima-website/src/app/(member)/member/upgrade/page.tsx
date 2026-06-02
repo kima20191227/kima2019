@@ -120,9 +120,9 @@ export default async function UpgradePage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-4 bg-[#1B3A6B] rounded-xl text-white">
                   <div>
-                    <p className="text-xs text-blue-200 mb-0.5">납부 계좌 · 국민은행</p>
-                    <p className="text-lg font-bold tracking-wide">263101-04-561156</p>
-                    <p className="text-xs text-blue-200 mt-0.5">예금주: 이창호 (한국이주민선교연합회)</p>
+                    <p className="text-xs text-blue-200 mb-0.5">납부 계좌 · 하나은행</p>
+                    <p className="text-lg font-bold tracking-wide">435-910079-52904</p>
+                    <p className="text-xs text-blue-200 mt-0.5">예금주: 한국이주민선교연합회</p>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm text-gray-600">

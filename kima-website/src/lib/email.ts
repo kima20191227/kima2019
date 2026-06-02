@@ -115,8 +115,8 @@ export function premiumExpiringEmailHtml(name: string, expiresAt: Date) {
     <p>정회원 자격을 유지하시려면 만료 전에 연 회비를 납부해 주세요.</p>
     <div style="background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:16px 20px;margin:24px 0;">
       <p style="margin:0;font-weight:600;">입금 계좌</p>
-      <p style="margin:8px 0 0;font-size:18px;font-weight:700;color:#1B3A6B;">국민은행 263101-04-561156</p>
-      <p style="margin:4px 0 0;color:#666;font-size:13px;">예금주: 이창호 (한국이주민선교연합회) | 연 5만원</p>
+      <p style="margin:8px 0 0;font-size:18px;font-weight:700;color:#1B3A6B;">하나은행 435-910079-52904</p>
+      <p style="margin:4px 0 0;color:#666;font-size:13px;">예금주: 한국이주민선교연합회 | 연 5만원</p>
     </div>
     <p>납부 후 성함·금액·납부일을 <a href="mailto:${ADMIN_EMAIL}" style="color:#1B3A6B;">${ADMIN_EMAIL}</a>으로 알려주세요.</p>
     ${btn('정회원 갱신 안내 페이지', `${SITE_URL}/member/upgrade`)}
