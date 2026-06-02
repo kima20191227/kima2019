@@ -7,7 +7,7 @@ pages_build_output_dir = ".open-next/assets"
 
 # Google Drive 자료 업로드 (폴더 ID는 비밀값 아님 — 서비스 계정 키는 대시보드 Secrets에 설정)
 [vars]
-GOOGLE_DRIVE_RESOURCE_FOLDER_ID = "1LKzxRWypSnhbZzkGTDhWvhHG7a07r1RF"
+GOOGLE_DRIVE_RESOURCE_FOLDER_ID = "0AGil8dGKJPdzUk9PVA"
 
 # ─────────────────────────────────────────────
 # Cloudflare Workers Cron (별도 워커로 배포)

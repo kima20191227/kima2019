@@ -15,6 +15,7 @@ Fix:
 - Added `/api/upload/resource/signed` to issue Google Drive resumable upload session URLs after auth, MIME, and size validation.
 - Added `/api/upload/resource/drive-finalize` to set the uploaded Drive file to public reader and return the Drive link.
 - Updated `uploadResourceFile()` so browser uploads go directly to Google Drive instead of through the Next.js route body.
+- Set the deployment Drive folder variable to the shared-drive folder `0AGil8dGKJPdzUk9PVA`.
 - Routed community resource, photo, and category flag uploads through the common upload client.
 - Added a policy regression test for the 100MB limit and MIME inference.
 
