@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { convertDriveUrl } from '@/lib/utils'
+import { uploadResourceFile } from '@/lib/uploadClient'
 
 const MAX_PHOTO_UPLOAD_MB = 100
 const MAX_PHOTO_UPLOAD_BYTES = MAX_PHOTO_UPLOAD_MB * 1024 * 1024
@@ -63,12 +64,8 @@ export function PhotoUploadZone({ initialAttachments, onAttachmentsChange, onIns
   }, [items]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function uploadFile(id: string, file: File) {
-    const fd = new FormData()
-    fd.append('file', file)
     try {
-      const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
-      if (!res.ok) throw new Error('업로드 실패')
-      const data = await res.json()
+      const data = await uploadResourceFile(file)
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, serverUrl: data.url, status: 'done' } : i))
       )

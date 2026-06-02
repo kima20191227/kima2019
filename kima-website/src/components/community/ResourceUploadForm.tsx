@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { uploadResourceFile } from '@/lib/uploadClient'
 
 interface ResourceUploadFormProps {
   categoryId: string
@@ -64,53 +65,47 @@ export function ResourceUploadForm({ categoryId, categoryName }: ResourceUploadF
     setError('')
 
     startTransition(async () => {
-      let driveUrl = form.driveUrl
-      let fileType: string | undefined
+      try {
+        let driveUrl = form.driveUrl
+        let fileType: string | undefined
 
-      // 파일 모드: 먼저 Drive에 업로드
-      if (mode === 'file' && selectedFile) {
-        setUploading(true)
-        const fd = new FormData()
-        fd.append('file', selectedFile)
-        const uploadRes = await fetch('/api/upload/resource', { method: 'POST', body: fd })
-        setUploading(false)
+        if (mode === 'file' && selectedFile) {
+          setUploading(true)
+          const uploaded = await uploadResourceFile(selectedFile)
+          driveUrl = uploaded.url
+          fileType = uploaded.fileType
+        }
 
-        if (!uploadRes.ok) {
-          const data = await uploadRes.json()
-          setError(data.error ?? data.detail ?? '파일 업로드에 실패했습니다.')
+        const res = await fetch('/api/resources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: form.title.trim(),
+            description: form.description.trim() || undefined,
+            driveUrl,
+            fileType,
+            accessLevel: form.accessLevel,
+            categoryId,
+          }),
+        })
+
+        const data = await res.json().catch(() => null) as { error?: string } | null
+        if (!res.ok) {
+          setError(data?.error ?? '등록에 실패했습니다.')
           return
         }
-        const uploaded = await uploadRes.json()
-        driveUrl = uploaded.url
-        fileType = uploaded.fileType
+
+        setSuccess('자료가 등록되었습니다!')
+        setForm({ title: '', description: '', driveUrl: '', accessLevel: 'MEMBER' })
+        setSelectedFile(null)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        setTimeout(() => { setSuccess(''); setOpen(false) }, 1500)
+        router.refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '파일 업로드에 실패했습니다.')
+      } finally {
+        setUploading(false)
       }
-
-      // 자료 DB 저장
-      const res = await fetch('/api/resources', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: form.title.trim(),
-          description: form.description.trim() || undefined,
-          driveUrl,
-          fileType,
-          accessLevel: form.accessLevel,
-          categoryId,
-        }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.error ?? '등록에 실패했습니다.')
-        return
-      }
-
-      setSuccess('자료가 등록되었습니다!')
-      setForm({ title: '', description: '', driveUrl: '', accessLevel: 'MEMBER' })
-      setSelectedFile(null)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      setTimeout(() => { setSuccess(''); setOpen(false) }, 1500)
-      router.refresh()
     })
   }
 

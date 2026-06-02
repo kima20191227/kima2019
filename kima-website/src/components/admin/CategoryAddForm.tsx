@@ -4,6 +4,7 @@ import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CategoryType } from '@prisma/client'
 import { convertDriveUrl } from '@/lib/utils'
+import { uploadResourceFile } from '@/lib/uploadClient'
 
 interface Props {
   type: CategoryType
@@ -57,13 +58,14 @@ export function CategoryAddForm({ type }: Props) {
     if (!file) return
     e.target.value = ''
     setFlagUploading(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
-    const json = await res.json() as { url?: string; error?: string }
-    setFlagUploading(false)
-    if (res.ok && json.url) setFlag(json.url)
-    else setError(json.error ?? '국기 이미지 업로드 실패')
+    try {
+      const uploaded = await uploadResourceFile(file)
+      setFlag(uploaded.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '국기 이미지 업로드 실패')
+    } finally {
+      setFlagUploading(false)
+    }
   }
 
   const handleSubmit = () => {
@@ -213,13 +215,14 @@ export function CategoryRenameForm({ categoryId, name, slug, type, flag: initial
     if (!file) return
     e.target.value = ''
     setFlagUploading(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/upload/resource', { method: 'POST', body: fd })
-    const json = await res.json() as { url?: string; error?: string }
-    setFlagUploading(false)
-    if (res.ok && json.url) setNewFlag(json.url)
-    else setError(json.error ?? '국기 이미지 업로드 실패')
+    try {
+      const uploaded = await uploadResourceFile(file)
+      setNewFlag(uploaded.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '국기 이미지 업로드 실패')
+    } finally {
+      setFlagUploading(false)
+    }
   }
 
   function handleNameChange(v: string) {

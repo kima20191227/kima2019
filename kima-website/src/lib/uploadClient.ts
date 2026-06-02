@@ -1,6 +1,8 @@
 'use client'
 
-const MAX_BROWSER_UPLOAD_BYTES = 100 * 1024 * 1024
+import { MAX_RESOURCE_FILE_SIZE_BYTES } from '@/lib/resourceUploadPolicy'
+
+const MAX_BROWSER_UPLOAD_BYTES = MAX_RESOURCE_FILE_SIZE_BYTES
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
 
@@ -8,6 +10,13 @@ export type UploadResourceResult = {
   url: string
   fileType?: string
   storage?: 'drive' | 'supabase'
+}
+
+type SignedUploadResult = {
+  signedUrl: string
+  url: string
+  fileType: string
+  storage: 'supabase'
 }
 
 function isCompressibleImage(file: File): boolean {
@@ -113,16 +122,7 @@ function errorFromUploadResponse(response: Response, text: string, parsed: unkno
   return `업로드에 실패했습니다. (HTTP ${response.status})`
 }
 
-export async function uploadResourceFile(file: File): Promise<UploadResourceResult> {
-  const preparedFile = await prepareFileForBrowserUpload(file)
-  const formData = new FormData()
-  formData.append('file', preparedFile)
-
-  const response = await fetch('/api/upload/resource', {
-    method: 'POST',
-    body: formData,
-  })
-
+async function readUploadResponse(response: Response): Promise<unknown> {
   const text = await response.text()
   let parsed: unknown = null
   try {
@@ -135,9 +135,83 @@ export async function uploadResourceFile(file: File): Promise<UploadResourceResu
     throw new Error(errorFromUploadResponse(response, text, parsed))
   }
 
+  return parsed
+}
+
+async function requestSignedUpload(file: File): Promise<SignedUploadResult> {
+  const response = await fetch('/api/upload/resource/signed', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+    }),
+  })
+  const parsed = await readUploadResponse(response)
+
+  if (
+    !parsed ||
+    typeof parsed !== 'object' ||
+    !('signedUrl' in parsed) ||
+    typeof parsed.signedUrl !== 'string' ||
+    !('url' in parsed) ||
+    typeof parsed.url !== 'string' ||
+    !('fileType' in parsed) ||
+    typeof parsed.fileType !== 'string'
+  ) {
+    throw new Error('업로드 URL 응답이 올바르지 않습니다.')
+  }
+
+  return parsed as SignedUploadResult
+}
+
+async function uploadToSignedUrl(file: File, signed: SignedUploadResult): Promise<void> {
+  const formData = new FormData()
+  formData.append('cacheControl', '3600')
+  formData.append('', file)
+
+  const response = await fetch(signed.signedUrl, {
+    method: 'PUT',
+    headers: { 'x-upsert': 'false' },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(errorFromUploadResponse(response, text, null))
+  }
+}
+
+async function uploadViaServerRoute(file: File): Promise<UploadResourceResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch('/api/upload/resource', {
+    method: 'POST',
+    body: formData,
+  })
+  const parsed = await readUploadResponse(response)
+
   if (!parsed || typeof parsed !== 'object' || !('url' in parsed) || typeof parsed.url !== 'string') {
     throw new Error('업로드 응답에 파일 URL이 없습니다.')
   }
 
   return parsed as UploadResourceResult
+}
+
+export async function uploadResourceFile(file: File): Promise<UploadResourceResult> {
+  const preparedFile = await prepareFileForBrowserUpload(file)
+
+  try {
+    const signed = await requestSignedUpload(preparedFile)
+    await uploadToSignedUrl(preparedFile, signed)
+    return { url: signed.url, fileType: signed.fileType, storage: signed.storage }
+  } catch (err) {
+    if (preparedFile.size > 4 * 1024 * 1024) {
+      throw err
+    }
+
+    return uploadViaServerRoute(preparedFile)
+  }
 }
