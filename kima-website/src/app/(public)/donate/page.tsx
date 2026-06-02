@@ -23,9 +23,9 @@ export default function DonatePage() {
         {/* 계좌 정보 */}
         <div className="bg-[#1B3A6B] rounded-2xl p-8 text-white text-center shadow-lg">
           <p className="text-blue-200 text-sm mb-2">후원 계좌</p>
-          <p className="text-xl font-semibold mb-1">국민은행</p>
-          <p className="text-3xl font-bold tracking-wider text-[#C8922A] my-3">263101-04-561156</p>
-          <p className="text-blue-200">예금주: 이창호 (한국이주민선교연합회)</p>
+          <p className="text-xl font-semibold mb-1">하나은행</p>
+          <p className="text-3xl font-bold tracking-wider text-[#C8922A] my-3">435-910079-52904</p>
+          <p className="text-blue-200">예금주: 한국이주민선교연합회</p>
         </div>
 
         {/* 후원 방법 */}
