@@ -203,13 +203,34 @@ async function finalizeDriveUpload(fileId: string, fileType: string): Promise<Up
   return parsed as UploadResourceResult
 }
 
+async function uploadThroughServerFallback(file: File): Promise<UploadResourceResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch('/api/upload/resource', {
+    method: 'POST',
+    body: formData,
+  })
+  const parsed = await readUploadResponse(response)
+
+  if (!parsed || typeof parsed !== 'object' || !('url' in parsed) || typeof parsed.url !== 'string') {
+    throw new Error('파일 업로드 응답이 올바르지 않습니다.')
+  }
+
+  return parsed as UploadResourceResult
+}
+
 export async function uploadResourceFile(file: File): Promise<UploadResourceResult> {
   const preparedFile = await prepareFileForBrowserUpload(file)
 
-  const signed = await requestSignedUpload(preparedFile)
-  const uploaded = await uploadToDriveSession(preparedFile, signed)
-  if (!uploaded.id) {
-    throw new Error('Google Drive 업로드 응답에 파일 ID가 없습니다.')
+  try {
+    const signed = await requestSignedUpload(preparedFile)
+    const uploaded = await uploadToDriveSession(preparedFile, signed)
+    if (!uploaded.id) {
+      throw new Error('Google Drive 업로드 응답에 파일 ID가 없습니다.')
+    }
+    return finalizeDriveUpload(uploaded.id, uploaded.mimeType ?? signed.fileType)
+  } catch {
+    return uploadThroughServerFallback(preparedFile)
   }
-  return finalizeDriveUpload(uploaded.id, uploaded.mimeType ?? signed.fileType)
 }
