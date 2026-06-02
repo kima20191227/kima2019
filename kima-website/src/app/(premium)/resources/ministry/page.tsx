@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { ministryResourceWhere } from '@/lib/resourceFilters'
 import { ResourcesPageClient } from '@/components/resources/ResourcesPageClient'
 import Link from 'next/link'
 import type { Metadata } from 'next'
@@ -58,9 +59,8 @@ export default async function MinistryResourcesPage({ searchParams }: PageProps)
     }),
     prisma.resource.findMany({
       where: {
-        section: 'MINISTRY',
+        ...ministryResourceWhere(categoryId),
         accessLevel: { in: [...allowedLevels] },
-        ...(categoryId ? { categoryId } : {}),
       },
       include: {
         category: { select: { id: true, name: true, slug: true } },

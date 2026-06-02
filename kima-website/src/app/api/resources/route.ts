@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { ministryResourceWhere } from '@/lib/resourceFilters'
 import { resourceSchema } from '@/schemas/resource.schema'
 import type { UserRole, AccessLevel, ResourceSection } from '@prisma/client'
 
@@ -43,11 +44,18 @@ export async function GET(request: NextRequest) {
         ? (rawSection as ResourceSection)
         : undefined
 
+    const sectionWhere =
+      section === 'MINISTRY'
+        ? ministryResourceWhere(categoryId)
+        : {
+            ...(section ? { section } : {}),
+            ...(categoryId ? { categoryId } : {}),
+          }
+
     const resources = await prisma.resource.findMany({
       where: {
         accessLevel: { in: allowedLevels },
-        ...(section ? { section } : {}),
-        ...(categoryId ? { categoryId } : {}),
+        ...sectionWhere,
       },
       include: {
         category: { select: { id: true, name: true, slug: true } },

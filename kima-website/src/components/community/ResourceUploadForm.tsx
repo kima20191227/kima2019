@@ -84,6 +84,7 @@ export function ResourceUploadForm({ categoryId, categoryName }: ResourceUploadF
             description: form.description.trim() || undefined,
             driveUrl,
             fileType,
+            section: 'MINISTRY',
             accessLevel: form.accessLevel,
             categoryId,
           }),
