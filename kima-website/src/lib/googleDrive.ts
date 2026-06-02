@@ -1,5 +1,6 @@
 export interface DriveEnvOptions {
   folderId: string
+  fallbackFolderId?: string
   clientEmail: string
   privateKey: string
 }
@@ -39,6 +40,10 @@ function base64url(buf: ArrayBuffer | Buffer): string {
     ? buf.toString('base64')
     : Buffer.from(buf).toString('base64')
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+function uniqueFolderIds(...ids: Array<string | undefined>): string[] {
+  return Array.from(new Set(ids.map((id) => id?.trim()).filter((id): id is string => !!id)))
 }
 
 async function getAccessToken(clientEmail: string, privateKey: string): Promise<string> {
@@ -104,7 +109,7 @@ export async function createDriveResumableUploadSession(
   mimeType: string,
   options: DriveEnvOptions,
 ): Promise<string> {
-  const { folderId, clientEmail, privateKey } = options
+  const { folderId, fallbackFolderId, clientEmail, privateKey } = options
   const accessToken = await getAccessToken(clientEmail, privateKey)
 
   const createSession = (metadata: { name: string; parents?: string[] }) => fetch(
@@ -120,8 +125,15 @@ export async function createDriveResumableUploadSession(
     },
   )
 
-  let uploadRes = await createSession({ name: fileName, parents: [folderId] })
-  if (uploadRes.status === 404) {
+  const folderIds = uniqueFolderIds(folderId, fallbackFolderId)
+  let uploadRes: Response | null = null
+
+  for (const candidateFolderId of folderIds) {
+    uploadRes = await createSession({ name: fileName, parents: [candidateFolderId] })
+    if (uploadRes.ok || uploadRes.status !== 404) break
+  }
+
+  if (!uploadRes) {
     uploadRes = await createSession({ name: fileName })
   }
 
@@ -169,7 +181,7 @@ export async function uploadFileToDrive(
   mimeType: string,
   options: DriveEnvOptions,
 ): Promise<string> {
-  const { folderId, clientEmail, privateKey } = options
+  const { folderId, fallbackFolderId, clientEmail, privateKey } = options
 
   const accessToken = await getAccessToken(clientEmail, privateKey)
 
@@ -202,8 +214,15 @@ export async function uploadFileToDrive(
     )
   }
 
-  let uploadRes = await upload({ name: fileName, parents: [folderId] })
-  if (uploadRes.status === 404) {
+  const folderIds = uniqueFolderIds(folderId, fallbackFolderId)
+  let uploadRes: Response | null = null
+
+  for (const candidateFolderId of folderIds) {
+    uploadRes = await upload({ name: fileName, parents: [candidateFolderId] })
+    if (uploadRes.ok || uploadRes.status !== 404) break
+  }
+
+  if (!uploadRes) {
     uploadRes = await upload({ name: fileName })
   }
 

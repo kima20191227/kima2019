@@ -20,7 +20,7 @@ function resolveDriveOptions() {
     throw new Error('Google Drive 업로드 설정이 없습니다. 서비스 계정 키를 확인해주세요.')
   }
 
-  return { folderId, clientEmail, privateKey }
+  return { folderId, fallbackFolderId: DEFAULT_DRIVE_FOLDER_ID, clientEmail, privateKey }
 }
 
 export async function POST(request: NextRequest) {

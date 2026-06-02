@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
     try {
       const driveUrl = await uploadFileToDrive(buffer, file.name, mimeType, {
         folderId,
+        fallbackFolderId: DEFAULT_DRIVE_FOLDER_ID,
         clientEmail,
         privateKey,
       })

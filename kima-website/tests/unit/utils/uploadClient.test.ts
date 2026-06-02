@@ -72,6 +72,22 @@ describe('uploadResourceFile', () => {
     expect(result.fileType).toBe('application/octet-stream')
   })
 
+  it('does not send larger files through the server fallback when Drive upload fails', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Drive 업로드 세션 발급 실패: File not found' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      uploadResourceFile(new File([new Uint8Array(5 * 1024 * 1024)], 'file.exe', { type: 'application/octet-stream' })),
+    ).rejects.toThrow('Drive 업로드 세션 발급 실패')
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('turns platform 413 responses into a readable upload error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(
       new Response('<html>Payload Too Large</html>', {
