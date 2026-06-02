@@ -220,7 +220,12 @@ export default async function CategoryBoardPage({ params }: Props) {
               ) : (
                 <div>
                   {notices.map((post) => (
-                    <PostCard key={post.id} post={post} categoryType={type} />
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      categoryType={type}
+                      canManage={!!session?.user?.id && (session.user.id === post.author.id || roleWeight >= 4)}
+                    />
                   ))}
                 </div>
               )}
@@ -247,7 +252,12 @@ export default async function CategoryBoardPage({ params }: Props) {
               ) : (
                 <div>
                   {shares.map((post) => (
-                    <PostCard key={post.id} post={post} categoryType={type} />
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      categoryType={type}
+                      canManage={!!session?.user?.id && (session.user.id === post.author.id || roleWeight >= 4)}
+                    />
                   ))}
                 </div>
               )}
@@ -275,7 +285,12 @@ export default async function CategoryBoardPage({ params }: Props) {
                 ) : (
                   <div>
                     {introduces.map((post) => (
-                      <PostCard key={post.id} post={post} categoryType={type} />
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        categoryType={type}
+                        canManage={!!session?.user?.id && (session.user.id === post.author.id || roleWeight >= 4)}
+                      />
                     ))}
                   </div>
                 )}

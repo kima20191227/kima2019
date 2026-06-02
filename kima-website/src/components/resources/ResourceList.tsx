@@ -32,6 +32,7 @@ export interface ResourceListProps {
   searchable?: boolean
   deleteMode?: 'all' | 'own' | null
   currentUserId?: string
+  isAdmin?: boolean
   onEdit?: (resource: Resource) => void
   onDeleted?: (id: string) => void
 }
@@ -173,11 +174,25 @@ function ResourceRow({
   const hasContent = !!resource.content?.trim()
   const hasDriveFile = !!getDriveFileId(resource.driveUrl)
 
+  const isSharePost = resource.sourceType === 'SHARE_POST'
+
+  const handleEdit = () => {
+    if (isSharePost && resource.sourceHref) {
+      router.push(`${resource.sourceHref}/edit`)
+    } else {
+      onEdit?.(resource)
+    }
+  }
+
   const handleDelete = async () => {
-    if (!confirm(`"${resource.title}" 자료를 삭제하시겠습니까?`)) return
+    const label = isSharePost ? '게시글' : '자료'
+    if (!confirm(`"${resource.title}" ${label}을 삭제하시겠습니까?`)) return
     setIsDeleting(true)
     try {
-      const res = await fetch(`/api/resources/${resource.id}`, { method: 'DELETE' })
+      const url = isSharePost
+        ? `/api/posts/${resource.id.replace(/^share-/, '')}`
+        : `/api/resources/${resource.id}`
+      const res = await fetch(url, { method: 'DELETE' })
       if (res.ok) {
         onDeleted?.(resource.id)
         router.refresh()
@@ -323,10 +338,10 @@ function ResourceRow({
 
             {canManage && (
               <div className="flex items-center gap-0.5 ml-auto">
-                {onEdit && (
+                {(onEdit || isSharePost) && (
                   <button
                     type="button"
-                    onClick={() => onEdit(resource)}
+                    onClick={handleEdit}
                     className="p-1.5 rounded-md text-gray-400 hover:text-[#1B3A6B] hover:bg-blue-50 transition-colors"
                     title="수정"
                   >
@@ -385,6 +400,7 @@ export function ResourceList({
   searchable,
   deleteMode,
   currentUserId,
+  isAdmin,
   onEdit,
   onDeleted,
 }: ResourceListProps) {
@@ -404,7 +420,10 @@ export function ResourceList({
   }, [resources, query])
 
   const getCanManage = (resource: Resource): boolean => {
-    if (resource.sourceType === 'SHARE_POST') return false
+    if (resource.sourceType === 'SHARE_POST') {
+      if (!currentUserId) return false
+      return isAdmin || resource.uploadedById === currentUserId
+    }
     if (!deleteMode) return false
     if (deleteMode === 'all') return true
     return deleteMode === 'own' && !!currentUserId && resource.uploadedById === currentUserId

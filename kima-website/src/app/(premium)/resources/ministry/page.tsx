@@ -139,7 +139,7 @@ export default async function MinistryResourcesPage({ searchParams }: PageProps)
       fileType: null,
       accessLevel: 'PUBLIC' as const,
       section: 'MINISTRY',
-      uploadedById: null,
+      uploadedById: post.authorId,
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),
       category: { id: post.category.id, name: post.category.name, slug: post.category.slug },
@@ -232,6 +232,7 @@ export default async function MinistryResourcesPage({ searchParams }: PageProps)
           canUpload={canUpload}
           deleteMode={deleteMode}
           currentUserId={session?.user?.id}
+          isAdmin={weight >= 4}
           categories={categories}
           preselectedCategoryId={categoryId}
         />

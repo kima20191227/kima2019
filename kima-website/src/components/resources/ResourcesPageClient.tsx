@@ -22,6 +22,7 @@ export interface ResourcesPageClientProps {
   canUpload: boolean
   deleteMode: 'all' | 'own' | null
   currentUserId?: string
+  isAdmin?: boolean
   categories?: Category[]
   preselectedCategoryId?: string
 }
@@ -296,6 +297,7 @@ export function ResourcesPageClient({
   canUpload,
   deleteMode,
   currentUserId,
+  isAdmin,
   categories,
   preselectedCategoryId,
 }: ResourcesPageClientProps) {
@@ -449,6 +451,7 @@ export function ResourcesPageClient({
           searchable
           deleteMode={deleteMode}
           currentUserId={currentUserId}
+          isAdmin={isAdmin}
           onEdit={canUpload ? handleEdit : undefined}
           onDeleted={handleDeleted}
         />
