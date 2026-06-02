@@ -19,6 +19,11 @@ export interface Resource {
   uploadedById?: string | null
   createdAt: string | Date
   category?: { id: string; name: string; slug: string } | null
+  sourceType?: 'RESOURCE' | 'SHARE_POST'
+  sourceLabel?: string
+  sourceHref?: string
+  sourceActionLabel?: string
+  sourceExternal?: boolean
 }
 
 export interface ResourceListProps {
@@ -36,6 +41,11 @@ const ACCESS_BADGES: Record<AccessLevel, { label: string; className: string }> =
   MEMBER: { label: '회원', className: 'bg-blue-100 text-blue-700' },
   PREMIUM: { label: '정회원', className: 'bg-amber-100 text-amber-700' },
 }
+
+const SOURCE_BADGES = {
+  RESOURCE: { label: '사역 자료', className: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+  SHARE_POST: { label: '사역 나눔', className: 'bg-amber-50 text-amber-700 border-amber-100' },
+} as const
 
 function canAccess(resourceLevel: AccessLevel, userLevel: 'none' | 'member' | 'premium'): boolean {
   if (resourceLevel === 'PUBLIC') return true
@@ -154,6 +164,11 @@ function ResourceRow({
 
   const accessible = canAccess(resource.accessLevel, userAccessLevel)
   const badge = ACCESS_BADGES[resource.accessLevel]
+  const sourceType = resource.sourceType ?? 'RESOURCE'
+  const sourceBadge = SOURCE_BADGES[sourceType]
+  const sourceHref = resource.sourceHref ?? resource.driveUrl
+  const sourceActionLabel = resource.sourceActionLabel ?? ((resource.fileUrls ?? []).length > 0 ? '파일 1' : '열기')
+  const sourceExternal = resource.sourceExternal ?? true
   const date = new Date(resource.createdAt).toLocaleDateString('ko-KR')
   const hasContent = !!resource.content?.trim()
   const hasDriveFile = !!getDriveFileId(resource.driveUrl)
@@ -206,15 +221,23 @@ function ResourceRow({
             <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 flex-1 min-w-0">
               {resource.title}
             </h3>
-            <span className={cn(
-              'flex-shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium',
-              badge.className,
-            )}>
-              {resource.accessLevel !== 'PUBLIC' && (
-                <LockIcon gold={resource.accessLevel === 'PREMIUM'} />
-              )}
-              {badge.label}
-            </span>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 flex-shrink-0">
+              <span className={cn(
+                'inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold',
+                sourceBadge.className,
+              )}>
+                {resource.sourceLabel ?? sourceBadge.label}
+              </span>
+              <span className={cn(
+                'inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium',
+                badge.className,
+              )}>
+                {resource.accessLevel !== 'PUBLIC' && (
+                  <LockIcon gold={resource.accessLevel === 'PREMIUM'} />
+                )}
+                {badge.label}
+              </span>
+            </div>
           </div>
 
           {/* ② 설명 */}
@@ -247,15 +270,15 @@ function ResourceRow({
             {accessible ? (
               <>
                 <a
-                  href={resource.driveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={sourceHref}
+                  target={sourceExternal ? '_blank' : undefined}
+                  rel={sourceExternal ? 'noopener noreferrer' : undefined}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1B3A6B] text-white hover:bg-[#142d54] transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
-                  {(resource.fileUrls ?? []).length > 0 ? '파일 1' : '열기'}
+                  {sourceActionLabel}
                 </a>
                 {(resource.fileUrls ?? []).map((url, i) => (
                   <a
@@ -288,7 +311,7 @@ function ResourceRow({
                 {contentOpen ? '내용 접기 ▲' : '내용 ▼'}
               </button>
             )}
-            {hasDriveFile && accessible && (
+            {sourceType === 'RESOURCE' && hasDriveFile && accessible && (
               <button
                 type="button"
                 onClick={() => setPreviewOpen((v) => !v)}
@@ -374,11 +397,14 @@ export function ResourceList({
       (r) =>
         r.title.toLowerCase().includes(q) ||
         (r.description ?? '').toLowerCase().includes(q) ||
-        (r.category?.name ?? '').toLowerCase().includes(q),
+        (r.content ?? '').toLowerCase().includes(q) ||
+        (r.category?.name ?? '').toLowerCase().includes(q) ||
+        (r.sourceLabel ?? '').toLowerCase().includes(q),
     )
   }, [resources, query])
 
   const getCanManage = (resource: Resource): boolean => {
+    if (resource.sourceType === 'SHARE_POST') return false
     if (!deleteMode) return false
     if (deleteMode === 'all') return true
     return deleteMode === 'own' && !!currentUserId && resource.uploadedById === currentUserId

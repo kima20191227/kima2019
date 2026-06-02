@@ -4,7 +4,7 @@ import { ministryResourceWhere } from '@/lib/resourceFilters'
 import { ResourcesPageClient } from '@/components/resources/ResourcesPageClient'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import type { UserRole } from '@prisma/client'
+import type { CategoryType, UserRole } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +14,43 @@ export const metadata: Metadata = {
 }
 
 const ROLE_WEIGHT: Record<UserRole, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
+const CATEGORY_TYPE_URL: Record<CategoryType, string> = {
+  REGION: 'region',
+  LANGUAGE: 'language',
+  TARGET: 'target',
+}
+
+type PostAttachment = {
+  url: string
+  name?: string
+  type?: string
+  isCover?: boolean
+}
+
+function getPostAttachments(value: unknown): PostAttachment[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is PostAttachment => (
+    typeof item === 'object'
+    && item !== null
+    && typeof (item as PostAttachment).url === 'string'
+  ))
+}
+
+function getPostThumbnail(attachments: PostAttachment[]): string | null {
+  const image =
+    attachments.find((item) => item.isCover && item.type?.startsWith('image/'))
+    ?? attachments.find((item) => item.type?.startsWith('image/'))
+  return image?.url ?? null
+}
+
+function toExcerpt(content: string): string | null {
+  const text = content
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!text) return null
+  return text.length > 120 ? `${text.slice(0, 120)}...` : text
+}
 
 function getUserAccessLevel(
   role?: UserRole,
@@ -52,7 +89,7 @@ export default async function MinistryResourcesPage({ searchParams }: PageProps)
         ? (['PUBLIC', 'MEMBER'] as const)
         : (['PUBLIC'] as const)
 
-  const [categories, resources] = await Promise.all([
+  const [categories, resources, sharePosts] = await Promise.all([
     prisma.category.findMany({
       select: { id: true, name: true, slug: true, order: true },
       orderBy: [{ type: 'asc' }, { order: 'asc' }],
@@ -67,13 +104,56 @@ export default async function MinistryResourcesPage({ searchParams }: PageProps)
       },
       orderBy: { createdAt: 'desc' },
     }),
+    prisma.post.findMany({
+      where: {
+        isPublished: true,
+        type: 'SHARE',
+        ...(categoryId ? { categoryId } : {}),
+      },
+      include: {
+        category: { select: { id: true, name: true, slug: true, type: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
   ])
 
-  const serialized = resources.map((r) => ({
+  const serializedResources = resources.map((r) => ({
     ...r,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
+    sourceType: 'RESOURCE' as const,
+    sourceLabel: '사역 자료',
   }))
+
+  const serializedSharePosts = sharePosts.map((post) => {
+    const attachments = getPostAttachments(post.attachments)
+    const href = `/community/${CATEGORY_TYPE_URL[post.category.type]}/${post.category.slug}/posts/${post.id}`
+    return {
+      id: `share-${post.id}`,
+      title: post.title,
+      description: toExcerpt(post.content),
+      content: post.content,
+      thumbnail: getPostThumbnail(attachments),
+      driveUrl: href,
+      fileUrls: [],
+      fileType: null,
+      accessLevel: 'PUBLIC' as const,
+      section: 'MINISTRY',
+      uploadedById: null,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+      category: { id: post.category.id, name: post.category.name, slug: post.category.slug },
+      sourceType: 'SHARE_POST' as const,
+      sourceLabel: '사역 나눔',
+      sourceHref: href,
+      sourceActionLabel: '게시글 보기',
+      sourceExternal: false,
+    }
+  })
+
+  const serialized = [...serializedResources, ...serializedSharePosts].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
