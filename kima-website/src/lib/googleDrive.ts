@@ -4,6 +4,36 @@ export interface DriveEnvOptions {
   privateKey: string
 }
 
+export type GoogleServiceAccountKey = {
+  client_email?: string
+  private_key?: string
+}
+
+export function parseServiceAccountKey(raw: string | undefined): GoogleServiceAccountKey {
+  if (!raw) return {}
+
+  const candidates = [raw.trim()]
+  try {
+    candidates.push(Buffer.from(raw.trim(), 'base64').toString('utf8'))
+  } catch {
+    // The value was not base64 encoded.
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as GoogleServiceAccountKey
+      return {
+        client_email: parsed.client_email,
+        private_key: parsed.private_key,
+      }
+    } catch {
+      // Try the next representation.
+    }
+  }
+
+  return {}
+}
+
 function base64url(buf: ArrayBuffer | Buffer): string {
   const b64 = Buffer.isBuffer(buf)
     ? buf.toString('base64')
@@ -69,6 +99,65 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   return access_token
 }
 
+export async function createDriveResumableUploadSession(
+  fileName: string,
+  mimeType: string,
+  options: DriveEnvOptions,
+): Promise<string> {
+  const { folderId, clientEmail, privateKey } = options
+  const accessToken = await getAccessToken(clientEmail, privateKey)
+
+  const uploadRes = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,mimeType,webViewLink&supportsAllDrives=true',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': mimeType,
+      },
+      body: JSON.stringify({ name: fileName, parents: [folderId] }),
+    },
+  )
+
+  if (!uploadRes.ok) {
+    const msg = await uploadRes.text()
+    throw new Error(`Drive 업로드 세션 발급 실패: ${msg}`)
+  }
+
+  const uploadUrl = uploadRes.headers.get('location')
+  if (!uploadUrl) throw new Error('Drive 업로드 세션 URL을 받지 못했습니다.')
+
+  return uploadUrl
+}
+
+export async function makeDriveFilePublic(
+  fileId: string,
+  options: DriveEnvOptions,
+): Promise<string> {
+  const { clientEmail, privateKey } = options
+  const accessToken = await getAccessToken(clientEmail, privateKey)
+
+  const permissionRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?supportsAllDrives=true`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+    },
+  )
+
+  if (!permissionRes.ok) {
+    const msg = await permissionRes.text()
+    throw new Error(`Drive 파일 공유 설정 실패: ${msg}`)
+  }
+
+  return `https://drive.google.com/file/d/${fileId}/view`
+}
+
 export async function uploadFileToDrive(
   buffer: Buffer,
   fileName: string,
@@ -115,14 +204,5 @@ export async function uploadFileToDrive(
   if (!fileId) throw new Error('Drive 파일 ID를 가져올 수 없습니다.')
 
   // 누구나 링크로 볼 수 있도록 공유 설정
-  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`, {
-    method:  'POST',
-    headers: {
-      Authorization:  `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ role: 'reader', type: 'anyone' }),
-  })
-
-  return `https://drive.google.com/file/d/${fileId}/view`
+  return makeDriveFilePublic(fileId, options)
 }

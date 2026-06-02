@@ -1,18 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase'
-import { safeStorageKey } from '@/lib/utils'
+import { cfEnv } from '@/lib/cfEnv'
+import { createDriveResumableUploadSession, parseServiceAccountKey } from '@/lib/googleDrive'
 import {
   MAX_RESOURCE_FILE_SIZE_BYTES,
   MAX_RESOURCE_FILE_SIZE_MB,
-  RESOURCE_UPLOAD_BUCKET,
   normalizedResourceMimeType,
 } from '@/lib/resourceUploadPolicy'
+
+const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
 
 type SignedUploadRequest = {
   name?: unknown
   type?: unknown
   size?: unknown
+}
+
+function resolveDriveOptions() {
+  const serviceAccount = parseServiceAccountKey(cfEnv('GOOGLE_SERVICE_ACCOUNT_KEY'))
+  const folderId = cfEnv('GOOGLE_DRIVE_RESOURCE_FOLDER_ID') ?? DEFAULT_DRIVE_FOLDER_ID
+  const clientEmail = cfEnv('GOOGLE_CLIENT_EMAIL') ?? serviceAccount.client_email ?? ''
+  const privateKey = cfEnv('GOOGLE_PRIVATE_KEY') ?? serviceAccount.private_key ?? ''
+
+  if (!clientEmail || !privateKey) {
+    throw new Error('Google Drive 업로드 설정이 없습니다. 서비스 계정 키를 확인해주세요.')
+  }
+
+  return { folderId, clientEmail, privateKey }
 }
 
 export async function POST(request: NextRequest) {
@@ -46,32 +60,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createAdminClient()
-    const path = safeStorageKey({ name, type: mimeType }, 'community')
-    const { data, error } = await supabase.storage
-      .from(RESOURCE_UPLOAD_BUCKET)
-      .createSignedUploadUrl(path, { upsert: false })
-
-    if (error || !data) {
-      throw new Error(error?.message ?? 'Signed upload URL 발급에 실패했습니다.')
-    }
-
-    const { data: publicData } = supabase.storage.from(RESOURCE_UPLOAD_BUCKET).getPublicUrl(path)
+    const uploadUrl = await createDriveResumableUploadSession(name, mimeType, resolveDriveOptions())
 
     return NextResponse.json({
-      bucket: RESOURCE_UPLOAD_BUCKET,
-      path,
-      token: data.token,
-      signedUrl: data.signedUrl,
-      url: publicData.publicUrl,
+      storage: 'drive',
+      uploadUrl,
       fileType: mimeType,
-      storage: 'supabase',
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[upload/resource/signed]', message)
     return NextResponse.json(
-      { error: message || '업로드 URL 발급 중 오류가 발생했습니다.' },
+      { error: message || 'Google Drive 업로드 세션 발급 중 오류가 발생했습니다.' },
       { status: 500 },
     )
   }

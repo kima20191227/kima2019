@@ -13,10 +13,14 @@ export type UploadResourceResult = {
 }
 
 type SignedUploadResult = {
-  signedUrl: string
-  url: string
+  uploadUrl: string
   fileType: string
-  storage: 'supabase'
+  storage: 'drive'
+}
+
+type DriveUploadResponse = {
+  id?: string
+  mimeType?: string
 }
 
 function isCompressibleImage(file: File): boolean {
@@ -153,48 +157,47 @@ async function requestSignedUpload(file: File): Promise<SignedUploadResult> {
   if (
     !parsed ||
     typeof parsed !== 'object' ||
-    !('signedUrl' in parsed) ||
-    typeof parsed.signedUrl !== 'string' ||
-    !('url' in parsed) ||
-    typeof parsed.url !== 'string' ||
+    !('uploadUrl' in parsed) ||
+    typeof parsed.uploadUrl !== 'string' ||
     !('fileType' in parsed) ||
     typeof parsed.fileType !== 'string'
   ) {
-    throw new Error('업로드 URL 응답이 올바르지 않습니다.')
+    throw new Error('Google Drive 업로드 세션 응답이 올바르지 않습니다.')
   }
 
   return parsed as SignedUploadResult
 }
 
-async function uploadToSignedUrl(file: File, signed: SignedUploadResult): Promise<void> {
-  const formData = new FormData()
-  formData.append('cacheControl', '3600')
-  formData.append('', file)
-
-  const response = await fetch(signed.signedUrl, {
+async function uploadToDriveSession(file: File, signed: SignedUploadResult): Promise<DriveUploadResponse> {
+  const response = await fetch(signed.uploadUrl, {
     method: 'PUT',
-    headers: { 'x-upsert': 'false' },
-    body: formData,
+    headers: { 'Content-Type': signed.fileType },
+    body: file,
   })
 
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     throw new Error(errorFromUploadResponse(response, text, null))
   }
+
+  const text = await response.text()
+  try {
+    return text ? JSON.parse(text) as DriveUploadResponse : {}
+  } catch {
+    return {}
+  }
 }
 
-async function uploadViaServerRoute(file: File): Promise<UploadResourceResult> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const response = await fetch('/api/upload/resource', {
+async function finalizeDriveUpload(fileId: string, fileType: string): Promise<UploadResourceResult> {
+  const response = await fetch('/api/upload/resource/drive-finalize', {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileId, fileType }),
   })
   const parsed = await readUploadResponse(response)
 
   if (!parsed || typeof parsed !== 'object' || !('url' in parsed) || typeof parsed.url !== 'string') {
-    throw new Error('업로드 응답에 파일 URL이 없습니다.')
+    throw new Error('Google Drive 파일 링크 응답이 올바르지 않습니다.')
   }
 
   return parsed as UploadResourceResult
@@ -203,15 +206,10 @@ async function uploadViaServerRoute(file: File): Promise<UploadResourceResult> {
 export async function uploadResourceFile(file: File): Promise<UploadResourceResult> {
   const preparedFile = await prepareFileForBrowserUpload(file)
 
-  try {
-    const signed = await requestSignedUpload(preparedFile)
-    await uploadToSignedUrl(preparedFile, signed)
-    return { url: signed.url, fileType: signed.fileType, storage: signed.storage }
-  } catch (err) {
-    if (preparedFile.size > 4 * 1024 * 1024) {
-      throw err
-    }
-
-    return uploadViaServerRoute(preparedFile)
+  const signed = await requestSignedUpload(preparedFile)
+  const uploaded = await uploadToDriveSession(preparedFile, signed)
+  if (!uploaded.id) {
+    throw new Error('Google Drive 업로드 응답에 파일 ID가 없습니다.')
   }
+  return finalizeDriveUpload(uploaded.id, uploaded.mimeType ?? signed.fileType)
 }
