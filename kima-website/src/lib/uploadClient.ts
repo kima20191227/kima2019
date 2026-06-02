@@ -3,8 +3,7 @@
 import { MAX_RESOURCE_FILE_SIZE_BYTES } from '@/lib/resourceUploadPolicy'
 
 const MAX_BROWSER_UPLOAD_BYTES = MAX_RESOURCE_FILE_SIZE_BYTES
-const MAX_SERVER_FALLBACK_BYTES = 4 * 1024 * 1024
-const DRIVE_CHUNK_BYTES = 6 * 1024 * 1024
+const DRIVE_CHUNK_BYTES = 4 * 1024 * 1024
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
 
@@ -269,14 +268,7 @@ export async function uploadResourceFile(file: File): Promise<UploadResourceResu
       throw new Error('Google Drive 업로드 응답에 파일 ID가 없습니다.')
     }
     return finalizeDriveUpload(uploaded.id, uploaded.mimeType ?? signed.fileType)
-  } catch (err) {
-    if (preparedFile.size > MAX_SERVER_FALLBACK_BYTES) {
-      const message = err instanceof Error && err.message.trim()
-        ? err.message
-        : 'Google Drive 직접 업로드에 실패했습니다.'
-      throw new Error(message)
-    }
-
+  } catch {
     return uploadThroughServerFallback(preparedFile)
   }
 }
