@@ -107,7 +107,7 @@ export async function createDriveResumableUploadSession(
   const { folderId, clientEmail, privateKey } = options
   const accessToken = await getAccessToken(clientEmail, privateKey)
 
-  const uploadRes = await fetch(
+  const createSession = (metadata: { name: string; parents?: string[] }) => fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,mimeType,webViewLink&supportsAllDrives=true',
     {
       method: 'POST',
@@ -116,9 +116,14 @@ export async function createDriveResumableUploadSession(
         'Content-Type': 'application/json; charset=UTF-8',
         'X-Upload-Content-Type': mimeType,
       },
-      body: JSON.stringify({ name: fileName, parents: [folderId] }),
+      body: JSON.stringify(metadata),
     },
   )
+
+  let uploadRes = await createSession({ name: fileName, parents: [folderId] })
+  if (uploadRes.status === 404) {
+    uploadRes = await createSession({ name: fileName })
+  }
 
   if (!uploadRes.ok) {
     const msg = await uploadRes.text()
@@ -168,32 +173,39 @@ export async function uploadFileToDrive(
 
   const accessToken = await getAccessToken(clientEmail, privateKey)
 
-  const boundary = 'kima_' + Math.random().toString(36).slice(2)
-  const metadata  = JSON.stringify({ name: fileName, parents: [folderId] })
+  const upload = (metadata: { name: string; parents?: string[] }) => {
+    const boundary = 'kima_' + Math.random().toString(36).slice(2)
+    const metadataJson = JSON.stringify(metadata)
 
-  const part1 = Buffer.from(
-    `--${boundary}\r\n` +
-    `Content-Type: application/json; charset=UTF-8\r\n` +
-    `\r\n` +
-    `${metadata}\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: ${mimeType}\r\n` +
-    `\r\n`,
-  )
-  const part2    = Buffer.from(`\r\n--${boundary}--`)
-  const fullBody = Buffer.concat([part1, buffer, part2])
+    const part1 = Buffer.from(
+      `--${boundary}\r\n` +
+      `Content-Type: application/json; charset=UTF-8\r\n` +
+      `\r\n` +
+      `${metadataJson}\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Type: ${mimeType}\r\n` +
+      `\r\n`,
+    )
+    const part2    = Buffer.from(`\r\n--${boundary}--`)
+    const fullBody = Buffer.concat([part1, buffer, part2])
 
-  const uploadRes = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true',
-    {
-      method:  'POST',
-      headers: {
-        Authorization:  `Bearer ${accessToken}`,
-        'Content-Type': `multipart/related; boundary=${boundary}`,
+    return fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true',
+      {
+        method:  'POST',
+        headers: {
+          Authorization:  `Bearer ${accessToken}`,
+          'Content-Type': `multipart/related; boundary=${boundary}`,
+        },
+        body: fullBody,
       },
-      body: fullBody,
-    },
-  )
+    )
+  }
+
+  let uploadRes = await upload({ name: fileName, parents: [folderId] })
+  if (uploadRes.status === 404) {
+    uploadRes = await upload({ name: fileName })
+  }
 
   if (!uploadRes.ok) {
     const msg = await uploadRes.text()
