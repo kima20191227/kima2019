@@ -77,7 +77,7 @@ export default async function AdminNewsPage({
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-[#1B3A6B]">이주민·다문화 뉴스 관리</h1>
+          <h1 className="text-xl font-bold text-[#1B3A6B]">이주민 관련 뉴스 관리</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             자동 수집 설정, 뉴스 목록, 수집 소스, 분류 카테고리를 관리합니다.
           </p>

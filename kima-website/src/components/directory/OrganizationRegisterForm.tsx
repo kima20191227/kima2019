@@ -175,7 +175,7 @@ export function OrganizationRegisterForm() {
         <input
           {...register('name')}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30"
-          placeholder="예: 서울다문화선교회"
+          placeholder="예: 서울이주민선교회"
         />
         <FieldError message={errors.name?.message} />
       </div>

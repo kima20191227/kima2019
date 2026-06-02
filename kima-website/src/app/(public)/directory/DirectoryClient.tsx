@@ -62,7 +62,7 @@ function DirectoryContent({ initialOrgs }: { initialOrgs: Organization[] }) {
           <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-lg font-bold text-[#1B3A6B]">사역단체 전국지도</h1>
-              <p className="text-xs text-gray-400 mt-0.5">전국 다문화 사역 단체를 찾아보세요</p>
+              <p className="text-xs text-gray-400 mt-0.5">전국 이주민 사역 단체를 찾아보세요</p>
             </div>
             <Link
               href="/directory/register"

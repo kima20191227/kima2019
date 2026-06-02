@@ -128,7 +128,7 @@ export function organizationApprovedEmailHtml(orgName: string) {
   return layout(`
     <h2 style="color:#1B3A6B;margin-top:0;">단체 등록이 완료되었습니다 🏢</h2>
     <p><strong>${orgName}</strong>이(가) KIMA 회원단체 디렉토리에 등재되었습니다.</p>
-    <p>이제 전국 다문화사역 단체 지도와 목록에서 귀 단체를 확인하실 수 있습니다.</p>
+    <p>이제 전국 이주민 사역 단체 지도와 목록에서 귀 단체를 확인하실 수 있습니다.</p>
     ${btn('단체 디렉토리 확인하기', `${SITE_URL}/directory`)}
     <p style="color:#888;font-size:13px;">단체 정보 수정이 필요하시면 <a href="mailto:${ADMIN_EMAIL}" style="color:#1B3A6B;">${ADMIN_EMAIL}</a>으로 연락해 주세요.</p>
   `)

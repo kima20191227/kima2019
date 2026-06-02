@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '법령 공식 출처 | KIMA',
-  description: '회원들이 직접 확인할 수 있는 이주민·다문화 관련 공식 법령 출처입니다.',
+  description: '회원들이 직접 확인할 수 있는 이주민 관련 공식 법령 출처입니다.',
   robots: { index: false, follow: false },
 }
 

@@ -2,7 +2,7 @@
 
 **한국이주민선교연합회 (Korea Immigrant Mission Alliance)** 공식 홈페이지
 
-> 연결하고 · 기록하고 · 보이게 하고 · 후원으로 이어주는 전국 다문화사역 연합 플랫폼
+> 연결하고 · 기록하고 · 보이게 하고 · 후원으로 이어주는 전국 이주민 사역 연합 플랫폼
 
 - 도메인: [kima2019.org](https://kima2019.org)
 - 배포: Cloudflare Pages

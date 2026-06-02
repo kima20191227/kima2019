@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: '리스닝콜 & 포럼 | KIMA',
-  description: '전국 다문화사역 사역자들이 함께 모이는 리스닝콜과 포럼을 소개합니다.',
+  description: '전국 이주민 사역자들이 함께 모이는 리스닝콜과 포럼을 소개합니다.',
 }
 
 export default function NetworkPage() {

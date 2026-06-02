@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '법령&제도 | KIMA',
-  description: '이주민과 다문화인을 위한 필수 법률·제도 정보를 제공합니다.',
+  description: '이주민을 위한 필수 법률·제도 정보를 제공합니다.',
 }
 
 const PAGE_SIZE = 10
@@ -93,7 +93,7 @@ export default async function LegalPage({ searchParams }: PageProps) {
           <h1 className="text-3xl font-bold">법령&제도</h1>
           <p className="mt-3 text-blue-100 text-sm leading-relaxed max-w-2xl">
             다문화가족, 출입국, 비자, 난민, 외국인 고용, 사회보장 등
-            이주민과 다문화 현장에서 자주 확인해야 하는 법률 정보를 정리합니다.
+            이주민 사역 현장에서 자주 확인해야 하는 법률 정보를 정리합니다.
           </p>
         </div>
       </div>

@@ -44,7 +44,8 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/network/listening',     label: '리스닝콜',             desc: '리스닝콜 안내 및 역대 기록' },
       { href: '/network/forum',         label: '포럼',                 desc: 'KIMA 이주민 선교 포럼 소개 및 기록' },
       { href: '/network/schedule',      label: 'KIMA 행사 일정',       desc: '리스닝콜·포럼 일정 및 참석 신청' },
-      { href: '/legal',                  label: '법령&제도',            desc: '이주민·다문화 관련 필수 법령과 제도 안내', dividerBefore: true },
+      { href: '/legal',                  label: '법령&제도',            desc: '이주민 관련 필수 법령과 제도 안내', dividerBefore: true },
+      { href: '/network/news',           label: '이주민 관련 뉴스',   desc: '이주민 관련 최신 뉴스 자동 수집' },
     ],
   },
   {

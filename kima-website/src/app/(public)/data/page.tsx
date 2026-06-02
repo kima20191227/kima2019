@@ -41,7 +41,7 @@ const STATS = [
 
 const WHITEPAPER_LIST = [
   { title: 'KIMA 이주민 사역 백서 1호 (2022)', year: '2022', size: 'PDF 4.2MB' },
-  { title: '다문화사역 현장 조사 보고서 (2023)', year: '2023', size: 'PDF 2.8MB' },
+  { title: '이주민 사역 현장 조사 보고서 (2023)', year: '2023', size: 'PDF 2.8MB' },
 ]
 
 export default function DataPage() {
@@ -126,9 +126,9 @@ export default function DataPage() {
           </div>
         </section>
 
-        {/* 이주민·다문화 뉴스 */}
+        {/* 이주민 관련 뉴스 */}
         <section>
-          <h2 className="text-xl font-bold text-[#1B3A6B] mb-5">이주민·다문화 뉴스</h2>
+          <h2 className="text-xl font-bold text-[#1B3A6B] mb-5">이주민 관련 뉴스</h2>
           <Link
             href="/network/news"
             className="group block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#C8922A]/40 transition-all overflow-hidden"
@@ -146,7 +146,7 @@ export default function DataPage() {
                     <span className="text-xs text-gray-400">매일 오전 8시 업데이트</span>
                   </div>
                   <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1B3A6B] transition-colors">
-                    이주민·다문화 뉴스 바로가기
+                    이주민 관련 뉴스 바로가기
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
                     법령·통계·다문화가족·이주노동자·유학생 관련 최신 뉴스를 AI가 수집·요약합니다.

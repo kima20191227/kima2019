@@ -34,7 +34,7 @@ const SLIDES = [
     type: 'text' as const,
     badge: 'Korea Immigrants Missions Association',
     title: '이주민과 함께,\n한국 교회가 하나로',
-    desc: '전국 다문화 사역 단체를 연결하고, 현장을 기록하며, 후원이 필요한 곳으로 자원이 흐르게 하는 플랫폼입니다.',
+    desc: '전국 이주민 사역 단체를 연결하고, 현장을 기록하며, 후원이 필요한 곳으로 자원이 흐르게 하는 플랫폼입니다.',
   },
 ]
 

@@ -1,6 +1,6 @@
 /**
  * GET /api/cron/collect-news
- * 이주민·다문화 뉴스 자동 수집 cron endpoint.
+ * 이주민 관련 뉴스 자동 수집 cron endpoint.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { runNewsCollection } from '@/lib/collectNews'

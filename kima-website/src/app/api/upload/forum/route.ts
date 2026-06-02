@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '파일이 없습니다.' }, { status: 400 })
     }
 
-    const MAX_MB = 50
+    const MAX_MB = 100
     if (file.size > MAX_MB * 1024 * 1024) {
       return NextResponse.json({ error: `파일 크기는 ${MAX_MB}MB 이하여야 합니다.` }, { status: 400 })
     }

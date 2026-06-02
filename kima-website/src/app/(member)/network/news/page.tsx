@@ -29,8 +29,8 @@ export async function generateMetadata({
   const { category } = await searchParams
   const suffix = category ? ` — ${category}` : ''
   return {
-    title:       `이주민·다문화 뉴스${suffix} | KIMA`,
-    description: 'AI가 매일 수집·요약한 이주민·다문화 관련 최신 뉴스입니다.',
+    title:       `이주민 관련 뉴스${suffix} | KIMA`,
+    description: 'AI가 매일 수집·요약한 이주민 관련 최신 뉴스입니다.',
   }
 }
 
@@ -51,8 +51,8 @@ export default async function NetworkNewsPage({
         <div className="bg-[#1B3A6B] text-white py-12 px-4">
           <div className="max-w-5xl mx-auto">
             <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">AI News</p>
-            <h1 className="text-2xl font-bold">이주민·다문화 뉴스</h1>
-            <p className="mt-2 text-blue-200 text-sm">AI가 매일 수집·요약한 이주민·다문화 관련 최신 뉴스</p>
+            <h1 className="text-2xl font-bold">이주민 관련 뉴스</h1>
+            <p className="mt-2 text-blue-200 text-sm">AI가 매일 수집·요약한 이주민 관련 최신 뉴스</p>
           </div>
         </div>
 
@@ -66,7 +66,7 @@ export default async function NetworkNewsPage({
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">회원 전용 콘텐츠입니다</h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-6">
-              이주민·다문화 뉴스는 <strong>일반회원 이상</strong>만 열람하실 수 있습니다.<br />
+              이주민 관련 뉴스는 <strong>일반회원 이상</strong>만 열람하실 수 있습니다.<br />
               {isLoggedIn
                 ? '현재 계정의 권한으로는 이 페이지에 접근할 수 없습니다.'
                 : '회원가입 후 로그인하시면 무료로 이용하실 수 있습니다.'}
@@ -171,9 +171,9 @@ export default async function NetworkNewsPage({
           <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">
             AI News
           </p>
-          <h1 className="text-2xl font-bold">이주민·다문화 뉴스</h1>
+          <h1 className="text-2xl font-bold">이주민 관련 뉴스</h1>
           <p className="mt-2 text-blue-200 text-sm">
-            AI가 매일 수집·요약한 이주민·다문화 관련 최신 뉴스
+            AI가 매일 수집·요약한 이주민 관련 최신 뉴스
           </p>
         </div>
       </div>

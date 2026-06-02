@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'KIMA 소개 | 한국이주민선교연합회',
-  description: '한국이주민선교연합회(KIMA)는 전국 다문화사역 단체들이 연합하는 플랫폼입니다.',
+  description: '한국이주민선교연합회(KIMA)는 전국 이주민 사역 단체들이 연합하는 플랫폼입니다.',
 }
 
 const SECTIONS = [
@@ -26,7 +26,7 @@ export default function AboutPage() {
           </h1>
           <p className="mt-4 text-blue-200 text-lg max-w-2xl mx-auto leading-relaxed">
             "연결하고 · 기록하고 · 보이게 하고 · 후원으로 이어주는"<br />
-            전국 다문화사역 연합 플랫폼
+            전국 이주민 사역 연합 플랫폼
           </p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-[#1B3A6B] mb-6">단체 소개</h2>
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 space-y-4 text-gray-700 leading-relaxed">
             <p>
-              한국이주민선교연합회(KIMA, Korea Immigrants Missions Association)는 한국 내 다문화사역을 감당하는
+              한국이주민선교연합회(KIMA, Korea Immigrants Missions Association)는 한국 내 이주민 사역을 감당하는
               교회, NGO, 법률·복지 기관들이 모인 전국 연합 플랫폼입니다.
             </p>
             <p>
@@ -57,7 +57,7 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-[#1B3A6B] mb-6">4대 사명</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { icon: '🔗', word: 'CONNECT', desc: '전국 다문화사역 단체를 하나로 연결합니다' },
+              { icon: '🔗', word: 'CONNECT', desc: '전국 이주민 사역 단체를 하나로 연결합니다' },
               { icon: '📊', word: 'DATA', desc: '이주민 현황과 사역 데이터를 기록·공유합니다' },
               { icon: '📣', word: 'STORY', desc: '현장의 이야기를 세상에 보이게 합니다' },
               { icon: '💛', word: 'FUND', desc: '후원자와 사역을 이어 재정을 흘려보냅니다' },

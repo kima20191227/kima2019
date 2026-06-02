@@ -524,13 +524,13 @@ model ColumnPost {
   @@index([createdAt])
 }
 
-// ─── 이주민·다문화 뉴스 자동화 ──────────────────────────────────────────────────
+// ─── 이주민 관련 뉴스 자동화 ──────────────────────────────────────────────────
 
 // 뉴스 카테고리 분류
 enum NewsCategory {
   LAW              // 법률·정책
   STATISTICS       // 통계·연구
-  MULTICULTURAL    // 다문화 일반
+  MULTICULTURAL    // 다문화가족 일반
   MIGRANT_WORKER   // 이주노동자
   STUDENT          // 유학생
   OTHER            // 기타

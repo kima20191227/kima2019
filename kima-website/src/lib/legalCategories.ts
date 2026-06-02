@@ -46,7 +46,7 @@ export const LEGAL_CATEGORY_META: Record<
   },
   OTHER: {
     label: '기타',
-    description: '그 밖의 이주민·다문화 관련 법령과 제도',
+    description: '그 밖의 이주민 관련 법령과 제도',
     className: 'bg-gray-50 text-gray-700 border-gray-100',
   },
 }

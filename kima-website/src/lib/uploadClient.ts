@@ -1,6 +1,6 @@
 'use client'
 
-const MAX_BROWSER_UPLOAD_BYTES = 4 * 1024 * 1024
+const MAX_BROWSER_UPLOAD_BYTES = 100 * 1024 * 1024
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
 
@@ -81,7 +81,7 @@ async function compressImageForUpload(file: File): Promise<File> {
 
   if (file.size <= MAX_BROWSER_UPLOAD_BYTES) return file
 
-  throw new Error('이미지 용량이 너무 큽니다. 4MB 이하 이미지로 줄인 뒤 다시 업로드해주세요.')
+  throw new Error('이미지 용량이 너무 큽니다. 100MB 이하 이미지로 줄인 뒤 다시 업로드해주세요.')
 }
 
 async function prepareFileForBrowserUpload(file: File): Promise<File> {
@@ -91,7 +91,7 @@ async function prepareFileForBrowserUpload(file: File): Promise<File> {
   }
 
   if (file.size > MAX_BROWSER_UPLOAD_BYTES) {
-    throw new Error('파일 용량이 너무 큽니다. 현재 첨부 업로드는 4MB 이하 파일만 가능합니다.')
+    throw new Error('파일 용량이 너무 큽니다. 현재 첨부 업로드는 100MB 이하 파일만 가능합니다.')
   }
 
   return file
@@ -99,7 +99,7 @@ async function prepareFileForBrowserUpload(file: File): Promise<File> {
 
 function errorFromUploadResponse(response: Response, text: string, parsed: unknown): string {
   if (response.status === 413) {
-    return '파일 용량이 너무 큽니다. 4MB 이하 파일로 줄인 뒤 다시 업로드해주세요.'
+    return '파일 용량이 너무 큽니다. 100MB 이하 파일로 줄인 뒤 다시 업로드해주세요.'
   }
 
   if (parsed && typeof parsed === 'object' && 'error' in parsed) {

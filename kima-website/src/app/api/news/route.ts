@@ -1,6 +1,6 @@
 /**
  * GET /api/news
- * 이주민·다문화 뉴스 목록 조회
+ * 이주민 관련 뉴스 목록 조회
  *
  * 쿼리 파라미터:
  *   category  'all' | 'LAW' | 'STATISTICS' | 'MULTICULTURAL' | 'MIGRANT_WORKER' | 'STUDENT' | 'OTHER'
