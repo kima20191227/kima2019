@@ -103,14 +103,25 @@ describe('POST /api/upload/resource', () => {
     })
   })
 
-  it('rejects unsafe file types before uploading', async () => {
+  it('allows uncommon file types instead of rejecting by format', async () => {
+    mocks.uploadFileToDrive.mockResolvedValue('https://drive.google.com/file/d/exe-file/view')
+
     const response = await POST(makeRequest(new File(['<html></html>'], 'page.html', { type: 'text/html' })) as never)
     const body = await response.json()
 
-    expect(response.status).toBe(400)
-    expect(body.error).toContain('허용되지 않는 파일 형식')
-    expect(mocks.uploadFileToDrive).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    expect(mocks.uploadFileToDrive).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      'page.html',
+      'text/html',
+      expect.objectContaining({ folderId: 'drive-folder-id' }),
+    )
     expect(mocks.upload).not.toHaveBeenCalled()
+    expect(body).toEqual({
+      url: 'https://drive.google.com/file/d/exe-file/view',
+      fileType: 'text/html',
+      storage: 'drive',
+    })
   })
 
   it('allows common Korean document uploads when the browser sends octet-stream', async () => {

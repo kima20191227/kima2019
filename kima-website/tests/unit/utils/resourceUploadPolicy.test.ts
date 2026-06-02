@@ -20,8 +20,10 @@ describe('resourceUploadPolicy', () => {
       .toBe('application/x-hwp')
   })
 
-  it('rejects unsupported file extensions', () => {
+  it('allows unknown extensions as generic binary files', () => {
     expect(normalizedResourceMimeType({ name: 'archive.exe', type: 'application/octet-stream' }))
-      .toBeNull()
+      .toBe('application/octet-stream')
+    expect(normalizedResourceMimeType({ name: 'installer.exe', type: '' }))
+      .toBe('application/octet-stream')
   })
 })
