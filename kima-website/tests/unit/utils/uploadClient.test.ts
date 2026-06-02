@@ -19,7 +19,7 @@ describe('uploadResourceFile', () => {
         }),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ id: 'drive-file-id', mimeType: 'text/plain' }), {
+        new Response(JSON.stringify({ done: true, id: 'drive-file-id', mimeType: 'text/plain' }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         }),
@@ -35,7 +35,10 @@ describe('uploadResourceFile', () => {
     const result = await uploadResourceFile(new File(['hello'], 'file.txt', { type: 'text/plain' }))
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/upload/resource/signed', expect.objectContaining({ method: 'POST' }))
-    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://upload.example.com/session', expect.objectContaining({ method: 'PUT' }))
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/upload/resource/chunk', expect.objectContaining({
+      method: 'POST',
+      body: expect.any(FormData),
+    }))
     expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/upload/resource/drive-finalize', expect.objectContaining({ method: 'POST' }))
     expect(result.url).toBe('https://drive.example.com/file.txt')
     expect(result.fileType).toBe('text/plain')

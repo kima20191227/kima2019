@@ -4,6 +4,7 @@ import { MAX_RESOURCE_FILE_SIZE_BYTES } from '@/lib/resourceUploadPolicy'
 
 const MAX_BROWSER_UPLOAD_BYTES = MAX_RESOURCE_FILE_SIZE_BYTES
 const MAX_SERVER_FALLBACK_BYTES = 4 * 1024 * 1024
+const DRIVE_CHUNK_BYTES = 3 * 1024 * 1024
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
 
@@ -20,6 +21,13 @@ type SignedUploadResult = {
 }
 
 type DriveUploadResponse = {
+  id?: string
+  mimeType?: string
+}
+
+type ChunkUploadResponse = {
+  done?: boolean
+  nextStart?: number
   id?: string
   mimeType?: string
 }
@@ -169,24 +177,54 @@ async function requestSignedUpload(file: File): Promise<SignedUploadResult> {
   return parsed as SignedUploadResult
 }
 
-async function uploadToDriveSession(file: File, signed: SignedUploadResult): Promise<DriveUploadResponse> {
-  const response = await fetch(signed.uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': signed.fileType },
-    body: file,
+async function uploadDriveChunk(
+  signed: SignedUploadResult,
+  chunk: Blob,
+  start: number,
+  end: number,
+  total: number,
+  fileName: string,
+): Promise<ChunkUploadResponse> {
+  const formData = new FormData()
+  formData.append('uploadUrl', signed.uploadUrl)
+  formData.append('fileType', signed.fileType)
+  formData.append('start', String(start))
+  formData.append('end', String(end))
+  formData.append('total', String(total))
+  formData.append('chunk', chunk, fileName)
+
+  const response = await fetch('/api/upload/resource/chunk', {
+    method: 'POST',
+    body: formData,
   })
+  const parsed = await readUploadResponse(response)
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new Error(errorFromUploadResponse(response, text, null))
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Google Drive 조각 업로드 응답이 올바르지 않습니다.')
   }
 
-  const text = await response.text()
-  try {
-    return text ? JSON.parse(text) as DriveUploadResponse : {}
-  } catch {
-    return {}
+  return parsed as ChunkUploadResponse
+}
+
+async function uploadToDriveSession(file: File, signed: SignedUploadResult): Promise<DriveUploadResponse> {
+  let start = 0
+
+  while (start < file.size) {
+    const endExclusive = Math.min(start + DRIVE_CHUNK_BYTES, file.size)
+    const end = endExclusive - 1
+    const chunk = file.slice(start, endExclusive, signed.fileType)
+    const uploaded = await uploadDriveChunk(signed, chunk, start, end, file.size, file.name)
+
+    if (uploaded.done) {
+      return { id: uploaded.id, mimeType: uploaded.mimeType }
+    }
+
+    start = typeof uploaded.nextStart === 'number' && uploaded.nextStart > start
+      ? uploaded.nextStart
+      : endExclusive
   }
+
+  return {}
 }
 
 async function finalizeDriveUpload(fileId: string, fileType: string): Promise<UploadResourceResult> {
