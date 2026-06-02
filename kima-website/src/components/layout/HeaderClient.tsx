@@ -34,7 +34,7 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/about/leadership', label: '임원단 소개',      desc: '4기 임원단 및 위원장' },
     ],
   },
-  { href: '/network/news', label: '이주민·다문화 뉴스' },
+  { href: '/network/news', label: '이주민 관련 뉴스' },
   {
     href: '/network',
     label: '네트워크 사역',
