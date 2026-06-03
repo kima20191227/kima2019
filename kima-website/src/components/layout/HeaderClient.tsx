@@ -43,7 +43,6 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/network/mission-map',   label: '유형별 단체 현황',     desc: '전국 이주민 선교 단체 통합 지도' },
       { href: '/network/listening',     label: '리스닝콜',             desc: '리스닝콜 안내 및 역대 기록' },
       { href: '/network/forum',         label: '포럼',                 desc: 'KIMA 이주민 선교 포럼 소개 및 기록' },
-      { href: '/network/schedule',      label: 'KIMA 행사 일정',       desc: '리스닝콜·포럼 일정 및 참석 신청' },
       { href: '/legal',                  label: '법령&제도',            desc: '이주민 관련 필수 법령과 제도 안내', dividerBefore: true },
     ],
   },
@@ -73,6 +72,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'KIMA 소식',
     children: [
       { href: '/story/notice',       label: '공지사항',              desc: 'KIMA 공지 및 주요 안내사항' },
+      { href: '/network/schedule',   label: 'KIMA 행사 일정',        desc: '리스닝콜·포럼 일정 및 참석 신청' },
       { href: '/story/news',         label: 'KIMA 보도자료',         desc: '외부 언론 기사·뉴스 링크 모음' },
       { href: '/story/media',        label: 'KIMA 행사&영상',        desc: 'KIMA가 주관·참여한 행사들의 사진·영상' },
       { href: '/story/event-promo',  label: '이주민 사역안내',       desc: '이주민 사역 관련 행사를 소개하고 알립니다' },
