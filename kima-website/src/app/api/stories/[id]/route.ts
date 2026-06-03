@@ -8,7 +8,7 @@ function isAdmin(role?: string) {
 }
 
 const adminPatchSchema = z.object({
-  type: z.enum(['NEWS', 'FIELD_STORY', 'EVENT_MEDIA', 'EVENT_PROMO', 'PRAYER_REQUEST']).optional(),
+  type: z.enum(['NOTICE', 'NEWS', 'FIELD_STORY', 'EVENT_MEDIA', 'EVENT_PROMO', 'PRAYER_REQUEST']).optional(),
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
   isPublished: z.boolean().optional(),
   isAnswered: z.boolean().optional(),

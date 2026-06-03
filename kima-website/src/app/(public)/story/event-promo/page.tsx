@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = { title: '이주민사역&행사 홍보 | KIMA' }
+export const metadata: Metadata = { title: '이주민 사역안내 | KIMA' }
 
 export default async function EventPromoPage() {
   const session = await auth()
@@ -23,9 +23,9 @@ export default async function EventPromoPage() {
       <div className="bg-[#1B3A6B] text-white py-12 px-4">
         <div className="max-w-4xl mx-auto flex items-end justify-between flex-wrap gap-3">
           <div>
-            <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">Event Promo</p>
-            <h1 className="text-2xl font-bold">이주민사역&amp;행사 홍보</h1>
-            <p className="mt-2 text-blue-200 text-sm">이주민 사역 관련 행사를 소개하고 알립니다. 회원이라면 누구나 행사를 등록할 수 있습니다.</p>
+            <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">Ministry Guide</p>
+            <h1 className="text-2xl font-bold">이주민 사역안내</h1>
+            <p className="mt-2 text-blue-200 text-sm">이주민 사역 관련 행사를 소개하고 알립니다. 회원이라면 누구나 등록할 수 있습니다.</p>
           </div>
           {session && (
             <Link
@@ -48,7 +48,7 @@ export default async function EventPromoPage() {
         )}
 
         {stories.length === 0 ? (
-          <p className="text-center text-gray-400 py-20">등록된 행사 홍보가 없습니다.</p>
+          <p className="text-center text-gray-400 py-20">등록된 사역안내가 없습니다.</p>
         ) : (
           <div className="flex flex-col gap-6">
             {stories.map((story) => (

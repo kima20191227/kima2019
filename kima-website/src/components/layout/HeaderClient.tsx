@@ -62,22 +62,22 @@ const NAV_ITEMS: NavItem[] = [
     href: '/story',
     label: '현장스토리',
     children: [
-      { href: '/story/field',        label: '사역현장 이야기',      desc: '회원들이 직접 나누는 현장 사역 이야기' },
-      { href: '/story/event-promo',  label: '이주민사역&행사 홍보', desc: '이주민 사역 관련 행사를 소개하고 알립니다' },
-      { href: '/story/prayer',       label: '중보기도 요청',        desc: '함께 기도해요. 기도가 현장을 바꿉니다' },
-      { href: '/story/news',         label: 'KIMA 뉴스',            desc: '외부 언론 기사·뉴스 링크 모음', dividerBefore: true },
-      { href: '/story/media',        label: 'KIMA 행사&영상',       desc: 'KIMA가 주관·참여한 행사들의 사진·영상' },
-      { href: '/story/columns',      label: '이주민 사역 칼럼',     desc: '이주민 사역 현장에서 온 칼럼', dividerBefore: true },
-      { href: '/story/qna',          label: 'Q&A 게시판',           desc: '이주민 사역 질문과 답변' },
+      { href: '/story/field',   label: '사역현장 이야기', desc: '회원들이 직접 나누는 현장 사역 이야기' },
+      { href: '/story/prayer',  label: '중보기도 요청',   desc: '함께 기도해요. 기도가 현장을 바꿉니다' },
+      { href: '/story/columns', label: '이주민 사역 칼럼', desc: '이주민 사역 현장에서 온 칼럼', dividerBefore: true },
+      { href: '/story/qna',     label: 'Q&A 게시판',      desc: '이주민 사역 질문과 답변' },
     ],
   },
   {
     href: '/resources',
-    label: 'KIMA 자료실',
-    minWeight: 2,  // 정회원(2) 이상만 표시
+    label: 'KIMA 소식',
     children: [
-      { href: '/resources/kima',     label: 'KIMA 자료', desc: '총회자료·회의록·예산결산·정관 등 공식 자료' },
-      { href: '/resources/ministry', label: '사역 자료', desc: '지역·언어권·사역대상별 사역 자료', dividerBefore: true },
+      { href: '/story/notice',       label: '공지사항',              desc: 'KIMA 공지 및 주요 안내사항' },
+      { href: '/story/news',         label: 'KIMA 보도자료',         desc: '외부 언론 기사·뉴스 링크 모음' },
+      { href: '/story/media',        label: 'KIMA 행사&영상',        desc: 'KIMA가 주관·참여한 행사들의 사진·영상' },
+      { href: '/story/event-promo',  label: '이주민 사역안내',       desc: '이주민 사역 관련 행사를 소개하고 알립니다' },
+      { href: '/resources/kima',     label: 'KIMA 자료',             desc: '총회자료·회의록·예산결산·정관 등 공식 자료', dividerBefore: true },
+      { href: '/resources/ministry', label: '이주민 사역자료(통합)', desc: '지역·언어권·사역대상별 사역 자료' },
     ],
   },
   { href: '/donate', label: '후원' },
@@ -99,8 +99,8 @@ function PremiumModal({ onClose, onUpgrade }: { onClose: () => void; onUpgrade: 
         <div className="text-4xl mb-3">🔒</div>
         <h3 className="text-lg font-bold text-[#1B3A6B] mb-2">정회원 전용 메뉴</h3>
         <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-          사역자료는 정회원(연 5만원) 이상만 이용할 수 있습니다.<br />
-          정회원 신청 후 자료를 열람해 주세요.
+          이 메뉴는 정회원(연 5만원) 이상만 이용할 수 있습니다.<br />
+          정회원 신청 후 열람해 주세요.
         </p>
         <div className="flex gap-3">
           <button type="button" onClick={onClose}

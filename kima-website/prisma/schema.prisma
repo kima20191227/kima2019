@@ -326,6 +326,7 @@ model Story {
 }
 
 enum StoryType {
+  NOTICE
   NEWS
   FIELD_STORY
   EVENT_MEDIA

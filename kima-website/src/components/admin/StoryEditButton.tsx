@@ -3,13 +3,14 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
-type StoryType = 'NEWS' | 'FIELD_STORY' | 'EVENT_MEDIA' | 'EVENT_PROMO' | 'PRAYER_REQUEST'
+type StoryType = 'NOTICE' | 'NEWS' | 'FIELD_STORY' | 'EVENT_MEDIA' | 'EVENT_PROMO' | 'PRAYER_REQUEST'
 
 const TYPE_LABELS: Record<StoryType, string> = {
-  NEWS:           '📰 KIMA 뉴스',
+  NOTICE:         '📢 공지사항',
+  NEWS:           '📰 KIMA 보도자료',
   EVENT_MEDIA:    '📸 KIMA 행사&영상',
   FIELD_STORY:    '✍️ 사역현장 이야기',
-  EVENT_PROMO:    '📣 이주민사역 행사 홍보',
+  EVENT_PROMO:    '📣 이주민 사역안내',
   PRAYER_REQUEST: '🙏 중보기도 요청',
 }
 

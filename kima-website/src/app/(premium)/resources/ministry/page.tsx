@@ -9,7 +9,7 @@ import type { CategoryType, UserRole } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: '사역 자료 | KIMA 자료실',
+  title: '이주민 사역자료(통합) | KIMA 소식',
   description: '지역별·언어권별·사역대상별 이주민 사역 자료를 공유합니다.',
 }
 
@@ -163,7 +163,7 @@ export default async function MinistryResourcesPage({ searchParams }: PageProps)
           <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">
             Ministry Resources
           </p>
-          <h1 className="text-2xl font-bold">사역 자료</h1>
+          <h1 className="text-2xl font-bold">이주민 사역자료(통합)</h1>
           <p className="mt-2 text-blue-200 text-sm">
             지역별·언어권별·사역대상별로 분류된 이주민 사역 자료를 공유합니다.
           </p>

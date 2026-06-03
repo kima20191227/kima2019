@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
-const OFFICER_TYPES = ['NEWS', 'EVENT_MEDIA'] as const
+const OFFICER_TYPES = ['NOTICE', 'NEWS', 'EVENT_MEDIA'] as const
 const MEMBER_TYPES  = ['FIELD_STORY', 'EVENT_PROMO', 'PRAYER_REQUEST'] as const
 const ALL_TYPES     = [...OFFICER_TYPES, ...MEMBER_TYPES] as const
 

@@ -11,10 +11,11 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: '현장스토리 관리 | KIMA 관리자' }
 
 const TYPE_LABELS: Record<string, string> = {
-  NEWS:           '📰 KIMA 뉴스',
+  NOTICE:         '📢 공지사항',
+  NEWS:           '📰 KIMA 보도자료',
   FIELD_STORY:    '✍️ 현장 이야기',
   EVENT_MEDIA:    '📸 KIMA 행사&영상',
-  EVENT_PROMO:    '📣 이주민사역 행사 홍보',
+  EVENT_PROMO:    '📣 이주민 사역안내',
   PRAYER_REQUEST: '🙏 중보기도',
 }
 
