@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         phone: data.phone || null,
         email: data.email || null,
         website: data.website || null,
-        isPublic: true,
+        isPublic: false,
       },
     })
 

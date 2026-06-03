@@ -36,9 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }))
 
-  // 스토리 게시글 (공개 게시물만)
-  const stories = await prisma.post.findMany({
-    where: { type: 'SHARE', isPublished: true },
+  // 스토리 (공개 승인된 스토리만)
+  const stories = await prisma.story.findMany({
+    where: { isPublished: true, status: 'APPROVED' },
     select: { id: true, updatedAt: true },
     orderBy: { createdAt: 'desc' },
     take: 100,

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          name, email, organization, role: 'MEMBER',
+          name, email, password: hashedPassword, organization, role: 'MEMBER',
           position, phone, address, denomination,
           ministryLanguages, ministryTargets,
         },

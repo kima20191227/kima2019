@@ -21,12 +21,23 @@ function requireOfficer(role?: string | null) {
   return role === 'ADMIN' || role === 'OFFICER'
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = await auth()
+    const isLoggedIn = !!session?.user
+
     const leaders = await prisma.leader.findMany({
       orderBy: [{ group: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
     })
-    return NextResponse.json({ leaders })
+
+    // 비로그인 시 연락처(전화번호·이메일) 제외
+    const filtered = leaders.map((l) => ({
+      ...l,
+      phone: isLoggedIn ? l.phone : null,
+      email: isLoggedIn ? l.email : null,
+    }))
+
+    return NextResponse.json({ leaders: filtered })
   } catch {
     return NextResponse.json({ error: '데이터를 불러오는 중 오류가 발생했습니다.' }, { status: 500 })
   }
