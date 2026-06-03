@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { MediaGallery } from '@/components/story/MediaGallery'
 import nextDynamic from 'next/dynamic'
 import type { Metadata } from 'next'
@@ -24,9 +25,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function MediaDetailPage({ params }: Props) {
   const { id } = await params
-  const event = await prisma.story.findUnique({ where: { id, type: 'EVENT_MEDIA', isPublished: true } }).catch(() => null)
+  const [event, session] = await Promise.all([
+    prisma.story.findUnique({ where: { id, type: 'EVENT_MEDIA', isPublished: true } }).catch(() => null),
+    auth().catch(() => null),
+  ])
 
   if (!event) notFound()
+
+  const canEdit = session?.user?.role === 'OFFICER' || session?.user?.role === 'ADMIN'
+    || session?.user?.id === event.authorId
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -42,14 +49,29 @@ export default async function MediaDetailPage({ params }: Props) {
             </svg>
             행사 갤러리 목록
           </Link>
-          <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">Gallery</p>
-          <h1 className="text-xl font-bold leading-snug">{event.title}</h1>
-          <div className="flex items-center gap-3 mt-2 text-sm text-blue-200 flex-wrap">
-            {event.publishedAt && (
-              <span>{event.publishedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">Gallery</p>
+              <h1 className="text-xl font-bold leading-snug">{event.title}</h1>
+              <div className="flex items-center gap-3 mt-2 text-sm text-blue-200 flex-wrap">
+                {event.publishedAt && (
+                  <span>{event.publishedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                )}
+                {event.eventLocation && <span>📍 {event.eventLocation}</span>}
+                {event.images.length > 0 && <span>📷 {event.images.length}장</span>}
+              </div>
+            </div>
+            {canEdit && (
+              <Link
+                href={`/story/media/${event.id}/edit`}
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors border border-white/20"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                수정
+              </Link>
             )}
-            {event.eventLocation && <span>📍 {event.eventLocation}</span>}
-            {event.images.length > 0 && <span>📷 {event.images.length}장</span>}
           </div>
         </div>
       </div>
