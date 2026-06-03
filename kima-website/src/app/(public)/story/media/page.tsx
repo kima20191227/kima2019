@@ -136,7 +136,6 @@ export default async function MediaPage() {
                       <Link
                         href={`/story/media/${event.id}/edit`}
                         className="px-2.5 py-1 bg-white/90 backdrop-blur-sm text-[#1B3A6B] text-xs font-medium rounded-md shadow-sm border border-gray-200 hover:bg-[#1B3A6B] hover:text-white transition-colors"
-                        onClick={(e) => e.stopPropagation()}
                       >
                         수정
                       </Link>
