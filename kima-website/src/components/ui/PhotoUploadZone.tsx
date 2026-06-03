@@ -4,8 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { convertDriveUrl } from '@/lib/utils'
 import { uploadResourceFile } from '@/lib/uploadClient'
 
-const MAX_PHOTO_UPLOAD_MB = 100
-const MAX_PHOTO_UPLOAD_BYTES = MAX_PHOTO_UPLOAD_MB * 1024 * 1024
 
 export interface PhotoAttachment {
   url: string
@@ -87,21 +85,19 @@ export function PhotoUploadZone({ initialAttachments, onAttachmentsChange, onIns
       const id = makeId()
       const localUrl = URL.createObjectURL(file)
       const shouldBeCover = !hasExistingCover && isImage(file.type) && idx === 0
-      const oversized = file.size > MAX_PHOTO_UPLOAD_BYTES
       return {
         id,
         name: file.name,
         mimeType: file.type,
         localUrl,
         isCover: shouldBeCover,
-        status: oversized ? 'error' as const : 'uploading' as const,
-        errorMsg: oversized ? `File uploads are limited to ${MAX_PHOTO_UPLOAD_MB}MB or less.` : undefined,
+        status: 'uploading' as const,
       }
     })
     const ids = newItems.map((i) => i.id)
     setItems((prev) => [...prev, ...newItems])
     arr.forEach((file, idx) => {
-      if (file.size <= MAX_PHOTO_UPLOAD_BYTES) uploadFile(ids[idx], file)
+      uploadFile(ids[idx], file)
     })
   }
 
@@ -148,7 +144,7 @@ export function PhotoUploadZone({ initialAttachments, onAttachmentsChange, onIns
           <span className="text-[#1B3A6B] font-medium">클릭하여 선택</span>
         </p>
         <p className="text-xs text-gray-400 mt-1">
-          JPG, PNG, GIF, WEBP 등 · 파일당 최대 {MAX_PHOTO_UPLOAD_MB}MB
+          JPG, PNG, GIF, WEBP 등
         </p>
         <input
           ref={fileInputRef}

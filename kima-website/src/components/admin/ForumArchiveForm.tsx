@@ -46,9 +46,6 @@ interface Props {
 
 const FILE_TYPES = ['PDF', 'PPT', 'DOCX', 'HWP', 'VIDEO', 'LINK', 'ZIP', '기타']
 
-const MAX_FORUM_UPLOAD_MB = 100
-const MAX_FORUM_UPLOAD_BYTES = MAX_FORUM_UPLOAD_MB * 1024 * 1024
-
 const emptySchedule = (): ScheduleItem => ({ time: '', title: '', speaker: '' })
 const emptyMaterial = (): MaterialItem => ({ title: '', fileType: 'PDF', url: '' })
 
@@ -115,10 +112,8 @@ export function ForumArchiveForm({ mode = 'create', initialData, defaultType, tr
   const handlePhotoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
-    const uploadable = files.filter((file) => file.size <= MAX_FORUM_UPLOAD_BYTES)
-    if (uploadable.length !== files.length) {
-      setError(`File uploads are limited to ${MAX_FORUM_UPLOAD_MB}MB or less.`)
-    } else {
+    const uploadable = files
+    {
       setError('')
     }
     if (!uploadable.length) {
@@ -150,10 +145,6 @@ export function ForumArchiveForm({ mode = 'create', initialData, defaultType, tr
 
   // --- Material file upload (immediate) ---
   const handleMaterialFileSelect = async (idx: number, file: File) => {
-    if (file.size > MAX_FORUM_UPLOAD_BYTES) {
-      setError(`File uploads are limited to ${MAX_FORUM_UPLOAD_MB}MB or less.`)
-      return
-    }
     setError('')
     setMaterials((prev) =>
       prev.map((m, i) => i === idx ? { ...m, file, uploading: true } : m)
@@ -479,7 +470,7 @@ export function ForumArchiveForm({ mode = 'create', initialData, defaultType, tr
                         />
                         <label className="cursor-pointer">
                           <span className={`px-2 py-1.5 text-xs rounded-lg border transition-colors ${m.uploading ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-white text-[#1B3A6B] border-[#1B3A6B]/30 hover:bg-[#1B3A6B]/5'}`}>
-                            {m.uploading ? '업로드중...' : '파일 선택 (100MB 이하)'}
+                            {m.uploading ? '업로드중...' : '파일 선택'}
                           </span>
                           <input
                             type="file"
@@ -522,7 +513,7 @@ export function ForumArchiveForm({ mode = 'create', initialData, defaultType, tr
                   onChange={handlePhotoSelect}
                 />
                 <p className="mb-2 text-xs text-gray-400">
-                  Archive photos: up to {MAX_FORUM_UPLOAD_MB}MB each, max 30 files.
+                  Archive photos: max 30 files.
                 </p>
                 {photoPreviewUrls.length === 0 ? (
                   <p className="text-xs text-gray-400 italic">사진 추가 버튼으로 업로드하세요. (최대 30장)</p>

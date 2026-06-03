@@ -1,16 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  MAX_RESOURCE_FILE_SIZE_BYTES,
-  MAX_RESOURCE_FILE_SIZE_MB,
   normalizedResourceMimeType,
 } from '@/lib/resourceUploadPolicy'
 
 describe('resourceUploadPolicy', () => {
-  it('keeps the resource upload limit at 100MB', () => {
-    expect(MAX_RESOURCE_FILE_SIZE_MB).toBe(100)
-    expect(MAX_RESOURCE_FILE_SIZE_BYTES).toBe(100 * 1024 * 1024)
-  })
-
   it('infers common document MIME types when browsers send octet-stream', () => {
     expect(normalizedResourceMimeType({ name: 'guide.pdf', type: 'application/octet-stream' }))
       .toBe('application/pdf')

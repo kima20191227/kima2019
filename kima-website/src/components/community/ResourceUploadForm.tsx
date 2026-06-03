@@ -11,8 +11,6 @@ interface ResourceUploadFormProps {
 
 type UploadMode = 'file' | 'url'
 
-const MAX_RESOURCE_FILE_SIZE_MB = 100
-const MAX_RESOURCE_FILE_SIZE_BYTES = MAX_RESOURCE_FILE_SIZE_MB * 1024 * 1024
 
 export function ResourceUploadForm({ categoryId, categoryName }: ResourceUploadFormProps) {
   const router = useRouter()
@@ -37,12 +35,6 @@ export function ResourceUploadForm({ categoryId, categoryName }: ResourceUploadF
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
-    if (file && file.size > MAX_RESOURCE_FILE_SIZE_BYTES) {
-      setSelectedFile(null)
-      setError(`파일은 ${MAX_RESOURCE_FILE_SIZE_MB}MB 이하만 업로드할 수 있습니다.`)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      return
-    }
     setError('')
     setSelectedFile(file)
     if (file && !form.title) {
@@ -158,9 +150,6 @@ export function ResourceUploadForm({ categoryId, categoryName }: ResourceUploadF
           <label htmlFor="resource-file" className="block text-xs text-gray-500 mb-1">
             파일 선택 *
           </label>
-          <p className="mb-1.5 text-[11px] text-gray-400">
-            파일은 {MAX_RESOURCE_FILE_SIZE_MB}MB 이하만 업로드할 수 있습니다.
-          </p>
           <input
             id="resource-file"
             ref={fileInputRef}

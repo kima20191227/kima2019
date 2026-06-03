@@ -1,6 +1,4 @@
 export const RESOURCE_UPLOAD_BUCKET = 'forum-files'
-export const MAX_RESOURCE_FILE_SIZE_MB = 100
-export const MAX_RESOURCE_FILE_SIZE_BYTES = MAX_RESOURCE_FILE_SIZE_MB * 1024 * 1024
 
 const RESOURCE_EXTENSION_TO_TYPE: Record<string, string> = {
   jpg: 'image/jpeg',

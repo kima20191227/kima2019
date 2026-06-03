@@ -3,8 +3,6 @@ import { auth } from '@/lib/auth'
 import { cfEnv } from '@/lib/cfEnv'
 import { createDriveResumableUploadSession, parseServiceAccountKey } from '@/lib/googleDrive'
 import {
-  MAX_RESOURCE_FILE_SIZE_BYTES,
-  MAX_RESOURCE_FILE_SIZE_MB,
   normalizedResourceMimeType,
 } from '@/lib/resourceUploadPolicy'
 
@@ -43,13 +41,6 @@ export async function POST(request: NextRequest) {
 
     if (!name || !Number.isFinite(size) || size <= 0) {
       return NextResponse.json({ error: '업로드할 파일 정보가 올바르지 않습니다.' }, { status: 400 })
-    }
-
-    if (size > MAX_RESOURCE_FILE_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: `파일 크기는 ${MAX_RESOURCE_FILE_SIZE_MB}MB 이하여야 합니다.` },
-        { status: 400 },
-      )
     }
 
     const mimeType = normalizedResourceMimeType({ name, type })

@@ -1,8 +1,5 @@
 'use client'
 
-import { MAX_RESOURCE_FILE_SIZE_BYTES } from '@/lib/resourceUploadPolicy'
-
-const MAX_BROWSER_UPLOAD_BYTES = MAX_RESOURCE_FILE_SIZE_BYTES
 const DRIVE_CHUNK_BYTES = 4 * 1024 * 1024
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
@@ -95,24 +92,18 @@ async function compressImageForUpload(file: File): Promise<File> {
     }
   }
 
-  if (best && best.size < file.size && best.size <= MAX_BROWSER_UPLOAD_BYTES) {
+  if (best && best.size < file.size) {
     const extension = best.type === 'image/webp' ? 'webp' : 'jpg'
     return new File([best], fileWithExtension(file, extension, best.type), { type: best.type })
   }
 
-  if (file.size <= MAX_BROWSER_UPLOAD_BYTES) return file
-
-  throw new Error('이미지 용량이 너무 큽니다. 100MB 이하 이미지로 줄인 뒤 다시 업로드해주세요.')
+  return file
 }
 
 async function prepareFileForBrowserUpload(file: File): Promise<File> {
   if (isCompressibleImage(file)) {
     if (file.size <= TARGET_IMAGE_BYTES) return file
     return compressImageForUpload(file)
-  }
-
-  if (file.size > MAX_BROWSER_UPLOAD_BYTES) {
-    throw new Error('파일 용량이 너무 큽니다. 현재 첨부 업로드는 100MB 이하 파일만 가능합니다.')
   }
 
   return file

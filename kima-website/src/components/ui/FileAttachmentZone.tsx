@@ -3,8 +3,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { uploadResourceFile } from '@/lib/uploadClient'
 
-const MAX_RESOURCE_FILE_SIZE_MB = 100
-const MAX_RESOURCE_FILE_SIZE_BYTES = MAX_RESOURCE_FILE_SIZE_MB * 1024 * 1024
 
 export interface AttachedFile {
   url: string
@@ -98,25 +96,16 @@ export function FileAttachmentZone({
         const remaining = maxFiles - prev.length
         if (remaining <= 0) return prev
         const selected = files.slice(0, remaining)
-        const oversized = selected.filter((file) => file.size > MAX_RESOURCE_FILE_SIZE_BYTES)
-        const uploadable = selected.filter((file) => file.size <= MAX_RESOURCE_FILE_SIZE_BYTES)
         const newItems: UploadItem[] = selected.map((file) => ({
           id: makeId(),
           name: file.name,
           type: file.type || 'application/octet-stream',
-          status: file.size > MAX_RESOURCE_FILE_SIZE_BYTES ? 'error' as const : 'uploading' as const,
-          errorMsg:
-            file.size > MAX_RESOURCE_FILE_SIZE_BYTES
-              ? `파일은 ${MAX_RESOURCE_FILE_SIZE_MB}MB 이하만 업로드할 수 있습니다.`
-              : undefined,
+          status: 'uploading' as const,
         }))
         notify([...prev, ...newItems])
         setTimeout(() => {
-          newItems
-            .filter((item) => item.status === 'uploading')
-            .forEach((item, index) => uploadOne(item.id, uploadable[index]))
+          newItems.forEach((item, index) => uploadOne(item.id, selected[index]))
         }, 0)
-        if (oversized.length > 0 && uploadable.length === 0) notify([...prev, ...newItems])
         return [...prev, ...newItems]
       })
     },
@@ -185,7 +174,7 @@ export function FileAttachmentZone({
             <span className="text-[#1B3A6B] underline font-medium">클릭하여 선택</span>
           </p>
           <p className="text-xs text-gray-400">
-            이미지, PDF, 문서 등 모든 파일 · 파일당 최대 {MAX_RESOURCE_FILE_SIZE_MB}MB · 최대 {maxFiles}개
+            이미지, PDF, 문서 등 모든 파일 · 최대 {maxFiles}개
           </p>
         </div>
       </div>
