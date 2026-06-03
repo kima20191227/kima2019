@@ -171,7 +171,7 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
           <div key={item.href} className="relative" onMouseEnter={() => openMenu(item.href)} onMouseLeave={closeMenu}>
             <Link
               href={item.href}
-              className={`flex items-center gap-0.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex items-center gap-0.5 px-3 py-2 rounded-lg text-base font-semibold transition-colors ${
                 activeMenu === item.href ? 'text-[#1B3A6B] bg-blue-50' : 'text-gray-800 hover:text-[#1B3A6B] hover:bg-gray-50'
               }`}
             >
