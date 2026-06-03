@@ -38,6 +38,14 @@ function formatDate(date: Date) {
 
 type Attachment = { url: string; name: string; type: string }
 
+function getDriveFileId(url: string): string | null {
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/)
+  if (m1) return m1[1]
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/)
+  if (m2) return m2[1]
+  return null
+}
+
 
 export default async function PostDetailPage({ params }: Props) {
   const { type, slug, id } = await params
@@ -73,7 +81,10 @@ export default async function PostDetailPage({ params }: Props) {
     .filter((att) => att.type?.startsWith('image/'))
     .map((att) => ({ url: convertDriveUrl(att.url), name: att.name }))
 
-  const fileAttachments = remainingAttachments.filter((att) => !att.type?.startsWith('image/'))
+  const videoAttachments = remainingAttachments.filter((att) => att.type?.startsWith('video/'))
+  const fileAttachments = remainingAttachments.filter(
+    (att) => !att.type?.startsWith('image/') && !att.type?.startsWith('video/')
+  )
 
   const contentText = post.content?.replace(/\[img:[^\]]*\]\([^)]+\)/g, '').trim() ?? ''
   const inlineImages = [...(post.content?.matchAll(/\[img:([^\]]*)\]\(([^)]+)\)/g) ?? [])].map((m) => ({
@@ -140,6 +151,47 @@ export default async function PostDetailPage({ params }: Props) {
         {/* 이미지 갤러리 (인라인 이미지 + 첨부 이미지) */}
         {allImages.length > 0 && (
           <PostAttachmentGallery images={allImages} />
+        )}
+
+        {/* 영상 첨부파일 */}
+        {videoAttachments.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+            <p className="text-xs font-semibold text-gray-500 mb-1">
+              첨부 영상 ({videoAttachments.length})
+            </p>
+            {videoAttachments.map((att, idx) => {
+              const driveId = getDriveFileId(att.url)
+              return (
+                <div key={idx}>
+                  <p className="text-xs text-gray-400 mb-2 truncate">{att.name}</p>
+                  {driveId ? (
+                    <div className="aspect-video w-full rounded-lg overflow-hidden border border-gray-100 bg-black">
+                      <iframe
+                        src={`https://drive.google.com/file/d/${driveId}/preview`}
+                        className="w-full h-full"
+                        allow="autoplay"
+                        title={att.name}
+                      />
+                    </div>
+                  ) : (
+                    <video
+                      controls
+                      className="w-full rounded-lg border border-gray-100 bg-black"
+                      preload="metadata"
+                    >
+                      <source src={att.url} type={att.type} />
+                      <p className="text-sm text-gray-500 p-4">
+                        브라우저에서 재생을 지원하지 않습니다.{' '}
+                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-[#1B3A6B] underline">
+                          직접 열기
+                        </a>
+                      </p>
+                    </video>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         )}
 
         {/* 비이미지 첨부파일 */}
