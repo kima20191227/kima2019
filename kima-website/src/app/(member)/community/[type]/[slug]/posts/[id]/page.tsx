@@ -165,13 +165,23 @@ export default async function PostDetailPage({ params }: Props) {
                 <div key={idx}>
                   <p className="text-xs text-gray-400 mb-2 truncate">{att.name}</p>
                   {driveId ? (
-                    <div className="aspect-video w-full rounded-lg overflow-hidden border border-gray-100 bg-black">
-                      <iframe
-                        src={`https://drive.google.com/file/d/${driveId}/preview`}
-                        className="w-full h-full"
-                        allow="autoplay"
-                        title={att.name}
-                      />
+                    <div>
+                      <div className="aspect-video w-full rounded-lg overflow-hidden border border-gray-100 bg-black">
+                        <iframe
+                          src={`https://drive.google.com/file/d/${driveId}/preview`}
+                          className="w-full h-full"
+                          allow="autoplay"
+                          title={att.name}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-gray-400 flex items-start gap-1.5">
+                        <span className="shrink-0 mt-0.5">ℹ️</span>
+                        <span>
+                          업로드 직후에는 &quot;처리 중&quot; 메시지가 표시될 수 있습니다.
+                          Google Drive가 영상을 변환하는 데 <strong className="text-gray-500">수 분~1시간</strong> 소요되며,
+                          완료되면 자동으로 재생됩니다.
+                        </span>
+                      </p>
                     </div>
                   ) : (
                     <video
