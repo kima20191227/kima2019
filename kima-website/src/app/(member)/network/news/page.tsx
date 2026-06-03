@@ -52,7 +52,6 @@ export default async function NetworkNewsPage({
           <div className="max-w-5xl mx-auto">
             <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">AI News</p>
             <h1 className="text-2xl font-bold">이주민 관련 뉴스</h1>
-            <p className="mt-2 text-blue-200 text-sm">AI가 매일 수집·요약한 이주민 관련 최신 뉴스</p>
           </div>
         </div>
 
