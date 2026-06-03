@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { convertDriveUrl } from '@/lib/utils'
 import { uploadResourceFile } from '@/lib/uploadClient'
 
@@ -228,11 +229,12 @@ function NewsForm({ editing, onSubmit, onCancel, isPending, error }: {
 
 interface Props {
   news: NewsItem[]
-  isOfficer: boolean
-  currentUserId?: string
 }
 
-export function NewsPageClient({ news, isOfficer }: Props) {
+export function NewsPageClient({ news }: Props) {
+  const { data: session } = useSession()
+  const role = session?.user?.role
+  const isOfficer = role === 'OFFICER' || role === 'ADMIN'
   const router = useRouter()
   const [formOpen, setFormOpen]   = useState(false)
   const [editing, setEditing]     = useState<NewsItem | null>(null)

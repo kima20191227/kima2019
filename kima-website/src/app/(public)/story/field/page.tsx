@@ -1,16 +1,13 @@
 import { prisma } from '@/lib/prisma'
-import Link from 'next/link'
-import { auth } from '@/lib/auth'
 import type { Metadata } from 'next'
 import { FieldStoryGrid, type FieldStoryItem } from '@/components/story/FieldStoryGrid'
+import { MemberWriteButton } from '@/components/story/MemberWriteButton'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 
 export const metadata: Metadata = { title: '사역현장 이야기 | KIMA' }
 
 export default async function FieldStoryPage() {
-  const session = await auth()
-
   const raw = await prisma.story.findMany({
     where: { type: 'FIELD_STORY', isPublished: true, status: 'APPROVED' },
     orderBy: { createdAt: 'desc' },
@@ -43,14 +40,7 @@ export default async function FieldStoryPage() {
             <h1 className="text-2xl font-bold">사역현장 이야기</h1>
             <p className="mt-2 text-blue-200 text-sm">회원들이 직접 나누는 현장 사역 이야기입니다.</p>
           </div>
-          {session && (
-            <Link
-              href="/story/field/write"
-              className="shrink-0 px-4 py-2 bg-[#C8922A] text-white text-sm font-semibold rounded-lg hover:bg-[#b07d22] transition-colors"
-            >
-              이야기 올리기
-            </Link>
-          )}
+          <MemberWriteButton href="/story/field/write" label="이야기 올리기" />
         </div>
       </div>
 

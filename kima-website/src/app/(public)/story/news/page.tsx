@@ -1,24 +1,16 @@
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
 import type { Metadata } from 'next'
 import { NewsPageClient } from '@/components/story/NewsPageClient'
-import type { UserRole } from '@prisma/client'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 
 export const metadata: Metadata = { title: 'KIMA 보도자료 | KIMA' }
 
 export default async function NewsPage() {
-  const [session, news] = await Promise.all([
-    auth(),
-    prisma.story.findMany({
-      where: { type: 'NEWS', isPublished: true, status: 'APPROVED' },
-      orderBy: { publishedAt: 'desc' },
-    }).catch(() => []),
-  ])
-
-  const role = session?.user?.role as UserRole | undefined
-  const isOfficer = role === 'OFFICER' || role === 'ADMIN'
+  const news = await prisma.story.findMany({
+    where: { type: 'NEWS', isPublished: true, status: 'APPROVED' },
+    orderBy: { publishedAt: 'desc' },
+  }).catch(() => [])
 
   const serialized = news.map((item) => ({
     id: item.id,
@@ -43,11 +35,7 @@ export default async function NewsPage() {
         </div>
       </div>
 
-      <NewsPageClient
-        news={serialized}
-        isOfficer={isOfficer}
-        currentUserId={session?.user?.id}
-      />
+      <NewsPageClient news={serialized} />
     </div>
   )
 }

@@ -1,24 +1,19 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
-import { MediaDeleteButton } from '@/components/story/MediaDeleteButton'
+import { OfficerWriteButton } from '@/components/story/OfficerWriteButton'
+import { MediaCardActions } from '@/components/story/MediaCardActions'
 import type { Metadata } from 'next'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 
 export const metadata: Metadata = { title: '행사 사진&영상 | KIMA' }
 
 export default async function MediaPage() {
-  const [session, events] = await Promise.all([
-    auth().catch(() => null),
-    prisma.story.findMany({
-      where: { type: 'EVENT_MEDIA', isPublished: true, status: 'APPROVED' },
-      orderBy: { publishedAt: 'desc' },
-    }).catch(() => []),
-  ])
-
-  const isOfficer = session?.user?.role === 'OFFICER' || session?.user?.role === 'ADMIN'
+  const events = await prisma.story.findMany({
+    where: { type: 'EVENT_MEDIA', isPublished: true, status: 'APPROVED' },
+    orderBy: { publishedAt: 'desc' },
+  }).catch(() => [])
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -29,17 +24,7 @@ export default async function MediaPage() {
             <h1 className="text-2xl font-bold">KIMA 행사 사진&amp;영상</h1>
             <p className="mt-2 text-blue-200 text-sm">KIMA가 주관·참여한 행사들의 사진과 영상을 모아봅니다.</p>
           </div>
-          {isOfficer && (
-            <Link
-              href="/story/media/write"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#C8922A] hover:bg-[#b07d20] text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              사진·영상 등록
-            </Link>
-          )}
+          <OfficerWriteButton href="/story/media/write" label="사진·영상 등록" />
         </div>
       </div>
 
@@ -48,14 +33,6 @@ export default async function MediaPage() {
           <div className="text-center py-24 text-gray-400">
             <p className="text-4xl mb-3">📷</p>
             <p>등록된 갤러리가 없습니다.</p>
-            {isOfficer && (
-              <Link
-                href="/story/media/write"
-                className="mt-4 inline-flex items-center gap-1.5 text-sm text-[#1B3A6B] font-medium hover:underline"
-              >
-                + 첫 번째 갤러리 등록하기
-              </Link>
-            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -130,18 +107,7 @@ export default async function MediaPage() {
                     </div>
                   </Link>
 
-                  {/* OFFICER/ADMIN 수정·삭제 버튼 */}
-                  {isOfficer && (
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link
-                        href={`/story/media/${event.id}/edit`}
-                        className="px-2.5 py-1 bg-white/90 backdrop-blur-sm text-[#1B3A6B] text-xs font-medium rounded-md shadow-sm border border-gray-200 hover:bg-[#1B3A6B] hover:text-white transition-colors"
-                      >
-                        수정
-                      </Link>
-                      <MediaDeleteButton id={event.id} title={event.title} />
-                    </div>
-                  )}
+                  <MediaCardActions id={event.id} title={event.title} />
                 </div>
               )
             })}

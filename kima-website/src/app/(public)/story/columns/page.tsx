@@ -1,9 +1,9 @@
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import { MemberWriteButton } from '@/components/story/MemberWriteButton'
 import type { Metadata } from 'next'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 
 export const metadata: Metadata = {
   title: '이주민 사역 칼럼 | KIMA 현장스토리',
@@ -11,9 +11,6 @@ export const metadata: Metadata = {
 }
 
 export default async function ColumnsPage() {
-  const session = await auth()
-  const isLoggedIn = !!session?.user
-
   const columns = await prisma.columnPost.findMany({
     where: { isPublished: true },
     select: {
@@ -47,27 +44,18 @@ export default async function ColumnsPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* 작성 버튼 (로그인 사용자) */}
-        {isLoggedIn && (
-          <div className="mb-6 flex justify-end">
-            <Link
-              href="/story/columns/write"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#15305a] transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              칼럼 작성
-            </Link>
-          </div>
-        )}
+        <div className="mb-6 flex justify-end">
+          <MemberWriteButton
+            href="/story/columns/write"
+            label="칼럼 작성"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#15305a] transition-colors"
+          />
+        </div>
 
         {/* 칼럼 목록 — 리스트 형식 */}
         {columns.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
             <p className="text-lg">아직 등록된 칼럼이 없습니다.</p>
-            {isLoggedIn && (
-              <p className="text-sm mt-2 text-gray-400">첫 번째 칼럼을 작성해보세요.</p>
-            )}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">

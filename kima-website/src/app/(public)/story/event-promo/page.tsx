@@ -1,17 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import Image from 'next/image'
-import { auth } from '@/lib/auth'
 import { convertDriveUrl } from '@/lib/utils'
+import { MemberWriteButton } from '@/components/story/MemberWriteButton'
 import type { Metadata } from 'next'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 
 export const metadata: Metadata = { title: '이주민 사역안내 | KIMA' }
 
 export default async function EventPromoPage() {
-  const session = await auth()
-
   const stories = await prisma.story.findMany({
     where: { type: 'EVENT_PROMO', isPublished: true, status: 'APPROVED' },
     orderBy: { createdAt: 'desc' },
@@ -27,26 +25,11 @@ export default async function EventPromoPage() {
             <h1 className="text-2xl font-bold">이주민 사역안내</h1>
             <p className="mt-2 text-blue-200 text-sm">이주민 사역 관련 행사를 소개하고 알립니다. 회원이라면 누구나 등록할 수 있습니다.</p>
           </div>
-          {session && (
-            <Link
-              href="/story/event-promo/write"
-              className="shrink-0 px-4 py-2 bg-[#C8922A] text-white text-sm font-semibold rounded-lg hover:bg-[#b07d22] transition-colors"
-            >
-              사역홍보&amp;행사등록하기
-            </Link>
-          )}
+          <MemberWriteButton href="/story/event-promo/write" label="사역홍보&amp;행사등록하기" />
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-10">
-        {!session && (
-          <div className="mb-6 px-4 py-3 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-700">
-            행사를 등록하려면{' '}
-            <Link href="/auth/login" className="font-semibold underline">로그인</Link>
-            이 필요합니다.
-          </div>
-        )}
-
         {stories.length === 0 ? (
           <p className="text-center text-gray-400 py-20">등록된 사역안내가 없습니다.</p>
         ) : (

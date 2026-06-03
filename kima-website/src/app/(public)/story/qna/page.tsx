@@ -1,9 +1,10 @@
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import { MemberWriteButton } from '@/components/story/MemberWriteButton'
+import { LoginPromptBanner } from '@/components/story/LoginPromptBanner'
 import type { Metadata } from 'next'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 
 export const metadata: Metadata = {
   title: 'Q&A 게시판 | KIMA 현장스토리',
@@ -11,9 +12,6 @@ export const metadata: Metadata = {
 }
 
 export default async function QnaPage() {
-  const session = await auth()
-  const isLoggedIn = !!session?.user
-
   const questions = await prisma.question.findMany({
     where: { isPublished: true },
     select: {
@@ -44,27 +42,18 @@ export default async function QnaPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* 질문 작성 버튼 (로그인 사용자) */}
-        {isLoggedIn && (
-          <div className="mb-6 flex justify-end">
-            <Link
-              href="/story/qna/write"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#15305a] transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              질문하기
-            </Link>
-          </div>
-        )}
+        <div className="mb-6 flex justify-end">
+          <MemberWriteButton
+            href="/story/qna/write"
+            label="질문하기"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-medium hover:bg-[#15305a] transition-colors"
+          />
+        </div>
 
         {/* 질문 목록 */}
         {questions.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
             <p className="text-lg">아직 등록된 질문이 없습니다.</p>
-            {isLoggedIn && (
-              <p className="text-sm mt-2 text-gray-400">첫 번째 질문을 남겨보세요.</p>
-            )}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
@@ -111,15 +100,7 @@ export default async function QnaPage() {
           </div>
         )}
 
-        {/* 비로그인 안내 */}
-        {!isLoggedIn && (
-          <div className="mt-6 rounded-lg bg-blue-50 border border-blue-100 p-4 text-sm text-blue-700">
-            <Link href="/auth/login" className="font-medium underline">
-              로그인
-            </Link>
-            하시면 질문을 작성하고 답변을 받을 수 있습니다.
-          </div>
-        )}
+        <LoginPromptBanner />
       </div>
     </div>
   )

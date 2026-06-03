@@ -1,22 +1,17 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { OfficerWriteButton } from '@/components/story/OfficerWriteButton'
 import type { Metadata } from 'next'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800
 export const metadata: Metadata = { title: '공지사항 | KIMA' }
 
 export default async function NoticePage() {
-  const [session, notices] = await Promise.all([
-    auth().catch(() => null),
-    prisma.story.findMany({
-      where: { type: 'NOTICE', isPublished: true, status: 'APPROVED' },
-      orderBy: { createdAt: 'desc' },
-      include: { author: { select: { name: true } } },
-    }).catch(() => []),
-  ])
-
-  const isOfficer = session?.user?.role === 'OFFICER' || session?.user?.role === 'ADMIN'
+  const notices = await prisma.story.findMany({
+    where: { type: 'NOTICE', isPublished: true, status: 'APPROVED' },
+    orderBy: { createdAt: 'desc' },
+    include: { author: { select: { name: true } } },
+  }).catch(() => [])
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -28,17 +23,7 @@ export default async function NoticePage() {
             <h1 className="text-2xl font-bold">공지사항</h1>
             <p className="mt-2 text-blue-200 text-sm">KIMA의 주요 공지 및 안내사항을 전합니다.</p>
           </div>
-          {isOfficer && (
-            <Link
-              href="/story/notice/write"
-              className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-[#C8922A] hover:bg-[#b07d20] text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              공지 작성
-            </Link>
-          )}
+          <OfficerWriteButton href="/story/notice/write" label="공지 작성" />
         </div>
       </div>
 
