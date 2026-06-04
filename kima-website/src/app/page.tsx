@@ -74,7 +74,7 @@ export default async function HomePage() {
       ),
     },
     {
-      label: '사역안내',
+      label: '이주민 사역안내',
       href: '/story/event-promo',
       items: eventPromos.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/event-promo/${s.id}` })),
       icon: (
