@@ -332,6 +332,7 @@ enum StoryType {
   EVENT_MEDIA
   EVENT_PROMO
   PRAYER_REQUEST
+  REST_WALK
 }
 
 enum StoryStatus {

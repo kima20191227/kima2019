@@ -61,10 +61,11 @@ const NAV_ITEMS: NavItem[] = [
     href: '/story',
     label: '현장스토리',
     children: [
-      { href: '/story/field',   label: '사역현장 이야기', desc: '회원들이 직접 나누는 현장 사역 이야기' },
-      { href: '/story/prayer',  label: '중보기도 요청',   desc: '함께 기도해요. 기도가 현장을 바꿉니다' },
-      { href: '/story/columns', label: '이주민 사역 칼럼', desc: '이주민 사역 현장에서 온 칼럼', dividerBefore: true },
-      { href: '/story/qna',     label: 'Q&A 게시판',      desc: '이주민 사역 질문과 답변' },
+      { href: '/story/field',   label: '사역현장 이야기',    desc: '회원들이 직접 나누는 현장 사역 이야기' },
+      { href: '/story/prayer',  label: '중보기도 요청',      desc: '함께 기도해요. 기도가 현장을 바꿉니다' },
+      { href: '/story/rest',    label: '쉬어가는 발걸음',    desc: '사역의 길 위에서 잠시 쉬어가는 이야기' },
+      { href: '/story/columns', label: '이주민 사역 칼럼',   desc: '이주민 사역 현장에서 온 칼럼', dividerBefore: true },
+      { href: '/story/qna',     label: 'Q&A 게시판',         desc: '이주민 사역 질문과 답변' },
     ],
   },
   {

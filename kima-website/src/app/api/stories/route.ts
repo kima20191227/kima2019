@@ -5,7 +5,7 @@ import { z } from 'zod/v4'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 const OFFICER_TYPES = ['NOTICE', 'NEWS', 'EVENT_MEDIA'] as const
-const MEMBER_TYPES  = ['FIELD_STORY', 'EVENT_PROMO', 'PRAYER_REQUEST'] as const
+const MEMBER_TYPES  = ['FIELD_STORY', 'EVENT_PROMO', 'PRAYER_REQUEST', 'REST_WALK'] as const
 const ALL_TYPES     = [...OFFICER_TYPES, ...MEMBER_TYPES] as const
 
 const storySchema = z.object({
@@ -102,6 +102,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // REST_WALK: 일반회원(MEMBER) 이상, 로그인 필수
+    if (type === 'REST_WALK' && !session?.user?.id) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     // 익명 PRAYER_REQUEST: IP당 1시간 5회 제한
     if (type === 'PRAYER_REQUEST' && !session?.user?.id) {
       const ip = getClientIp(request)
@@ -120,8 +125,8 @@ export async function POST(request: NextRequest) {
     const role = session?.user?.role
     const isOfficerUser = isOfficer(role)
 
-    // FIELD_STORY / EVENT_PROMO는 정회원 이상 즉시 승인 (위에서 PREMIUM 이상만 통과)
-    const resolvedStatus = (isOfficerUser || type === 'FIELD_STORY' || type === 'EVENT_PROMO')
+    // FIELD_STORY / EVENT_PROMO / REST_WALK: 로그인 회원 즉시 승인
+    const resolvedStatus = (isOfficerUser || type === 'FIELD_STORY' || type === 'EVENT_PROMO' || type === 'REST_WALK')
       ? 'APPROVED'
       : 'PENDING'
     const resolvedPublished = resolvedStatus === 'APPROVED'

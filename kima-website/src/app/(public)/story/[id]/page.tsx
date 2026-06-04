@@ -3,8 +3,14 @@ import { auth } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import nextDynamic from 'next/dynamic'
 import type { Metadata } from 'next'
 import { convertDriveUrl } from '@/lib/utils'
+
+const VideoEmbed = nextDynamic(
+  () => import('@/components/story/VideoEmbed').then((m) => m.VideoEmbed),
+  { loading: () => <div className="aspect-video bg-gray-100 animate-pulse rounded-xl" /> }
+)
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +23,7 @@ const TYPE_LABELS: Record<string, string> = {
   FIELD_STORY:    '✍️ 현장 이야기',
   EVENT_MEDIA:    '📸 행사 사진&영상',
   PRAYER_REQUEST: '🙏 중보기도',
+  REST_WALK:      '🌿 쉬어가는 발걸음',
 }
 
 const TYPE_BACK: Record<string, string> = {
@@ -24,6 +31,7 @@ const TYPE_BACK: Record<string, string> = {
   FIELD_STORY:    '/story/field',
   EVENT_MEDIA:    '/story/media',
   PRAYER_REQUEST: '/story/prayer',
+  REST_WALK:      '/story/rest',
 }
 
 const TYPE_EDIT: Record<string, string> = {
@@ -143,19 +151,16 @@ export default async function StoryDetailPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* 동영상 링크 */}
+            {/* 동영상 — 인라인 플레이어 */}
             {story.videoUrls.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
+              <div className="mt-6 space-y-4">
                 {story.videoUrls.map((url, i) => (
-                  <a
-                    key={i}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
-                  >
-                    ▶ 영상 보기 {story.videoUrls.length > 1 ? i + 1 : ''}
-                  </a>
+                  <div key={i}>
+                    {story.videoUrls.length > 1 && (
+                      <p className="text-xs text-gray-400 mb-1.5">영상 {i + 1}</p>
+                    )}
+                    <VideoEmbed url={url} title={`${story.title} 영상 ${i + 1}`} index={i} />
+                  </div>
                 ))}
               </div>
             )}

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
-type StoryType = 'NOTICE' | 'NEWS' | 'FIELD_STORY' | 'EVENT_MEDIA' | 'EVENT_PROMO' | 'PRAYER_REQUEST'
+type StoryType = 'NOTICE' | 'NEWS' | 'FIELD_STORY' | 'EVENT_MEDIA' | 'EVENT_PROMO' | 'PRAYER_REQUEST' | 'REST_WALK'
 
 const TYPE_LABELS: Record<StoryType, string> = {
   NOTICE:         '📢 공지사항',
@@ -12,6 +12,7 @@ const TYPE_LABELS: Record<StoryType, string> = {
   FIELD_STORY:    '✍️ 사역현장 이야기',
   EVENT_PROMO:    '📣 이주민 사역안내',
   PRAYER_REQUEST: '🙏 중보기도 요청',
+  REST_WALK:      '🌿 쉬어가는 발걸음',
 }
 
 interface StoryEditProps {
