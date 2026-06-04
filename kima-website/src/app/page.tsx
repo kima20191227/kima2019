@@ -152,14 +152,14 @@ export default async function HomePage() {
               <p className="text-xs font-semibold tracking-widest text-[#C8922A] uppercase mb-2">KIMA</p>
               <h2 className="text-2xl font-bold text-[#1B3A6B]">최신 사역 소식</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {eventMedia.map((story) => {
                 const thumb = getStoryThumb(story)
                 return (
                   <Link
                     key={story.id}
                     href={`/story/media/${story.id}`}
-                    className="group block rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                    className="group block w-[calc(50%-0.5rem)] md:w-56 lg:w-64 rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
                   >
                     <div className="relative aspect-square bg-gray-100 overflow-hidden">
                       {thumb ? (
