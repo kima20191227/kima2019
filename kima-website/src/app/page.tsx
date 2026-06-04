@@ -46,9 +46,9 @@ export default async function HomePage() {
     prisma.user.count().catch(() => 0),
     prisma.resource.count().catch(() => 0),
     // 이주민 사역자료
-    prisma.resource.findMany({ where: { section: 'MINISTRY' }, orderBy: { createdAt: 'desc' }, take: 3, select: { id: true, title: true, description: true, fileType: true, driveUrl: true, accessLevel: true, createdAt: true } }).catch(() => []),
+    prisma.resource.findMany({ where: { section: 'MINISTRY' }, orderBy: { createdAt: 'desc' }, take: 4, select: { id: true, title: true, description: true, fileType: true, thumbnail: true, driveUrl: true, accessLevel: true, createdAt: true } }).catch(() => []),
     // 이주민 관련 뉴스
-    prisma.news.findMany({ where: { isVisible: true }, orderBy: { publishedAt: 'desc' }, take: 6, select: { id: true, title: true, sourceName: true, sourceUrl: true, publishedAt: true, category: true } }).catch(() => []),
+    prisma.news.findMany({ where: { isVisible: true }, orderBy: { publishedAt: 'desc' }, take: 4, select: { id: true, title: true, sourceName: true, sourceUrl: true, publishedAt: true, category: true } }).catch(() => []),
   ])
 
   const stats = [
@@ -153,7 +153,7 @@ export default async function HomePage() {
       {/* 4. 최신 사역 소식(좌) + 이주민 관련 뉴스(우) */}
       <section className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
 
             {/* 왼쪽 — 최신 사역 소식 */}
             <div className="flex flex-col">
@@ -296,79 +296,111 @@ export default async function HomePage() {
       </section>
 
       {/* 5. 이주민 사역자료(통합) */}
-      <section className="bg-white py-14">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* 헤더 */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <span className="w-1 h-7 rounded-full bg-[#1B3A6B] inline-block" />
-              <h2 className="text-xl font-bold text-[#1B3A6B]">이주민 사역자료(통합)</h2>
-            </div>
-            <Link href="/resources/ministry" className="text-sm text-[#1B3A6B] font-medium hover:underline">
-              더 보기 →
-            </Link>
-          </div>
+      <section className="bg-[#F8F9FA] py-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-          {/* 자료 목록 */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-100 overflow-hidden">
-            {ministryResources.length > 0 ? ministryResources.map((res) => (
-              <a
-                key={res.id}
-                href={res.driveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-4 px-5 py-4 hover:bg-blue-50 transition-colors group"
-              >
-                {/* 파일 타입 아이콘 */}
-                <div className="shrink-0 w-10 h-10 rounded-lg bg-[#EAF2FB] flex items-center justify-center">
-                  <svg className="w-5 h-5 text-[#1B3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            {/* 왼쪽 — 아카이브 이미지 카드 */}
+            <div className="lg:col-span-1">
+              <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#1B3A6B] via-[#243f72] to-[#0f2147] text-white p-8 flex flex-col items-center justify-center text-center min-h-[320px] shadow-md">
+                {/* 아카이브 아이콘 */}
+                <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center mb-5">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                   </svg>
                 </div>
-
-                {/* 제목 · 설명 */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 group-hover:text-[#1B3A6B] line-clamp-1 transition-colors">
-                    {res.title}
-                  </p>
-                  {res.description && (
-                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{res.description}</p>
-                  )}
+                <h3 className="text-xl font-bold mb-2">이주민 사역자료</h3>
+                <p className="text-sm text-blue-200 leading-relaxed mb-6">
+                  현장 사역에서 바로 쓸 수 있는<br />통합 자료 아카이브입니다.
+                </p>
+                {/* 통계 */}
+                <div className="w-full bg-white/10 rounded-xl px-5 py-3 mb-6">
+                  <p className="text-2xl font-bold text-[#C8922A]">사역 자료</p>
+                  <p className="text-xs text-blue-200 mt-0.5">교육·훈련·법률·복지 자료 모음</p>
                 </div>
+                <Link
+                  href="/resources/ministry"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#C8922A] hover:bg-[#b07a20] text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  전체 자료 보기
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
 
-                {/* 파일 타입 뱃지 */}
-                {res.fileType && (
-                  <span className="shrink-0 px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-500 uppercase">
-                    {res.fileType}
-                  </span>
-                )}
+            {/* 오른쪽 — 자료 카드 리스트 */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-1 h-6 rounded-full bg-[#1B3A6B] inline-block" />
+                  <h2 className="text-xl font-bold text-[#1B3A6B]">이주민 사역자료(통합)</h2>
+                </div>
+                <Link href="/resources/ministry" className="text-sm text-[#1B3A6B] font-medium hover:underline">
+                  더 보기 →
+                </Link>
+              </div>
 
-                {/* 날짜 */}
-                <span className="shrink-0 text-xs text-gray-400 tabular-nums hidden sm:block">
-                  {res.createdAt.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
-                </span>
+              {ministryResources.length > 0 ? ministryResources.map((res) => (
+                <div key={res.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-start gap-4 hover:shadow-md transition-shadow">
+                  {/* 썸네일 or 파일 아이콘 */}
+                  <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-[#EAF2FB] flex items-center justify-center">
+                    {res.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={res.thumbnail} alt={res.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <svg className="w-6 h-6 text-[#1B3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                    )}
+                  </div>
 
-                {/* 화살표 */}
-                <svg className="shrink-0 w-4 h-4 text-gray-300 group-hover:text-[#1B3A6B] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </a>
-            )) : (
-              <div className="px-5 py-10 text-center text-sm text-gray-400">등록된 자료가 없습니다.</div>
-            )}
-          </div>
+                  {/* 내용 */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 line-clamp-1">{res.title}</p>
+                    {res.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{res.description}</p>
+                    )}
+                    <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                      <span className="text-xs text-gray-400">
+                        {res.createdAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                      {res.fileType && (
+                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-xs font-medium uppercase">
+                          {res.fileType}
+                        </span>
+                      )}
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        res.accessLevel === 'PUBLIC'  ? 'bg-green-50 text-green-700' :
+                        res.accessLevel === 'PREMIUM' ? 'bg-amber-50 text-amber-700' :
+                        'bg-blue-50 text-blue-700'
+                      }`}>
+                        {res.accessLevel === 'PUBLIC' ? '공개' : res.accessLevel === 'PREMIUM' ? '정회원' : '회원'}
+                      </span>
+                    </div>
+                  </div>
 
-          {/* 더 보기 버튼 */}
-          <div className="mt-4 text-center">
-            <Link
-              href="/resources/ministry"
-              className="inline-flex items-center gap-1.5 text-sm text-[#1B3A6B] font-medium hover:underline"
-            >
-              더 보기
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+                  {/* 열기 버튼 */}
+                  <a
+                    href={res.driveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-[#1B3A6B] hover:bg-[#15305a] text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    열기
+                  </a>
+                </div>
+              )) : (
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-10 text-center text-sm text-gray-400">
+                  등록된 자료가 없습니다.
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </section>
