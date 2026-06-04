@@ -47,16 +47,32 @@ export default async function ColumnDetailPage({ params }: Props) {
 
   const role = session?.user?.role as UserRole | undefined
   const canManage =
-    role === 'ADMIN' || (!!session?.user?.id && column.author.id === session.user.id)
+    role === 'ADMIN' || role === 'OFFICER' || (!!session?.user?.id && column.author.id === session.user.id)
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
       {/* Header */}
       <div className="bg-[#1B3A6B] text-white py-12 px-4">
         <div className="max-w-3xl mx-auto">
-          <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-2">
-            Column
-          </p>
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase">
+              Column
+            </p>
+            {canManage && (
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  href={`/story/columns/${column.id}/edit`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white text-xs font-medium rounded-lg transition-colors border border-white/20"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  수정
+                </Link>
+                <ColumnDeleteButton columnId={column.id} variant="dark" />
+              </div>
+            )}
+          </div>
           <h1 className="text-2xl font-bold leading-snug">{column.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-blue-200">
             <span>{column.authorName ?? column.author.name ?? '익명'}</span>
@@ -123,19 +139,6 @@ export default async function ColumnDetailPage({ params }: Props) {
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-
-        {/* Actions (author or admin) */}
-        {canManage && (
-          <div className="mt-6 flex items-center gap-3">
-            <Link
-              href={`/story/columns/${column.id}/edit`}
-              className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              수정
-            </Link>
-            <ColumnDeleteButton columnId={column.id} />
           </div>
         )}
 

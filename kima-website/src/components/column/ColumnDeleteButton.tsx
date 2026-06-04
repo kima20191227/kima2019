@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 
 interface Props {
   columnId: string
+  variant?: 'light' | 'dark'
 }
 
-export function ColumnDeleteButton({ columnId }: Props) {
+export function ColumnDeleteButton({ columnId, variant = 'light' }: Props) {
   const router = useRouter()
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -29,17 +30,25 @@ export function ColumnDeleteButton({ columnId }: Props) {
   if (confirming) {
     return (
       <span className="inline-flex items-center gap-2">
-        <span className="text-sm text-gray-600">정말 삭제하시겠습니까?</span>
+        <span className={`text-sm ${variant === 'dark' ? 'text-white/80' : 'text-gray-600'}`}>
+          정말 삭제하시겠습니까?
+        </span>
         <button
+          type="button"
           onClick={handleDelete}
           disabled={loading}
-          className="px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+          className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
         >
           {loading ? '삭제 중...' : '삭제'}
         </button>
         <button
+          type="button"
           onClick={() => setConfirming(false)}
-          className="px-3 py-1 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+          className={`px-3 py-1.5 text-sm rounded-lg ${
+            variant === 'dark'
+              ? 'border border-white/20 text-white hover:bg-white/10'
+              : 'border border-gray-200 hover:bg-gray-50'
+          }`}
         >
           취소
         </button>
@@ -49,8 +58,13 @@ export function ColumnDeleteButton({ columnId }: Props) {
 
   return (
     <button
+      type="button"
       onClick={() => setConfirming(true)}
-      className="px-3 py-1 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+        variant === 'dark'
+          ? 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+          : 'text-red-600 border border-red-200 hover:bg-red-50'
+      }`}
     >
       삭제
     </button>

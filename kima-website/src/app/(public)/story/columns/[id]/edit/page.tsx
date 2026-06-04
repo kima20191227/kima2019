@@ -39,7 +39,7 @@ export default async function ColumnEditPage({ params }: Props) {
   if (!column) notFound()
 
   const role = session.user.role as UserRole
-  if (role !== 'ADMIN' && column.authorId !== session.user.id) {
+  if (role !== 'ADMIN' && role !== 'OFFICER' && column.authorId !== session.user.id) {
     redirect('/story/columns')
   }
 
