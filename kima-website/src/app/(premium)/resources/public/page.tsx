@@ -36,10 +36,10 @@ export default async function PublicResourcesPage() {
   const weight = role ? (ROLE_WEIGHT[role] ?? 0) : 0
   const isAdmin = role === 'ADMIN'
 
-  // 공개 자료: MEMBER 이상이면 등록 가능
-  const canUpload = weight >= 1
-  // ADMIN은 모든 자료 수정/삭제, 일반 회원은 본인 자료만
-  const deleteMode: 'all' | 'own' | null = isAdmin ? 'all' : weight >= 1 ? 'own' : null
+  // 공개 자료: 정회원(PREMIUM) 이상만 등록 가능
+  const canUpload = weight >= 2
+  // OFFICER 이상은 모든 자료 수정/삭제, 정회원은 본인 자료만, 일반회원은 불가
+  const deleteMode: 'all' | 'own' | null = weight >= 3 ? 'all' : weight >= 2 ? 'own' : null
 
   const resources = await prisma.resource.findMany({
     where: {

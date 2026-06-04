@@ -19,8 +19,10 @@ function hasManagePermission(
   role: UserRole,
 ): boolean {
   if (role === 'ADMIN') return true
-  // PUBLIC 섹션: 작성자만 수정/삭제 가능
-  if (section === 'PUBLIC') return uploadedById === userId
+  // PUBLIC 섹션: 정회원(PREMIUM) 이상인 작성자만 수정/삭제 가능
+  if (section === 'PUBLIC') {
+    return uploadedById === userId && (ROLE_WEIGHT[role] ?? 0) >= 2
+  }
   // KIMA / MINISTRY 섹션: OFFICER 이상
   return (ROLE_WEIGHT[role] ?? 0) >= 3
 }

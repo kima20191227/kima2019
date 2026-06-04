@@ -90,8 +90,11 @@ export async function POST(request: NextRequest) {
       if (weight < 3) {
         return NextResponse.json({ error: 'KIMA/사역 자료는 임원(OFFICER) 이상만 등록할 수 있습니다.' }, { status: 403 })
       }
-    } else if (weight < 1) {
-      return NextResponse.json({ error: '로그인 회원만 공개 자료를 등록할 수 있습니다.' }, { status: 403 })
+    } else {
+      // PUBLIC 자료: 정회원(PREMIUM) 이상만 등록 가능
+      if (weight < 2) {
+        return NextResponse.json({ error: '공개 자료 등록은 정회원 이상만 가능합니다.' }, { status: 403 })
+      }
     }
 
     const resource = await prisma.resource.create({

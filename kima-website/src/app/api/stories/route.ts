@@ -93,9 +93,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '임원 이상만 작성할 수 있습니다.' }, { status: 403 })
     }
 
-    // FIELD_STORY / EVENT_PROMO requires login
-    if ((type === 'FIELD_STORY' || type === 'EVENT_PROMO') && !session?.user?.id) {
-      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    // FIELD_STORY / EVENT_PROMO: 정회원(PREMIUM) 이상 필요
+    if (type === 'FIELD_STORY' || type === 'EVENT_PROMO') {
+      const role = session?.user?.role
+      const ROLE_WEIGHT: Record<string, number> = { MEMBER: 1, PREMIUM: 2, OFFICER: 3, ADMIN: 4 }
+      if (!role || (ROLE_WEIGHT[role] ?? 0) < 2) {
+        return NextResponse.json({ error: '현장이야기·사역안내는 정회원 이상만 작성할 수 있습니다.' }, { status: 403 })
+      }
     }
 
     // 익명 PRAYER_REQUEST: IP당 1시간 5회 제한
@@ -116,7 +120,7 @@ export async function POST(request: NextRequest) {
     const role = session?.user?.role
     const isOfficerUser = isOfficer(role)
 
-    // FIELD_STORY / EVENT_PROMO는 로그인한 모든 회원이 즉시 승인
+    // FIELD_STORY / EVENT_PROMO는 정회원 이상 즉시 승인 (위에서 PREMIUM 이상만 통과)
     const resolvedStatus = (isOfficerUser || type === 'FIELD_STORY' || type === 'EVENT_PROMO')
       ? 'APPROVED'
       : 'PENDING'
