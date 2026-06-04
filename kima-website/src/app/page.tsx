@@ -211,6 +211,8 @@ export default async function HomePage() {
             {/* 오른쪽 — 이주민 관련 뉴스 */}
             <div className="flex flex-col">
               <div className="mb-5">
+                {/* 왼쪽 'KIMA' 라벨 높이(text-xs + mb-1 ≈ 20px)와 맞추는 spacer */}
+                <p className="text-xs mb-1 invisible select-none" aria-hidden="true">KIMA</p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-1 h-6 rounded-full bg-[#C8922A] inline-block" />
@@ -298,11 +300,11 @@ export default async function HomePage() {
       {/* 5. 이주민 사역자료(통합) */}
       <section className="bg-[#F8F9FA] py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             {/* 왼쪽 — 아카이브 이미지 카드 */}
-            <div className="lg:col-span-1">
-              <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#1B3A6B] via-[#243f72] to-[#0f2147] text-white p-8 flex flex-col items-center justify-center text-center min-h-[320px] shadow-md">
+            <div className="lg:col-span-1 flex flex-col">
+              <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#1B3A6B] via-[#243f72] to-[#0f2147] text-white p-8 flex flex-col items-center justify-center text-center h-full shadow-md">
                 {/* 아카이브 아이콘 */}
                 <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center mb-5">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
