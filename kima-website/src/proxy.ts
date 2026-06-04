@@ -43,12 +43,6 @@ export default auth((req) => {
     }
   }
 
-  if (pathname.startsWith('/community') || pathname.startsWith('/network')) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${pathname}`, req.url))
-    }
-  }
-
   if (pathname.startsWith('/member')) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${pathname}`, req.url))

@@ -430,13 +430,18 @@ model EventAttendee {
 /donate               → 모두 접근 가능
 /privacy, /terms      → 모두 접근 가능
 
-/community/*          → 일반회원(MEMBER) 이상 → 미로그인 시 /auth/login
-/network/*            → 일반회원(MEMBER) 이상
+/community/*          → 누구나 읽기 가능 / 글쓰기·수정은 로그인 필요
+/network/*            → 누구나 읽기 가능 / 수정은 로그인 필요
 
 /resources/*          → 정회원(PREMIUM) 이상 → 미충족 시 /member/upgrade
 /community/*/premium  → 정회원(PREMIUM) 이상
 
-/admin/*              → 관리자(ADMIN) 전용 → 미충족 시 /
+/admin/*              → 임원(OFFICER) 이상 → 미충족 시 /
+/admin/organizations  → 관리자(ADMIN) 전용
+/admin/categories     → 관리자(ADMIN) 전용 (API 기준)
+/admin/resources      → 관리자(ADMIN) 전용 (API 기준)
+/admin/email          → 관리자(ADMIN) 전용 (API 기준)
+/admin/popups         → 관리자(ADMIN) 전용 (API 기준)
 
 역할 계층: ADMIN > OFFICER > PREMIUM > MEMBER
 ```

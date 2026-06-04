@@ -3,8 +3,14 @@ import { auth } from '@/lib/auth'
 import { cfEnv } from '@/lib/cfEnv'
 import { createDriveResumableUploadSession, parseServiceAccountKey } from '@/lib/googleDrive'
 import {
+  MAX_RESOURCE_FILE_SIZE_MB,
+  isAllowedResourceExtension,
   normalizedResourceMimeType,
 } from '@/lib/resourceUploadPolicy'
+
+function isOfficer(role?: string | null) {
+  return role === 'ADMIN' || role === 'OFFICER'
+}
 
 const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
 
@@ -33,6 +39,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
+    if (!isOfficer(session.user.role)) {
+      return NextResponse.json({ error: '임원 이상만 자료를 업로드할 수 있습니다.' }, { status: 403 })
+    }
 
     const body = await request.json().catch(() => null) as SignedUploadRequest | null
     const name = typeof body?.name === 'string' ? body.name.trim() : ''
@@ -41,6 +50,20 @@ export async function POST(request: NextRequest) {
 
     if (!name || !Number.isFinite(size) || size <= 0) {
       return NextResponse.json({ error: '업로드할 파일 정보가 올바르지 않습니다.' }, { status: 400 })
+    }
+
+    if (!isAllowedResourceExtension(name)) {
+      return NextResponse.json(
+        { error: '허용되지 않는 파일 형식입니다.' },
+        { status: 400 },
+      )
+    }
+
+    if (size > MAX_RESOURCE_FILE_SIZE_MB * 1024 * 1024) {
+      return NextResponse.json(
+        { error: `파일 크기는 ${MAX_RESOURCE_FILE_SIZE_MB}MB 이하여야 합니다.` },
+        { status: 400 },
+      )
     }
 
     const mimeType = normalizedResourceMimeType({ name, type })

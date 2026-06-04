@@ -1,4 +1,5 @@
 export const RESOURCE_UPLOAD_BUCKET = 'forum-files'
+export const MAX_RESOURCE_FILE_SIZE_MB = 100
 
 const RESOURCE_EXTENSION_TO_TYPE: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -18,7 +19,13 @@ const RESOURCE_EXTENSION_TO_TYPE: Record<string, string> = {
   hwpx: 'application/vnd.hancom.hwpx',
   mp4: 'video/mp4',
   mov: 'video/quicktime',
-  exe: 'application/octet-stream',
+}
+
+export const ALLOWED_RESOURCE_EXTENSIONS = new Set(Object.keys(RESOURCE_EXTENSION_TO_TYPE))
+
+export function isAllowedResourceExtension(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? ''
+  return ALLOWED_RESOURCE_EXTENSIONS.has(ext)
 }
 
 export function normalizedResourceMimeType(file: { name: string; type: string }): string {

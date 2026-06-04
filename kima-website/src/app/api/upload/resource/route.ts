@@ -6,9 +6,15 @@ import { createAdminClient } from '@/lib/supabase'
 import { safeStorageKey } from '@/lib/utils'
 import { convertToWebP, isConvertibleImage } from '@/lib/imageConvert'
 import {
-RESOURCE_UPLOAD_BUCKET,
+  RESOURCE_UPLOAD_BUCKET,
+  MAX_RESOURCE_FILE_SIZE_MB,
+  isAllowedResourceExtension,
   normalizedResourceMimeType,
 } from '@/lib/resourceUploadPolicy'
+
+function isOfficer(role?: string | null) {
+  return role === 'ADMIN' || role === 'OFFICER'
+}
 
 const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
 
@@ -84,12 +90,29 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
+    if (!isOfficer(session.user.role)) {
+      return NextResponse.json({ error: '임원 이상만 자료를 업로드할 수 있습니다.' }, { status: 403 })
+    }
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
     if (!file) {
       return NextResponse.json({ error: '파일이 없습니다.' }, { status: 400 })
+    }
+
+    if (!isAllowedResourceExtension(file.name)) {
+      return NextResponse.json(
+        { error: '허용되지 않는 파일 형식입니다.' },
+        { status: 400 },
+      )
+    }
+
+    if (file.size > MAX_RESOURCE_FILE_SIZE_MB * 1024 * 1024) {
+      return NextResponse.json(
+        { error: `파일 크기는 ${MAX_RESOURCE_FILE_SIZE_MB}MB 이하여야 합니다.` },
+        { status: 400 },
+      )
     }
 
     const mimeType = normalizedResourceMimeType(file)

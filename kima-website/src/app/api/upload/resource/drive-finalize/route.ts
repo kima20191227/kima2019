@@ -29,6 +29,10 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
+    const role = session.user.role
+    if (role !== 'ADMIN' && role !== 'OFFICER') {
+      return NextResponse.json({ error: '임원 이상만 자료를 업로드할 수 있습니다.' }, { status: 403 })
+    }
 
     const body = await request.json().catch(() => null) as FinalizeRequest | null
     const fileId = typeof body?.fileId === 'string' ? body.fileId.trim() : ''

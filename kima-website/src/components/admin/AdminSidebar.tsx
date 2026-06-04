@@ -16,8 +16,8 @@ const NAV = [
   { href: '/admin',               label: '대시보드',     icon: '🏠', exact: true,  minRole: 'OFFICER' as const },
   { href: '/admin/members',       label: '회원 관리',    icon: '👥', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/organizations', label: '전체 단체관리', icon: '🏢', exact: false, minRole: 'OFFICER' as const },
-  { href: '/admin/categories',    label: '커뮤니티별 담당자 관리', icon: '📂', exact: false, minRole: 'OFFICER' as const },
-  { href: '/admin/resources',     label: '자료 관리',    icon: '📄', exact: false, minRole: 'OFFICER' as const },
+  { href: '/admin/categories',    label: '커뮤니티별 담당자 관리', icon: '📂', exact: false, minRole: 'ADMIN'   as const },
+  { href: '/admin/resources',     label: '자료 관리',    icon: '📄', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/events',        label: '일정 관리',    icon: '📅', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/leadership',     label: '임원단 관리',  icon: '👤', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/stories',       label: '현장스토리',   icon: '📖', exact: false, minRole: 'OFFICER' as const },
@@ -26,9 +26,9 @@ const NAV = [
   { href: '/admin/columns',       label: '칼럼 관리',    icon: '✍️', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/qna',           label: 'Q&A 관리',    icon: '💬', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/forum-archives', label: '포럼·리스닝콜', icon: '🏛', exact: false, minRole: 'OFFICER' as const },
-  { href: '/admin/email',         label: '메일 발송',    icon: '✉️', exact: false, minRole: 'OFFICER' as const },
+  { href: '/admin/email',         label: '메일 발송',    icon: '✉️', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/bulk-register', label: '회원 일괄등록', icon: '👤', exact: false, minRole: 'ADMIN'   as const },
-  { href: '/admin/popups',        label: '팝업 관리',    icon: '🪟', exact: false, minRole: 'OFFICER' as const },
+  { href: '/admin/popups',        label: '팝업 관리',    icon: '🪟', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/stats',         label: '접속 통계',    icon: '📊', exact: false, minRole: 'OFFICER' as const },
 ]
 
