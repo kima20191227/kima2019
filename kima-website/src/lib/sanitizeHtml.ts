@@ -14,7 +14,8 @@ function sanitizeStyle(style: string): string {
     .map((part) => part.trim())
     .filter((part) =>
       /^(color|background-color):\s*#[0-9a-f]{3,8}$/i.test(part) ||
-      /^font-size:\s*(14|16|18|20|24|28|32)px$/i.test(part)
+      /^font-size:\s*(14|16|18|20|24|28|32)px$/i.test(part) ||
+      /^text-align:\s*(left|center|right|justify)$/i.test(part)
     )
 
   return safeDeclarations.join('; ')

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { ColumnEditor } from '@/components/column/ColumnEditor'
 
 export default function RestWalkWritePage() {
   const router = useRouter()
@@ -17,8 +18,16 @@ export default function RestWalkWritePage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  const handleContentChange = useCallback((html: string) => {
+    setForm((prev) => ({ ...prev, content: html }))
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.content.trim() || form.content === '<p></p>') {
+      setError('본문을 입력해주세요.')
+      return
+    }
     setSubmitting(true)
     setError('')
     try {
@@ -93,13 +102,10 @@ export default function RestWalkWritePage() {
           {/* 본문 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">본문 *</label>
-            <textarea
-              required
-              rows={12}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="이야기를 자유롭게 써주세요."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] resize-none"
+            <ColumnEditor
+              content={form.content}
+              onChange={handleContentChange}
+              placeholder="이야기를 자유롭게 써주세요. 굵게·글자색·크기·정렬 등을 활용해 보세요."
             />
           </div>
 

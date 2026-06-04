@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
 import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { ColumnEditor } from '@/components/column/ColumnEditor'
 
 export default function PrayerWritePage() {
   const router = useRouter()
@@ -19,6 +20,10 @@ export default function PrayerWritePage() {
   const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const handleContentChange = useCallback((html: string) => {
+    setForm((prev) => ({ ...prev, content: html }))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -83,17 +88,12 @@ export default function PrayerWritePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">기도 내용 * (최대 1000자)</label>
-            <textarea
-              required
-              maxLength={1000}
-              rows={6}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
+            <label className="block text-sm font-medium text-gray-700 mb-1">기도 내용 *</label>
+            <ColumnEditor
+              content={form.content}
+              onChange={handleContentChange}
               placeholder="상황을 간단히 설명하고, 어떻게 기도해 주시면 좋을지 적어주세요."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] resize-none"
             />
-            <p className="text-xs text-gray-400 text-right mt-1">{form.content.length}/1000</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

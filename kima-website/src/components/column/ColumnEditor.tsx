@@ -70,9 +70,10 @@ const FONT_SIZES = ['14px', '16px', '18px', '20px', '24px', '28px', '32px']
 interface Props {
   content: string
   onChange: (html: string) => void
+  placeholder?: string
 }
 
-export function ColumnEditor({ content, onChange }: Props) {
+export function ColumnEditor({ content, onChange, placeholder = '내용을 작성해주세요...' }: Props) {
   const [imageUrl, setImageUrl] = useState('')
   const [showImageInput, setShowImageInput] = useState(false)
   const [currentAlign, setCurrentAlign] = useState<string | null>(null)
@@ -83,7 +84,7 @@ export function ColumnEditor({ content, onChange }: Props) {
       CustomTextStyle,
       Color.configure({ types: ['textStyle'] }),
       Image.configure({ inline: false }),
-      Placeholder.configure({ placeholder: '칼럼 내용을 작성해주세요...' }),
+      Placeholder.configure({ placeholder }),
       TextAlign,
     ],
     content,

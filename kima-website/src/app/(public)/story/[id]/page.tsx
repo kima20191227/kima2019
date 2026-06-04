@@ -6,6 +6,7 @@ import Image from 'next/image'
 import nextDynamic from 'next/dynamic'
 import type { Metadata } from 'next'
 import { convertDriveUrl } from '@/lib/utils'
+import { sanitizeRichHtml } from '@/lib/sanitizeHtml'
 
 const VideoEmbed = nextDynamic(
   () => import('@/components/story/VideoEmbed').then((m) => m.VideoEmbed),
@@ -135,10 +136,26 @@ export default async function StoryDetailPage({ params }: PageProps) {
               </a>
             )}
 
-            {/* 본문 */}
-            <div className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
-              {story.content}
-            </div>
+            {/* 본문 — HTML(리치 에디터) 또는 일반 텍스트 자동 감지 */}
+            {story.content.trimStart().startsWith('<') ? (
+              <div
+                className="text-gray-800 text-sm sm:text-base
+                  [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-gray-900
+                  [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-gray-900
+                  [&_p]:my-3 [&_p]:leading-relaxed [&_p]:text-gray-800
+                  [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2
+                  [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2
+                  [&_li]:my-1 [&_li]:text-gray-800
+                  [&_strong]:font-semibold [&_strong]:text-gray-900
+                  [&_a]:text-blue-600 [&_a]:underline
+                  [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-4"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(story.content) }}
+              />
+            ) : (
+              <div className="text-gray-800 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
+                {story.content}
+              </div>
+            )}
 
             {/* 이미지 그리드 (EVENT_MEDIA) */}
             {story.images.length > 0 && (

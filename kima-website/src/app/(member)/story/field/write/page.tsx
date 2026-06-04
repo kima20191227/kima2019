@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
 import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { ColumnEditor } from '@/components/column/ColumnEditor'
 
 export default function FieldStoryWritePage() {
   const router = useRouter()
@@ -21,6 +22,10 @@ export default function FieldStoryWritePage() {
   const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const handleContentChange = useCallback((html: string) => {
+    setForm((prev) => ({ ...prev, content: html }))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -99,13 +104,10 @@ export default function FieldStoryWritePage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">본문 *</label>
-            <textarea
-              required
-              rows={10}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="현장 이야기를 자유롭게 써주세요."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] resize-none"
+            <ColumnEditor
+              content={form.content}
+              onChange={handleContentChange}
+              placeholder="현장 이야기를 자유롭게 써주세요. 굵게·글자색·크기 등을 활용할 수 있습니다."
             />
           </div>
 
