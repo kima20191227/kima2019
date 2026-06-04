@@ -6,6 +6,7 @@ import { MemberSearchInput } from '@/components/admin/MemberSearchInput'
 import { DeleteMemberButton } from '@/components/admin/DeleteMemberButton'
 import { MemberEditButton } from '@/components/admin/MemberEditButton'
 import { MemberCreateButton } from '@/components/admin/MemberCreateButton'
+import { ResetPasswordButton } from '@/components/admin/ResetPasswordButton'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import type { UserRole, Prisma } from '@prisma/client'
@@ -272,8 +273,9 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2 flex-wrap">
                         <MemberEditButton user={user} />
+                        <ResetPasswordButton userId={user.id} userName={user.name ?? user.email} />
                         <DeleteMemberButton userId={user.id} userName={user.name ?? user.email} />
                       </div>
                     </td>
