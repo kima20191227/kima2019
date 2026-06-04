@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -25,6 +26,12 @@ const TYPE_BACK: Record<string, string> = {
   PRAYER_REQUEST: '/story/prayer',
 }
 
+const TYPE_EDIT: Record<string, string> = {
+  EVENT_MEDIA: 'media',
+  NOTICE:      'notice',
+  EVENT_PROMO: 'event-promo',
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const story = await prisma.story.findUnique({ where: { id }, select: { title: true } })
@@ -34,10 +41,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function StoryDetailPage({ params }: PageProps) {
   const { id } = await params
 
-  const story = await prisma.story.findUnique({
-    where: { id, isPublished: true },
-    include: { author: { select: { name: true, organization: true } } },
-  })
+  const [story, session] = await Promise.all([
+    prisma.story.findUnique({
+      where: { id, isPublished: true },
+      include: { author: { select: { name: true, organization: true } } },
+    }),
+    auth().catch(() => null),
+  ])
 
   if (!story) notFound()
 
@@ -46,6 +56,13 @@ export default async function StoryDetailPage({ params }: PageProps) {
 
   const displayName = story.authorName ?? story.author?.name ?? 'KIMA'
   const displayOrg  = story.ministryLocation ?? story.author?.organization
+
+  const canEdit = session?.user?.role === 'ADMIN'
+    || session?.user?.role === 'OFFICER'
+    || session?.user?.id === story.authorId
+
+  const editSlug = TYPE_EDIT[story.type]
+  const editUrl  = editSlug ? `/story/${editSlug}/${id}/edit` : null
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -73,7 +90,20 @@ export default async function StoryDetailPage({ params }: PageProps) {
               <span className="text-xs text-gray-400">{date}</span>
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight mb-6">{story.title}</h1>
+            <div className="flex items-start justify-between gap-3 mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 leading-tight flex-1">{story.title}</h1>
+              {canEdit && editUrl && (
+                <Link
+                  href={editUrl}
+                  className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  수정
+                </Link>
+              )}
+            </div>
 
             <div className="flex items-center gap-3 mb-8 pb-6 border-b border-gray-100">
               <div className="w-10 h-10 rounded-full bg-[#1B3A6B] flex items-center justify-center text-white font-bold shrink-0">

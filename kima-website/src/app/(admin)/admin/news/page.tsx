@@ -83,7 +83,7 @@ export default async function AdminNewsPage({
           </p>
         </div>
         <Link
-          href="/data/news"
+          href="/network/news"
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-[#1B3A6B] hover:underline flex items-center gap-1"

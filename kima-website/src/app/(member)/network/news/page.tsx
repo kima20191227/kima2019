@@ -7,7 +7,6 @@ import { NewsCategoryTabs } from '@/components/news/NewsCategoryTabs'
 import { NewsCard } from '@/components/news/NewsCard'
 import type { NewsCardItem } from '@/components/news/NewsCard'
 import { getNewsCategories } from '@/lib/newsCategories'
-import { isMissionRelevantArticle } from '@/lib/newsMissionRelevance'
 
 export const dynamic = 'force-dynamic'
 
@@ -118,31 +117,28 @@ export default async function NetworkNewsPage({
     ...(validCategory ? { category: validCategory } : {}),
   }
 
-  const visibleItems = await prisma.news.findMany({
-    where,
-    orderBy: { publishedAt: 'desc' },
-    select: {
-      id:             true,
-      title:          true,
-      summary:        true,
-      sourceUrl:      true,
-      sourceName:     true,
-      category:       true,
-      publishedAt:    true,
-      relevanceScore: true,
-      keywords:       true,
-    },
-  })
-
-  const filteredItems = visibleItems.filter((item) =>
-    isMissionRelevantArticle({
-      title: item.title,
-      summary: item.summary ?? '',
-      url: item.sourceUrl,
+  const [total, visibleItems] = await Promise.all([
+    prisma.news.count({ where }),
+    prisma.news.findMany({
+      where,
+      orderBy: { publishedAt: 'desc' },
+      skip,
+      take: PAGE_SIZE,
+      select: {
+        id:             true,
+        title:          true,
+        summary:        true,
+        sourceUrl:      true,
+        sourceName:     true,
+        category:       true,
+        publishedAt:    true,
+        relevanceScore: true,
+        keywords:       true,
+      },
     }),
-  )
-  const total = filteredItems.length
-  const rawItems = filteredItems.slice(skip, skip + PAGE_SIZE)
+  ])
+
+  const rawItems = visibleItems
 
   const items: NewsCardItem[] = rawItems.map((n) => ({
     ...n,

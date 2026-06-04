@@ -303,6 +303,14 @@ export function NewsSettingsForm() {
           {(errors.collectHour || errors.collectMinute) && (
             <p className="text-xs text-red-500 mt-1">올바른 시간을 선택해주세요.</p>
           )}
+          <div className="mt-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <svg className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              이 설정은 DB에만 저장됩니다. 실제 자동 수집은 <strong>Cloudflare Dashboard → Workers → kima-cron → Triggers → Cron Triggers</strong>에서 별도 설정한 스케줄에 따라 실행됩니다. 시간을 바꾸려면 Cloudflare 대시보드의 cron 스케줄도 함께 수정해야 합니다.
+            </p>
+          </div>
         </div>
 
         {/* AI 제공자 */}
