@@ -31,6 +31,7 @@ export default async function HomePage() {
     eventMedia,
     dbEvents, orgCount, memberCount, resourceCount,
     ministryResources,
+    recentNews,
   ] = await Promise.all([
     auth().catch(() => null),
     // 3단 게시판
@@ -46,6 +47,8 @@ export default async function HomePage() {
     prisma.resource.count().catch(() => 0),
     // 이주민 사역자료
     prisma.resource.findMany({ where: { section: 'MINISTRY' }, orderBy: { createdAt: 'desc' }, take: 3, select: { id: true, title: true, description: true, fileType: true, driveUrl: true, accessLevel: true, createdAt: true } }).catch(() => []),
+    // 이주민 관련 뉴스
+    prisma.news.findMany({ where: { isVisible: true }, orderBy: { publishedAt: 'desc' }, take: 6, select: { id: true, title: true, sourceName: true, sourceUrl: true, publishedAt: true, category: true } }).catch(() => []),
   ])
 
   const stats = [
@@ -147,56 +150,110 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 4. 최신 사역 소식 — 행사 사진 갤러리 */}
-      {eventMedia.length > 0 && (
-        <section className="bg-white py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10">
-              <p className="text-xs font-semibold tracking-widest text-[#C8922A] uppercase mb-2">KIMA</p>
-              <h2 className="text-2xl font-bold text-[#1B3A6B]">최신 사역 소식</h2>
-            </div>
-            <div className="flex flex-wrap justify-center gap-4">
-              {eventMedia.map((story) => {
-                const thumb = getStoryThumb(story)
-                return (
-                  <Link
-                    key={story.id}
-                    href={`/story/media/${story.id}`}
-                    className="group block w-[calc(50%-0.5rem)] md:w-56 lg:w-64 rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-                  >
-                    <div className="relative aspect-square bg-gray-100 overflow-hidden">
-                      {thumb ? (
-                        <Image
-                          src={thumb}
-                          alt={story.title}
-                          fill
-                          sizes="(min-width: 768px) 25vw, 50vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-[#EAF2FB]">
-                          <svg className="w-10 h-10 text-[#1B3A6B]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M13.5 12a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                          </svg>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                      <p className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs text-white font-medium line-clamp-2 leading-snug">
-                        {story.title}
-                      </p>
-                    </div>
+      {/* 4. 최신 사역 소식(좌) + 이주민 관련 뉴스(우) */}
+      <section className="bg-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+            {/* 왼쪽 — 최신 사역 소식 */}
+            <div className="flex flex-col">
+              <div className="mb-5">
+                <p className="text-xs font-semibold tracking-widest text-[#C8922A] uppercase mb-1">KIMA</p>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-[#1B3A6B]">최신 사역 소식</h2>
+                  <Link href="/story/media" className="text-sm text-[#1B3A6B] font-medium hover:underline">
+                    전체 보기 →
                   </Link>
-                )
-              })}
+                </div>
+              </div>
+              {eventMedia.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 flex-1">
+                  {eventMedia.map((story) => {
+                    const thumb = getStoryThumb(story)
+                    return (
+                      <Link
+                        key={story.id}
+                        href={`/story/media/${story.id}`}
+                        className="group block rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                      >
+                        <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                          {thumb ? (
+                            <Image
+                              src={thumb}
+                              alt={story.title}
+                              fill
+                              sizes="(min-width: 1024px) 25vw, 50vw"
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-[#EAF2FB]">
+                              <svg className="w-10 h-10 text-[#1B3A6B]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M13.5 12a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                              </svg>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                          <p className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs text-white font-medium line-clamp-2 leading-snug">
+                            {story.title}
+                          </p>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-400 py-16">
+                  등록된 사진이 없습니다.
+                </div>
+              )}
             </div>
-            <div className="mt-6 text-center">
-              <Link href="/story/media" className="text-sm text-[#1B3A6B] font-medium hover:underline">
-                전체 보기 →
-              </Link>
+
+            {/* 오른쪽 — 이주민 관련 뉴스 */}
+            <div className="flex flex-col">
+              <div className="mb-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1 h-6 rounded-full bg-[#C8922A] inline-block" />
+                    <h2 className="text-xl font-bold text-[#1B3A6B]">이주민 관련 뉴스</h2>
+                  </div>
+                  <Link href="/network/news" className="text-sm text-[#1B3A6B] font-medium hover:underline">
+                    더 보기 →
+                  </Link>
+                </div>
+              </div>
+              <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-100 overflow-hidden">
+                {recentNews.length > 0 ? recentNews.map((news) => (
+                  <a
+                    key={news.id}
+                    href={news.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-3 px-4 py-3.5 hover:bg-blue-50 transition-colors group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800 group-hover:text-[#1B3A6B] line-clamp-2 leading-snug transition-colors">
+                        {news.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-xs text-[#C8922A] font-medium">{news.sourceName}</span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(news.publishedAt).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
+                        </span>
+                      </div>
+                    </div>
+                    <svg className="shrink-0 w-4 h-4 text-gray-300 group-hover:text-[#1B3A6B] mt-0.5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )) : (
+                  <div className="px-4 py-10 text-center text-sm text-gray-400">등록된 뉴스가 없습니다.</div>
+                )}
+              </div>
             </div>
+
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* 4. 다가오는 일정 */}
       <section className="bg-[#F8F9FA] py-16">
