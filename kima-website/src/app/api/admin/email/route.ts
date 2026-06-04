@@ -40,13 +40,32 @@ export async function POST(request: NextRequest) {
     const recipients = users.filter((u) => !!u.email)
 
     if (recipients.length === 0) {
-      return NextResponse.json({ ok: true, total: 0, sent: 0, failed: 0 })
+      return NextResponse.json({ ok: true, total: 0, sent: 0, failed: 0, logId: null })
     }
 
-    // 50명씩 배치 발송 (SMTP 타임아웃 방지)
+    // ── 발송 이력 레코드 미리 생성 ─────────────────────────────────────────
+    const emailLog = await prisma.emailLog.create({
+      data: {
+        subject,
+        targetRole: target,
+        totalCount: recipients.length,
+        sentCount:  0,
+        failedCount: 0,
+        sentBy: session.user.email ?? undefined,
+      },
+    })
+
+    // ── 50명씩 배치 발송 (SMTP 타임아웃 방지) ─────────────────────────────
     const BATCH_SIZE = 50
     let sent = 0
     let failed = 0
+    const recipientRows: {
+      logId: string
+      email: string
+      name: string | null
+      status: string
+      errorMsg: string | null
+    }[] = []
 
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE)
@@ -55,13 +74,43 @@ export async function POST(request: NextRequest) {
           sendEmail(user.email!, subject, personalizeHtml(html, user.name))
         )
       )
-      results.forEach((r) => {
-        if (r.status === 'fulfilled') sent++
-        else failed++
+      results.forEach((r, idx) => {
+        const user = batch[idx]
+        if (r.status === 'fulfilled') {
+          sent++
+          recipientRows.push({
+            logId: emailLog.id,
+            email: user.email!,
+            name: user.name,
+            status: 'SUCCESS',
+            errorMsg: null,
+          })
+        } else {
+          failed++
+          const errMsg = r.reason instanceof Error
+            ? r.reason.message
+            : String(r.reason ?? '알 수 없는 오류')
+          recipientRows.push({
+            logId: emailLog.id,
+            email: user.email!,
+            name: user.name,
+            status: 'FAILED',
+            errorMsg: errMsg.slice(0, 500),
+          })
+        }
       })
     }
 
-    return NextResponse.json({ ok: true, total: recipients.length, sent, failed })
+    // ── 수신자별 결과 저장 + 이력 카운트 업데이트 ─────────────────────────
+    await Promise.all([
+      prisma.emailLogRecipient.createMany({ data: recipientRows }),
+      prisma.emailLog.update({
+        where: { id: emailLog.id },
+        data: { sentCount: sent, failedCount: failed },
+      }),
+    ])
+
+    return NextResponse.json({ ok: true, total: recipients.length, sent, failed, logId: emailLog.id })
   } catch (err) {
     console.error('[admin/email]', err)
     return NextResponse.json({ error: '메일 발송 중 오류가 발생했습니다.' }, { status: 500 })
@@ -77,7 +126,6 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#x27;')
 }
 
-// 수신자 이름 치환: 본문 안의 {{이름}} → 실제 이름 (XSS 방지를 위해 이스케이프)
 function personalizeHtml(html: string, name: string | null): string {
   return html.replace(/\{\{이름\}\}/g, escapeHtml(name ?? '회원'))
 }

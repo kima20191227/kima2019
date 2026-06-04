@@ -600,3 +600,33 @@ model NewsSettings {
   lastRunCount        Int?      // 마지막 수집 건수
   updatedAt           DateTime  @updatedAt
 }
+
+// ─── 이메일 발송 이력 ──────────────────────────────────────────────────────────
+
+model EmailLog {
+  id          String             @id @default(cuid())
+  subject     String
+  targetRole  String             // ALL | MEMBER | PREMIUM | OFFICER | ADMIN
+  totalCount  Int
+  sentCount   Int
+  failedCount Int
+  sentBy      String?            // 발송 관리자 이메일
+  createdAt   DateTime           @default(now())
+
+  recipients  EmailLogRecipient[]
+
+  @@index([createdAt(sort: Desc)])
+}
+
+model EmailLogRecipient {
+  id       String   @id @default(cuid())
+  logId    String
+  log      EmailLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+  email    String
+  name     String?
+  status   String   // SUCCESS | FAILED
+  errorMsg String?  // 실패 원인 메시지
+
+  @@index([logId])
+  @@index([logId, status])
+}
