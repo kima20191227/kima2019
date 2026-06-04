@@ -118,7 +118,7 @@ export function HeroCarousel({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 href="/directory"
                 className="inline-flex items-center px-7 py-3 rounded-lg border border-white/40 text-white font-semibold hover:bg-white/10 transition-colors"
               >
-                단체 디렉토리 보기
+                사역단체 전국지도 보기
               </Link>
             </div>
           )}
