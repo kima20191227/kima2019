@@ -89,15 +89,15 @@ export default async function ColumnDetailPage({ params }: Props) {
 
         {/* Content */}
         <div
-          className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8
-            [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
-            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2
-            [&_p]:my-3 [&_p]:leading-relaxed
+          className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8 text-gray-800
+            [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-gray-900
+            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-gray-900
+            [&_p]:my-3 [&_p]:leading-relaxed [&_p]:text-gray-800
             [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2
             [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2
-            [&_li]:my-1
+            [&_li]:my-1 [&_li]:text-gray-800
             [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-4
-            [&_strong]:font-semibold
+            [&_strong]:font-semibold [&_strong]:text-gray-900
             [&_a]:text-blue-600 [&_a]:underline"
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(column.content) }}
         />

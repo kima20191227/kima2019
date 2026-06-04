@@ -12,12 +12,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* 다크 모드 비활성화: 이 사이트는 라이트 모드 전용 디자인 */
+/* 사용자 OS가 다크 모드여도 흰 배경에 어두운 글씨를 유지 */
 
 body {
   background: var(--background);
