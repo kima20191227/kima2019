@@ -74,11 +74,7 @@ export function NewsCard({
       )}
 
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 mt-auto">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs text-gray-500 font-medium truncate">{item.sourceName}</span>
-          <span className="text-gray-300 text-xs">·</span>
-          <span className="text-xs text-gray-400 whitespace-nowrap">{date}</span>
-        </div>
+        <span className="text-xs text-gray-400 whitespace-nowrap">{date}</span>
         <a
           href={item.sourceUrl}
           target="_blank"
