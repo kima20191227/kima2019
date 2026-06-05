@@ -16,7 +16,6 @@ export default function EventPromoWritePage() {
     websiteUrl: '',
     videoUrls: '',
     tags: '',
-    agree: false,
   })
   const [storyImages, setStoryImages] = useState<PhotoAttachment[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -25,7 +24,6 @@ export default function EventPromoWritePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.agree) { setError('안내 사항에 동의해 주세요.'); return }
     setSubmitting(true)
     setError('')
 
@@ -194,19 +192,6 @@ export default function EventPromoWritePage() {
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
             />
           </div>
-
-          {/* 동의 체크 */}
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.agree}
-              onChange={(e) => setForm({ ...form, agree: e.target.checked })}
-              className="mt-0.5"
-            />
-            <span className="text-xs text-gray-500">
-              게시하는 이미지·내용이 해당 행사와 관련된 정확한 정보임을 확인하며, KIMA 커뮤니티 운영 원칙에 따라 작성하였음에 동의합니다.
-            </span>
-          </label>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 
