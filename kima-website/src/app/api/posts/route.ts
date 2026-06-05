@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { postSchema } from '@/schemas/post.schema'
-import type { UserRole } from '@prisma/client'
+import { sendPushBroadcast } from '@/lib/expoPush'
+import type { UserRole, CategoryType } from '@prisma/client'
 
 const CAN_WRITE: UserRole[] = ['PREMIUM', 'OFFICER', 'ADMIN']
 
@@ -54,7 +55,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '이 유형은 임원·위원장 이상만 작성할 수 있습니다.' }, { status: 403 })
     }
 
-    const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { id: true, name: true } })
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true, name: true, slug: true, type: true },
+    })
     if (!category) {
       return NextResponse.json({ error: '존재하지 않는 카테고리입니다.' }, { status: 400 })
     }
@@ -64,8 +68,44 @@ export async function POST(request: NextRequest) {
       include: { author: { select: { id: true, name: true } } },
     })
 
+    // 게시글 등록 후 앱 사용자에게 푸시 알림 발송 (비동기 — 응답 지연 없음)
+    void sendPushNotification(post.id, title, content, type, category)
+
     return NextResponse.json({ post }, { status: 201 })
   } catch {
     return NextResponse.json({ error: '게시글 작성 중 오류가 발생했습니다.' }, { status: 500 })
   }
+}
+
+// ─── 내부: 푸시 발송 로직 ─────────────────────────────────────────────────────
+
+async function sendPushNotification(
+  postId: string,
+  title: string,
+  content: string,
+  type: 'NOTICE' | 'SHARE' | 'INTRODUCE',
+  category: { name: string; slug: string; type: CategoryType },
+) {
+  const typeLabel =
+    type === 'NOTICE' ? '📢 공지' : type === 'SHARE' ? '🤝 사역나눔' : '📋 소개'
+
+  const notifyField =
+    type === 'SHARE' ? 'notifyShare' : 'notifyPost'
+
+  // 본문 첫 100자를 알림 미리보기로 사용
+  const preview = content.replace(/\n+/g, ' ').slice(0, 80)
+
+  await sendPushBroadcast(
+    `${typeLabel} — ${category.name}`,
+    `${title}\n${preview}`,
+    {
+      type: 'post',
+      postId,
+      categoryType: category.type,
+      slug: category.slug,
+    },
+    notifyField,
+  ).catch((err) => {
+    console.error('[posts/push]', err)
+  })
 }

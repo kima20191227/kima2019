@@ -34,6 +34,7 @@ model User {
   questions     Question[]
   answers       Answer[]
   columnPosts   ColumnPost[]
+  pushTokens    DevicePushToken[]
 }
 
 enum UserRole {
@@ -600,6 +601,22 @@ model NewsSettings {
   lastRunStatus       String?   // success | error | running
   lastRunCount        Int?      // 마지막 수집 건수
   updatedAt           DateTime  @updatedAt
+}
+
+// ─── 디바이스 푸시 토큰 ───────────────────────────────────────────────────────
+
+model DevicePushToken {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique                  // ExponentPushToken[...]
+  platform     String                            // ios | android
+  notifyPost   Boolean  @default(true)           // 공지 알림
+  notifyEvent  Boolean  @default(true)           // 행사 리마인더 알림
+  notifyShare  Boolean  @default(true)           // 사역나눔 알림
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // ─── 이메일 발송 이력 ──────────────────────────────────────────────────────────

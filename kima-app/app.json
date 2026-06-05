@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "KIMA",
+    "slug": "kima-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "kima",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1B3A6B"
+    },
+    "android": {
+      "package": "org.kima2019.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#1B3A6B"
+      }
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "org.kima2019.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#1B3A6B",
+          "sounds": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "24a4ba1b-4c01-4c92-8ca1-241af7506a90"
+      },
+      "router": {
+        "origin": false
+      }
+    },
+    "owner": "gumodo"
+  }
+}
