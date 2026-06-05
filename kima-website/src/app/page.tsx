@@ -28,7 +28,7 @@ export default async function HomePage() {
   const [
     session,
     notices, newsStories, eventPromos,
-    fieldStories,
+    fieldStories, prayerStories, restStories, columnStories,
     eventMedia,
     dbEvents, orgCount, memberCount, resourceCount,
     ministryResources,
@@ -39,8 +39,11 @@ export default async function HomePage() {
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'NOTICE'      }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, title: true, createdAt: true } }).catch(() => []),
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'NEWS'        }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, title: true, createdAt: true } }).catch(() => []),
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'EVENT_PROMO' }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, title: true, createdAt: true } }).catch(() => []),
-    // 현장스토리
-    prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'FIELD_STORY' }, orderBy: { createdAt: 'desc' }, take: 4, select: { id: true, title: true, thumbnail: true, images: true, videoUrls: true, authorName: true, ministryLocation: true, createdAt: true } }).catch(() => []),
+    // 현장스토리 4종
+    prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'FIELD_STORY'    }, orderBy: { createdAt: 'desc' }, take: 3, select: { id: true, title: true, createdAt: true } }).catch(() => []),
+    prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'PRAYER_REQUEST' }, orderBy: { createdAt: 'desc' }, take: 3, select: { id: true, title: true, createdAt: true } }).catch(() => []),
+    prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'REST_WALK'      }, orderBy: { createdAt: 'desc' }, take: 3, select: { id: true, title: true, createdAt: true } }).catch(() => []),
+    prisma.columnPost.findMany({ where: { isPublished: true }, orderBy: { createdAt: 'desc' }, take: 3, select: { id: true, title: true, createdAt: true } }).catch(() => []),
     // 사진 갤러리
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'EVENT_MEDIA' }, orderBy: { createdAt: 'desc' }, take: 4, select: { id: true, title: true, thumbnail: true, images: true, videoUrls: true } }).catch(() => []),
     // 일정·통계
@@ -65,6 +68,16 @@ export default async function HomePage() {
   const noticeAndNews = [
     ...notices.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/notice/${s.id}`, badge: '공지' as const })),
     ...newsStories.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/${s.id}`, badge: '보도' as const })),
+  ]
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 6)
+
+  // 현장스토리 4종 합산 (날짜순, 최대 6개)
+  const fieldAndStories = [
+    ...fieldStories.map((s)  => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/${s.id}`,           badge: '현장' as const })),
+    ...prayerStories.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/prayer/${s.id}`,    badge: '기도' as const })),
+    ...restStories.map((s)   => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/${s.id}`,           badge: '쉼터' as const })),
+    ...columnStories.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/columns/${s.id}`,   badge: '칼럼' as const })),
   ]
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .slice(0, 6)
@@ -133,51 +146,38 @@ export default async function HomePage() {
                 </svg>
                 <h3 className="mt-3 text-xl font-bold">현장스토리</h3>
               </div>
-              <div className="flex-1 bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
-                {fieldStories.length > 0 ? fieldStories.map((story) => {
-                  const thumb = getStoryThumb(story)
-                  return (
+              <ul className="flex-1 divide-y divide-gray-200 bg-white rounded-xl shadow-sm overflow-hidden">
+                {fieldAndStories.length > 0 ? fieldAndStories.map((item) => (
+                  <li key={`${item.badge}-${item.id}`}>
                     <Link
-                      key={story.id}
-                      href={`/story/${story.id}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors group"
+                      href={item.href}
+                      className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 transition-colors group"
                     >
-                      {/* 썸네일 */}
-                      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[#EAF2FB] relative">
-                        {thumb ? (
-                          <Image
-                            src={thumb}
-                            alt={story.title}
-                            fill
-                            sizes="48px"
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-[#1B3A6B]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M13.5 12a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      {/* 텍스트 */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 group-hover:text-[#1B3A6B] line-clamp-2 leading-snug transition-colors">
-                          {story.title}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {story.ministryLocation ? `${story.ministryLocation} · ` : ''}
-                          {new Date(story.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
-                        </p>
-                      </div>
+                      <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                        item.badge === '현장' ? 'bg-emerald-50 text-emerald-700' :
+                        item.badge === '기도' ? 'bg-violet-50 text-violet-700' :
+                        item.badge === '쉼터' ? 'bg-teal-50 text-teal-700' :
+                        'bg-amber-50 text-amber-700'
+                      }`}>
+                        {item.badge}
+                      </span>
+                      <span className="text-sm text-gray-700 group-hover:text-[#1B3A6B] line-clamp-1 flex-1 min-w-0">
+                        {item.title}
+                      </span>
+                      <span className="text-xs text-gray-400 shrink-0 tabular-nums">
+                        {item.date.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
+                      </span>
                     </Link>
-                  )
-                }) : (
-                  <div className="px-4 py-8 text-center text-sm text-gray-400">등록된 현장스토리가 없습니다.</div>
+                  </li>
+                )) : (
+                  <li className="px-4 py-8 text-center text-sm text-gray-400">등록된 게시물이 없습니다.</li>
                 )}
-              </div>
-              <div className="mt-3 text-right">
-                <Link href="/story/field" className="text-sm text-[#1B3A6B] font-medium hover:underline">더 보기 →</Link>
+              </ul>
+              <div className="mt-3 flex items-center justify-end gap-3">
+                <Link href="/story/field"   className="text-sm text-emerald-700 font-medium hover:underline">현장 →</Link>
+                <Link href="/story/prayer"  className="text-sm text-violet-700  font-medium hover:underline">기도 →</Link>
+                <Link href="/story/rest"    className="text-sm text-teal-700    font-medium hover:underline">쉼터 →</Link>
+                <Link href="/story/columns" className="text-sm text-amber-700   font-medium hover:underline">칼럼 →</Link>
               </div>
             </div>
 
