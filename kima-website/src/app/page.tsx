@@ -7,7 +7,7 @@ import { CounterSection } from '@/components/home/CounterSection'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 
-export const revalidate = 3600
+export const revalidate = 300
 
 function getStoryThumb(story: {
   thumbnail?: string | null

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
@@ -155,6 +156,11 @@ export async function POST(request: NextRequest) {
         authorId:         session?.user?.id ?? null,
       },
     })
+    // 메인 페이지 캐시 즉시 무효화 (승인된 글만)
+    if (resolvedStatus === 'APPROVED') {
+      revalidatePath('/')
+    }
+
     return NextResponse.json({ story }, { status: 201 })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
