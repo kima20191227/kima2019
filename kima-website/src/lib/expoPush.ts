@@ -112,7 +112,7 @@ export async function sendPushToUsers(
 ): Promise<void> {
   if (userIds.length === 0) return
 
-  const where: Parameters<typeof prisma.devicePushToken.findMany>[0]['where'] =
+  const where: NonNullable<Parameters<typeof prisma.devicePushToken.findMany>[0]>['where'] =
     {
       userId: { in: userIds },
       ...(notifyField ? { [notifyField]: true } : {}),
@@ -148,7 +148,7 @@ export async function sendPushBroadcast(
   data?: Record<string, unknown>,
   notifyField?: NotifyField,
 ): Promise<void> {
-  const where: Parameters<typeof prisma.devicePushToken.findMany>[0]['where'] =
+  const where: NonNullable<Parameters<typeof prisma.devicePushToken.findMany>[0]>['where'] =
     notifyField ? { [notifyField]: true } : {}
 
   const rows = await prisma.devicePushToken.findMany({
