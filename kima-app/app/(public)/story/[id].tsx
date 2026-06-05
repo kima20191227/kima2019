@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Share,
+  useWindowDimensions,
 } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams, Stack } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { Image } from 'expo-image'
+import RenderHtml from 'react-native-render-html'
 import { api } from '@/api/client'
 import { ErrorView } from '@/components/ui/ErrorView'
 import type { Story } from '@/types'
@@ -29,8 +31,15 @@ function extractYouTubeId(url: string): string | null {
   return null
 }
 
+const htmlTagsRe = /<[^>]+>/
+
+function isHtml(text: string): boolean {
+  return htmlTagsRe.test(text)
+}
+
 export default function StoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { width } = useWindowDimensions()
 
   const { data: story, isLoading, isError, refetch } = useQuery({
     queryKey: ['story', id],
@@ -137,7 +146,21 @@ export default function StoryDetailScreen() {
                   : ''}
               </Text>
               {story.content ? (
-                <Text className="text-gray-700 text-sm leading-relaxed">{story.content}</Text>
+                isHtml(story.content) ? (
+                  <RenderHtml
+                    contentWidth={width - 80}
+                    source={{ html: story.content }}
+                    baseStyle={{ color: '#374151', fontSize: 14, lineHeight: 22 }}
+                    tagsStyles={{
+                      p: { marginVertical: 6 },
+                      strong: { fontWeight: '700' },
+                      em: { fontStyle: 'italic' },
+                      a: { color: '#1B3A6B' },
+                    }}
+                  />
+                ) : (
+                  <Text className="text-gray-700 text-sm leading-relaxed">{story.content}</Text>
+                )
               ) : null}
             </View>
 
