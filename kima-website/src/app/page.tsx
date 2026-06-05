@@ -28,6 +28,7 @@ export default async function HomePage() {
   const [
     session,
     notices, newsStories, eventPromos,
+    fieldStories,
     eventMedia,
     dbEvents, orgCount, memberCount, resourceCount,
     ministryResources,
@@ -36,8 +37,10 @@ export default async function HomePage() {
     auth().catch(() => null),
     // 3단 게시판
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'NOTICE'      }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, title: true, createdAt: true } }).catch(() => []),
-    prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'NEWS'        }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, title: true, createdAt: true, source: true } }).catch(() => []),
+    prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'NEWS'        }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, title: true, createdAt: true } }).catch(() => []),
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'EVENT_PROMO' }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, title: true, createdAt: true } }).catch(() => []),
+    // 현장스토리
+    prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'FIELD_STORY' }, orderBy: { createdAt: 'desc' }, take: 4, select: { id: true, title: true, thumbnail: true, images: true, videoUrls: true, authorName: true, ministryLocation: true, createdAt: true } }).catch(() => []),
     // 사진 갤러리
     prisma.story.findMany({ where: { isPublished: true, status: 'APPROVED', type: 'EVENT_MEDIA' }, orderBy: { createdAt: 'desc' }, take: 4, select: { id: true, title: true, thumbnail: true, images: true, videoUrls: true } }).catch(() => []),
     // 일정·통계
@@ -58,38 +61,13 @@ export default async function HomePage() {
     { label: '등록 자료',     value: resourceCount > 0 ? `${resourceCount}+` : '1200+', unit: '건' },
   ]
 
-  const boards = [
-    {
-      label: '공지사항',
-      href: '/story/notice',
-      items: notices.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/notice/${s.id}` })),
-      icon: (
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" />
-        </svg>
-      ),
-    },
-    {
-      label: '보도자료',
-      href: '/story/news',
-      items: newsStories.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/${s.id}` })),
-      icon: (
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" />
-        </svg>
-      ),
-    },
-    {
-      label: '이주민 사역안내',
-      href: '/story/event-promo',
-      items: eventPromos.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/event-promo/${s.id}` })),
-      icon: (
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5m-9-6h.008v.008H12V13.5zm0 3h.008v.008H12v-.008zm-3 0h.008v.008H9V16.5zm6 0h.008v.008H15V16.5z" />
-        </svg>
-      ),
-    },
+  // 공지사항 + 보도자료 합산 (날짜순, 최대 6개)
+  const noticeAndNews = [
+    ...notices.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/notice/${s.id}`, badge: '공지' as const })),
+    ...newsStories.map((s) => ({ id: s.id, title: s.title, date: s.createdAt, href: `/story/${s.id}`, badge: '보도' as const })),
   ]
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 6)
 
   return (
     <>
@@ -106,46 +84,135 @@ export default async function HomePage() {
       <section className="bg-[#EAF2FB] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {boards.map((board) => (
-              <div key={board.label} className="flex flex-col">
-                {/* 아이콘 + 제목 */}
-                <div className="flex flex-col items-center mb-6 text-[#1B3A6B]">
-                  {board.icon}
-                  <h3 className="mt-3 text-xl font-bold">{board.label}</h3>
-                </div>
 
-                {/* 목록 */}
-                <ul className="flex-1 divide-y divide-gray-200 bg-white rounded-xl shadow-sm overflow-hidden">
-                  {board.items.length > 0 ? board.items.map((item) => (
-                    <li key={item.id}>
-                      <Link
-                        href={item.href}
-                        className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-blue-50 transition-colors group"
-                      >
-                        <span className="text-sm text-gray-700 group-hover:text-[#1B3A6B] line-clamp-1 flex-1 min-w-0">
-                          {item.title}
-                        </span>
-                        <span className="text-xs text-gray-400 shrink-0 tabular-nums">
-                          {item.date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
-                        </span>
-                      </Link>
-                    </li>
-                  )) : (
-                    <li className="px-4 py-8 text-center text-sm text-gray-400">등록된 게시물이 없습니다.</li>
-                  )}
-                </ul>
-
-                {/* 더 보기 */}
-                <div className="mt-3 text-right">
-                  <Link
-                    href={board.href}
-                    className="text-sm text-[#1B3A6B] font-medium hover:underline"
-                  >
-                    더 보기 →
-                  </Link>
-                </div>
+            {/* ① 공지사항 + 보도자료 */}
+            <div className="flex flex-col">
+              <div className="flex flex-col items-center mb-6 text-[#1B3A6B]">
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03.0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" />
+                </svg>
+                <h3 className="mt-3 text-xl font-bold">공지 · 보도자료</h3>
               </div>
-            ))}
+              <ul className="flex-1 divide-y divide-gray-200 bg-white rounded-xl shadow-sm overflow-hidden">
+                {noticeAndNews.length > 0 ? noticeAndNews.map((item) => (
+                  <li key={`${item.badge}-${item.id}`}>
+                    <Link
+                      href={item.href}
+                      className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 transition-colors group"
+                    >
+                      <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                        item.badge === '공지'
+                          ? 'bg-[#1B3A6B]/10 text-[#1B3A6B]'
+                          : 'bg-[#C8922A]/10 text-[#C8922A]'
+                      }`}>
+                        {item.badge}
+                      </span>
+                      <span className="text-sm text-gray-700 group-hover:text-[#1B3A6B] line-clamp-1 flex-1 min-w-0">
+                        {item.title}
+                      </span>
+                      <span className="text-xs text-gray-400 shrink-0 tabular-nums">
+                        {item.date.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
+                      </span>
+                    </Link>
+                  </li>
+                )) : (
+                  <li className="px-4 py-8 text-center text-sm text-gray-400">등록된 게시물이 없습니다.</li>
+                )}
+              </ul>
+              <div className="mt-3 flex items-center justify-end gap-3">
+                <Link href="/story/notice" className="text-sm text-[#1B3A6B] font-medium hover:underline">공지 →</Link>
+                <Link href="/story/news"   className="text-sm text-[#C8922A] font-medium hover:underline">보도 →</Link>
+              </div>
+            </div>
+
+            {/* ② 현장스토리 */}
+            <div className="flex flex-col">
+              <div className="flex flex-col items-center mb-6 text-[#1B3A6B]">
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+                <h3 className="mt-3 text-xl font-bold">현장스토리</h3>
+              </div>
+              <div className="flex-1 bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
+                {fieldStories.length > 0 ? fieldStories.map((story) => {
+                  const thumb = getStoryThumb(story)
+                  return (
+                    <Link
+                      key={story.id}
+                      href={`/story/${story.id}`}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors group"
+                    >
+                      {/* 썸네일 */}
+                      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[#EAF2FB] relative">
+                        {thumb ? (
+                          <Image
+                            src={thumb}
+                            alt={story.title}
+                            fill
+                            sizes="48px"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-[#1B3A6B]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M13.5 12a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      {/* 텍스트 */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-800 group-hover:text-[#1B3A6B] line-clamp-2 leading-snug transition-colors">
+                          {story.title}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {story.ministryLocation ? `${story.ministryLocation} · ` : ''}
+                          {new Date(story.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                }) : (
+                  <div className="px-4 py-8 text-center text-sm text-gray-400">등록된 현장스토리가 없습니다.</div>
+                )}
+              </div>
+              <div className="mt-3 text-right">
+                <Link href="/story/field" className="text-sm text-[#1B3A6B] font-medium hover:underline">더 보기 →</Link>
+              </div>
+            </div>
+
+            {/* ③ 이주민 사역안내 */}
+            <div className="flex flex-col">
+              <div className="flex flex-col items-center mb-6 text-[#1B3A6B]">
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5m-9-6h.008v.008H12V13.5zm0 3h.008v.008H12v-.008zm-3 0h.008v.008H9V16.5zm6 0h.008v.008H15V16.5z" />
+                </svg>
+                <h3 className="mt-3 text-xl font-bold">이주민 사역안내</h3>
+              </div>
+              <ul className="flex-1 divide-y divide-gray-200 bg-white rounded-xl shadow-sm overflow-hidden">
+                {eventPromos.length > 0 ? eventPromos.map((s) => (
+                  <li key={s.id}>
+                    <Link
+                      href={`/story/event-promo/${s.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-blue-50 transition-colors group"
+                    >
+                      <span className="text-sm text-gray-700 group-hover:text-[#1B3A6B] line-clamp-1 flex-1 min-w-0">
+                        {s.title}
+                      </span>
+                      <span className="text-xs text-gray-400 shrink-0 tabular-nums">
+                        {s.createdAt.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}
+                      </span>
+                    </Link>
+                  </li>
+                )) : (
+                  <li className="px-4 py-8 text-center text-sm text-gray-400">등록된 게시물이 없습니다.</li>
+                )}
+              </ul>
+              <div className="mt-3 text-right">
+                <Link href="/story/event-promo" className="text-sm text-[#1B3A6B] font-medium hover:underline">더 보기 →</Link>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>

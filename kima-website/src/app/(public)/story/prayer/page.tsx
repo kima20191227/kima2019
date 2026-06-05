@@ -7,6 +7,15 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = { title: '중보기도 요청 | KIMA' }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function excerpt(html: string, maxLen = 120): string {
+  const text = stripHtml(html)
+  return text.length > maxLen ? text.slice(0, maxLen) + '…' : text
+}
+
 export default async function PrayerPage() {
   const session = await auth()
 
@@ -61,20 +70,26 @@ export default async function PrayerPage() {
             </h2>
             <div className="space-y-3">
               {urgent.map((item) => (
-                <div key={item.id} className="bg-white border-l-4 border-red-400 rounded-xl shadow-sm p-5">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-800">{item.title}</h3>
+                <Link
+                  key={item.id}
+                  href={`/story/prayer/${item.id}`}
+                  className="block bg-white border-l-4 border-red-400 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h3 className="font-semibold text-gray-900 leading-snug">{item.title}</h3>
                     {item.isAnswered && (
-                      <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-xs font-medium">
+                      <span className="shrink-0 px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-xs font-medium">
                         응답됨
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 leading-relaxed">{item.content}</p>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
+                    {excerpt(item.content)}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-3">
                     {item.requesterName ?? '익명'} · {item.createdAt.toLocaleDateString('ko-KR')}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
@@ -88,20 +103,26 @@ export default async function PrayerPage() {
           ) : (
             <div className="space-y-3">
               {normal.map((item) => (
-                <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-800">{item.title}</h3>
+                <Link
+                  key={item.id}
+                  href={`/story/prayer/${item.id}`}
+                  className="block bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h3 className="font-semibold text-gray-900 leading-snug">{item.title}</h3>
                     {item.isAnswered && (
-                      <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-xs font-medium">
+                      <span className="shrink-0 px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-xs font-medium">
                         응답됨
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 leading-relaxed">{item.content}</p>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
+                    {excerpt(item.content)}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-3">
                     {item.requesterName ?? '익명'} · {item.createdAt.toLocaleDateString('ko-KR')}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           )}
