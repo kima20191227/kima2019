@@ -51,7 +51,9 @@ function StoryCard({ item }: { item: Story }) {
         </Text>
         <View className="flex-row items-center justify-between mt-2">
           <Text className="text-gray-400 text-xs">
-            {new Date(item.createdAt).toLocaleDateString('ko-KR')}
+            {item.createdAt
+              ? new Date(item.createdAt).toLocaleDateString('ko-KR')
+              : ''}
           </Text>
           {item.videoUrls && item.videoUrls.length > 0 && (
             <View className="flex-row items-center gap-1">

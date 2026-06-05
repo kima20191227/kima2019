@@ -34,7 +34,8 @@ export default function StoryDetailScreen() {
 
   const { data: story, isLoading, isError, refetch } = useQuery({
     queryKey: ['story', id],
-    queryFn: () => api.get<Story>(`/api/stories/${id}`),
+    queryFn: () =>
+      api.get<{ story: Story }>(`/api/stories/${id}`).then((r) => r.story),
     enabled: !!id,
   })
 
@@ -127,11 +128,13 @@ export default function StoryDetailScreen() {
                 {story.title}
               </Text>
               <Text className="text-gray-400 text-xs mb-4">
-                {new Date(story.createdAt).toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+                {story.createdAt
+                  ? new Date(story.createdAt).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  : ''}
               </Text>
               {story.content ? (
                 <Text className="text-gray-700 text-sm leading-relaxed">{story.content}</Text>
