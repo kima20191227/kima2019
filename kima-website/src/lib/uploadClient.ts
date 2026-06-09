@@ -1,7 +1,7 @@
 'use client'
 
-// 16MB 청크 — 4MB 대비 요청 횟수 75% 감소 (ex. 50MB: 13→4회)
-const DRIVE_CHUNK_BYTES = 16 * 1024 * 1024
+// 4MB 청크 — Cloudflare Pages Function의 request body 제한에 맞게 설정
+const DRIVE_CHUNK_BYTES = 4 * 1024 * 1024
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
 
