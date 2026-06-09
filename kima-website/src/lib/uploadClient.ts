@@ -191,9 +191,6 @@ async function uploadDriveChunk(
 
   const response = await fetch(edgeFunctionUrl, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''}`,
-    },
     body: formData,
   })
   const parsed = await readUploadResponse(response)
