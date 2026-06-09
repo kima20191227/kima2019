@@ -249,6 +249,9 @@ async function uploadThroughServerFallback(file: File): Promise<UploadResourceRe
   return parsed as UploadResourceResult
 }
 
+// 서버 폴백으로 안전하게 보낼 수 있는 최대 크기 (50MB)
+const SERVER_FALLBACK_MAX_BYTES = 50 * 1024 * 1024
+
 export async function uploadResourceFile(file: File): Promise<UploadResourceResult> {
   const preparedFile = await prepareFileForBrowserUpload(file)
 
@@ -259,7 +262,14 @@ export async function uploadResourceFile(file: File): Promise<UploadResourceResu
       throw new Error('Google Drive 업로드 응답에 파일 ID가 없습니다.')
     }
     return finalizeDriveUpload(uploaded.id, uploaded.mimeType ?? signed.fileType)
-  } catch {
+  } catch (err) {
+    // 파일이 크면 서버 폴백은 413이 발생할 수 있으므로 바로 안내
+    if (preparedFile.size > SERVER_FALLBACK_MAX_BYTES) {
+      const reason = err instanceof Error ? err.message : String(err)
+      throw new Error(
+        `대용량 파일 업로드에 실패했습니다. Google Drive 연동을 확인해주세요.\n(${reason})`
+      )
+    }
     return uploadThroughServerFallback(preparedFile)
   }
 }

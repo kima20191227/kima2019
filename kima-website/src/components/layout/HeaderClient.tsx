@@ -51,8 +51,8 @@ const NAV_ITEMS: NavItem[] = [
     label: '사역별 커뮤니티',
     children: [
       { href: '/community',              label: '커뮤니티 홈',  desc: '전체 카테고리 게시판' },
-      { href: '/community?tab=REGION',   label: '지역별',       desc: '서울경기·부산경남·광주전라 외' },
       { href: '/community?tab=LANGUAGE', label: '언어권별',     desc: '베트남·네팔·몽골·중국 외' },
+      { href: '/community?tab=REGION',   label: '지역별',       desc: '서울경기·부산경남·광주전라 외' },
       { href: '/community?tab=TARGET',   label: '사역대상별',   desc: '이주노동자·유학생·결혼이민자 외' },
       { href: '/resources/public',       label: '일반 자료',    desc: '누구나 열람·다운로드 가능한 공개 자료', dividerBefore: true },
     ],
