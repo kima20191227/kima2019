@@ -1,6 +1,7 @@
 'use client'
 
-const DRIVE_CHUNK_BYTES = 4 * 1024 * 1024
+// 16MB 청크 — 4MB 대비 요청 횟수 75% 감소 (ex. 50MB: 13→4회)
+const DRIVE_CHUNK_BYTES = 16 * 1024 * 1024
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
 
@@ -105,7 +106,6 @@ async function prepareFileForBrowserUpload(file: File): Promise<File> {
     if (file.size <= TARGET_IMAGE_BYTES) return file
     return compressImageForUpload(file)
   }
-
   return file
 }
 
@@ -167,33 +167,48 @@ async function requestSignedUpload(file: File): Promise<SignedUploadResult> {
   return parsed as SignedUploadResult
 }
 
-async function uploadDriveChunk(
-  signed: SignedUploadResult,
+// 브라우저에서 Google Drive로 청크를 직접 전송 (서버 프록시 없음)
+// Google Drive Resumable Upload URL은 CORS를 지원하므로 직접 PUT 가능
+async function uploadDriveChunkDirect(
+  uploadUrl: string,
   chunk: Blob,
   start: number,
   end: number,
   total: number,
-  fileName: string,
+  fileType: string,
 ): Promise<ChunkUploadResponse> {
-  const formData = new FormData()
-  formData.append('uploadUrl', signed.uploadUrl)
-  formData.append('fileType', signed.fileType)
-  formData.append('start', String(start))
-  formData.append('end', String(end))
-  formData.append('total', String(total))
-  formData.append('chunk', chunk, fileName)
-
-  const response = await fetch('/api/upload/resource/chunk', {
-    method: 'POST',
-    body: formData,
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': fileType || 'application/octet-stream',
+      'Content-Range': `bytes ${start}-${end}/${total}`,
+    },
+    body: chunk,
   })
-  const parsed = await readUploadResponse(response)
 
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('Google Drive 조각 업로드 응답이 올바르지 않습니다.')
+  // 308 Resume Incomplete: 청크 수신 완료, 다음 청크 대기
+  if (response.status === 308) {
+    const match = response.headers.get('range')?.match(/bytes=0-(\d+)$/)
+    return {
+      done: false,
+      nextStart: match ? Number(match[1]) + 1 : end + 1,
+    }
   }
 
-  return parsed as ChunkUploadResponse
+  // 200/201: 업로드 완료
+  if (response.ok) {
+    let parsed: unknown = null
+    try { parsed = await response.json() } catch { /* empty */ }
+    const id = parsed && typeof parsed === 'object' && 'id' in parsed && typeof (parsed as { id: unknown }).id === 'string'
+      ? (parsed as { id: string }).id
+      : undefined
+    const mimeType = parsed && typeof parsed === 'object' && 'mimeType' in parsed && typeof (parsed as { mimeType: unknown }).mimeType === 'string'
+      ? (parsed as { mimeType: string }).mimeType
+      : undefined
+    return { done: true, id, mimeType }
+  }
+
+  throw new Error(`Google Drive 청크 업로드 실패 (HTTP ${response.status})`)
 }
 
 async function uploadToDriveSession(file: File, signed: SignedUploadResult): Promise<DriveUploadResponse> {
@@ -203,7 +218,7 @@ async function uploadToDriveSession(file: File, signed: SignedUploadResult): Pro
     const endExclusive = Math.min(start + DRIVE_CHUNK_BYTES, file.size)
     const end = endExclusive - 1
     const chunk = file.slice(start, endExclusive, signed.fileType)
-    const uploaded = await uploadDriveChunk(signed, chunk, start, end, file.size, file.name)
+    const uploaded = await uploadDriveChunkDirect(signed.uploadUrl, chunk, start, end, file.size, signed.fileType)
 
     if (uploaded.done) {
       return { id: uploaded.id, mimeType: uploaded.mimeType }
@@ -263,7 +278,6 @@ export async function uploadResourceFile(file: File): Promise<UploadResourceResu
     }
     return finalizeDriveUpload(uploaded.id, uploaded.mimeType ?? signed.fileType)
   } catch (err) {
-    // 파일이 크면 서버 폴백은 413이 발생할 수 있으므로 바로 안내
     if (preparedFile.size > SERVER_FALLBACK_MAX_BYTES) {
       const reason = err instanceof Error ? err.message : String(err)
       throw new Error(
