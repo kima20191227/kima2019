@@ -41,15 +41,38 @@ const patchSchema = z.object({
   expiresAt:    z.string().datetime().nullable().optional(),
 })
 
+const noteOnlySchema = z.object({
+  premiumNote: z.string().max(500).nullable().optional(),
+})
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
+    const role = session?.user?.role
+    const isAdmin = role === 'ADMIN'
+    const isOfficerOrAbove = role === 'ADMIN' || role === 'OFFICER'
+
+    if (!isOfficerOrAbove) {
+      return NextResponse.json({ error: '임원 이상 권한이 필요합니다.' }, { status: 403 })
     }
 
     const { id } = await params
     const body = await request.json()
+
+    // 임원(OFFICER)은 납부 메모만 수정 가능
+    if (!isAdmin) {
+      const parsed = noteOnlySchema.safeParse(body)
+      if (!parsed.success) {
+        return NextResponse.json({ error: '입력값이 올바르지 않습니다.' }, { status: 400 })
+      }
+      const user = await prisma.user.update({
+        where: { id },
+        data: { premiumNote: parsed.data.premiumNote },
+      })
+      return NextResponse.json({ user })
+    }
+
+    // 관리자(ADMIN) — 전체 편집 가능
     const parsed = patchSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: '입력값이 올바르지 않습니다.' }, { status: 400 })

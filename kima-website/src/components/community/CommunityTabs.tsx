@@ -19,8 +19,8 @@ type CategorySummary = {
 import { cn, convertDriveUrl } from '@/lib/utils'
 
 const TAB_CONFIG: Array<{ key: CategoryType; label: string; urlKey: string }> = [
-  { key: 'REGION', label: '지역별', urlKey: 'region' },
   { key: 'LANGUAGE', label: '언어권별', urlKey: 'language' },
+  { key: 'REGION', label: '지역별', urlKey: 'region' },
   { key: 'TARGET', label: '사역대상별', urlKey: 'target' },
 ]
 
@@ -94,7 +94,7 @@ export function CommunityTabs({ categories }: CommunityTabsProps) {
 
   const tabParam = searchParams.get('tab') as CategoryType | null
   const activeTab: CategoryType =
-    tabParam && TAB_CONFIG.some((t) => t.key === tabParam) ? tabParam : 'REGION'
+    tabParam && TAB_CONFIG.some((t) => t.key === tabParam) ? tabParam : 'LANGUAGE'
 
   const filtered = categories.filter((c) => c.type === activeTab)
 

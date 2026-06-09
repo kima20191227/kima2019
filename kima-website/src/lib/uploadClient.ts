@@ -111,7 +111,7 @@ async function prepareFileForBrowserUpload(file: File): Promise<File> {
 
 function errorFromUploadResponse(response: Response, text: string, parsed: unknown): string {
   if (response.status === 413) {
-    return '파일 용량이 너무 큽니다. 100MB 이하 파일로 줄인 뒤 다시 업로드해주세요.'
+    return '파일 용량이 너무 큽니다. 파일을 압축하거나 나누어 업로드해주세요.'
   }
 
   if (parsed && typeof parsed === 'object' && 'error' in parsed) {
