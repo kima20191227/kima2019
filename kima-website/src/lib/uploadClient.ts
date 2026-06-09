@@ -167,48 +167,35 @@ async function requestSignedUpload(file: File): Promise<SignedUploadResult> {
   return parsed as SignedUploadResult
 }
 
-// 브라우저에서 Google Drive로 청크를 직접 전송 (서버 프록시 없음)
-// Google Drive Resumable Upload URL은 CORS를 지원하므로 직접 PUT 가능
-async function uploadDriveChunkDirect(
-  uploadUrl: string,
+// 서비스 계정 기반 Resumable Upload는 서버 프록시를 통해 청크 전송
+// (브라우저→Drive 직접 PUT은 서비스 계정 세션에서 CORS 미지원)
+async function uploadDriveChunk(
+  signed: SignedUploadResult,
   chunk: Blob,
   start: number,
   end: number,
   total: number,
-  fileType: string,
+  fileName: string,
 ): Promise<ChunkUploadResponse> {
-  const response = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': fileType || 'application/octet-stream',
-      'Content-Range': `bytes ${start}-${end}/${total}`,
-    },
-    body: chunk,
+  const formData = new FormData()
+  formData.append('uploadUrl', signed.uploadUrl)
+  formData.append('fileType', signed.fileType)
+  formData.append('start', String(start))
+  formData.append('end', String(end))
+  formData.append('total', String(total))
+  formData.append('chunk', chunk, fileName)
+
+  const response = await fetch('/api/upload/resource/chunk', {
+    method: 'POST',
+    body: formData,
   })
+  const parsed = await readUploadResponse(response)
 
-  // 308 Resume Incomplete: 청크 수신 완료, 다음 청크 대기
-  if (response.status === 308) {
-    const match = response.headers.get('range')?.match(/bytes=0-(\d+)$/)
-    return {
-      done: false,
-      nextStart: match ? Number(match[1]) + 1 : end + 1,
-    }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Google Drive 조각 업로드 응답이 올바르지 않습니다.')
   }
 
-  // 200/201: 업로드 완료
-  if (response.ok) {
-    let parsed: unknown = null
-    try { parsed = await response.json() } catch { /* empty */ }
-    const id = parsed && typeof parsed === 'object' && 'id' in parsed && typeof (parsed as { id: unknown }).id === 'string'
-      ? (parsed as { id: string }).id
-      : undefined
-    const mimeType = parsed && typeof parsed === 'object' && 'mimeType' in parsed && typeof (parsed as { mimeType: unknown }).mimeType === 'string'
-      ? (parsed as { mimeType: string }).mimeType
-      : undefined
-    return { done: true, id, mimeType }
-  }
-
-  throw new Error(`Google Drive 청크 업로드 실패 (HTTP ${response.status})`)
+  return parsed as ChunkUploadResponse
 }
 
 async function uploadToDriveSession(file: File, signed: SignedUploadResult): Promise<DriveUploadResponse> {
@@ -218,7 +205,7 @@ async function uploadToDriveSession(file: File, signed: SignedUploadResult): Pro
     const endExclusive = Math.min(start + DRIVE_CHUNK_BYTES, file.size)
     const end = endExclusive - 1
     const chunk = file.slice(start, endExclusive, signed.fileType)
-    const uploaded = await uploadDriveChunkDirect(signed.uploadUrl, chunk, start, end, file.size, signed.fileType)
+    const uploaded = await uploadDriveChunk(signed, chunk, start, end, file.size, file.name)
 
     if (uploaded.done) {
       return { id: uploaded.id, mimeType: uploaded.mimeType }
