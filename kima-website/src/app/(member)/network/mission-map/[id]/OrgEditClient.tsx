@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 
 const TYPE_OPTIONS = ['교회', 'NGO', '법률', '의료', '교육', '센터', '선교단체', '부설기관', '기타']
-const TARGET_OPTIONS = ['이주노동자', '유학생', '결혼이민자', '다문화자녀', '난민미등록', '귀국이주민', '중보사역', '기타']
+const TARGET_OPTIONS = ['이주노동자', '유학생', '다문화가정', '난민', '귀국이주민', '중보사역', '기타']
 const LANG_OPTIONS = [
   '네팔어', '베트남어', '태국어', '라오스어', '몽골어', '러시아어',
   '중국&동포', '필리핀어', '캄보디아어', '미얀마어', '영어', '일본어',

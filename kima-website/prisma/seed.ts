@@ -33,10 +33,9 @@ const CATEGORIES: Array<{ type: CategoryType; name: string; slug: string; order:
   // 사역대상별
   { type: 'TARGET', name: '이주노동자', slug: 'worker', order: 1 },
   { type: 'TARGET', name: '유학생', slug: 'student', order: 2 },
-  { type: 'TARGET', name: '결혼이민자', slug: 'marriage', order: 3 },
-  { type: 'TARGET', name: '다문화자녀', slug: 'children', order: 4 },
-  { type: 'TARGET', name: '난민미등록', slug: 'refugee', order: 5 },
-  { type: 'TARGET', name: '귀국이주민', slug: 'returnee', order: 6 },
+  { type: 'TARGET', name: '다문화가정', slug: 'children', order: 3 },
+  { type: 'TARGET', name: '난민', slug: 'refugee', order: 4 },
+  { type: 'TARGET', name: '귀국이주민', slug: 'returnee', order: 5 },
 ]
 
 type LeaderSeed = {

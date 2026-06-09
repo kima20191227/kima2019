@@ -32,9 +32,8 @@ function parseTargets(raw: string): string[] {
   const result: string[] = []
   if (val.includes('노동자') || val.includes('이주노동')) result.push('이주노동자')
   if (val.includes('유학생')) result.push('유학생')
-  if (val.includes('이주 가정') || val.includes('결혼') || val.includes('다문화가정')) result.push('결혼이민자')
-  if (val.includes('자녀') || val.includes('다음세대') || val.includes('2세')) result.push('다문화자녀')
-  if (val.includes('난민') || val.includes('미등록')) result.push('난민미등록')
+  if (val.includes('이주 가정') || val.includes('결혼') || val.includes('다문화가정') || val.includes('자녀') || val.includes('다음세대') || val.includes('2세')) result.push('다문화가정')
+  if (val.includes('난민') || val.includes('미등록')) result.push('난민')
   if (val.includes('귀국') || val.includes('탈북') || val.includes('동포')) result.push('귀국이주민')
   return result.length > 0 ? result : ['이주노동자']
 }

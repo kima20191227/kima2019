@@ -22,8 +22,8 @@ export const LANGUAGES = [
 ] as const
 
 export const TARGETS = [
-  '이주노동자', '유학생', '결혼이민자', '다문화자녀',
-  '난민미등록', '귀국이주민', '중보사역', '기타',
+  '이주노동자', '유학생', '다문화가정',
+  '난민', '귀국이주민', '중보사역', '기타',
 ] as const
 
 export const ORG_TYPES = [

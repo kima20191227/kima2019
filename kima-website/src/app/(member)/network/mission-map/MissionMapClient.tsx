@@ -31,7 +31,7 @@ interface Props {
 }
 
 const TYPE_OPTIONS = ['교회', 'NGO', '법률', '의료', '교육', '센터', '선교단체', '부설기관', '기타']
-const TARGET_OPTIONS = ['이주노동자', '유학생', '결혼이민자', '다문화자녀', '난민미등록', '귀국이주민', '중보사역', '기타']
+const TARGET_OPTIONS = ['이주노동자', '유학생', '다문화가정', '난민', '귀국이주민', '중보사역', '기타']
 
 const LANG_TO_DISPLAY: Record<string, string> = {
   '네팔': '네팔어', '네팔어': '네팔어',

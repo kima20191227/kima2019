@@ -18,7 +18,7 @@ export const MINISTRY_LANGUAGES = [
 ] as const
 
 export const MINISTRY_TARGETS = [
-  '이주노동자', '유학생', '결혼이민자', '다문화자녀', '난민·미등록', '귀국이주민', '기타',
+  '이주노동자', '유학생', '다문화가정', '난민', '귀국이주민', '기타',
 ] as const
 
 export const registerSchema = z
