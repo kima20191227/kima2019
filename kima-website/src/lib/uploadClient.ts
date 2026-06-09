@@ -1,7 +1,7 @@
 'use client'
 
-// 4MB 청크 — Cloudflare Pages Function의 request body 제한에 맞게 설정
-const DRIVE_CHUNK_BYTES = 4 * 1024 * 1024
+// 16MB 청크 — Supabase Edge Function 경유 시 50MB 한도 내에서 최적값
+const DRIVE_CHUNK_BYTES = 16 * 1024 * 1024
 const TARGET_IMAGE_BYTES = 3.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 1920
 
@@ -167,8 +167,9 @@ async function requestSignedUpload(file: File): Promise<SignedUploadResult> {
   return parsed as SignedUploadResult
 }
 
-// 서비스 계정 기반 Resumable Upload는 서버 프록시를 통해 청크 전송
-// (브라우저→Drive 직접 PUT은 서비스 계정 세션에서 CORS 미지원)
+// 서비스 계정 세션 URL은 브라우저 직접 PUT 시 CORS 차단,
+// Vercel 서버 경유는 4.5MB 바디 제한으로 대용량 불가 →
+// Supabase Edge Function이 중계하여 두 제약을 모두 우회한다.
 async function uploadDriveChunk(
   signed: SignedUploadResult,
   chunk: Blob,
@@ -177,6 +178,9 @@ async function uploadDriveChunk(
   total: number,
   fileName: string,
 ): Promise<ChunkUploadResponse> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const edgeFunctionUrl = `${supabaseUrl}/functions/v1/upload-chunk`
+
   const formData = new FormData()
   formData.append('uploadUrl', signed.uploadUrl)
   formData.append('fileType', signed.fileType)
@@ -185,8 +189,11 @@ async function uploadDriveChunk(
   formData.append('total', String(total))
   formData.append('chunk', chunk, fileName)
 
-  const response = await fetch('/api/upload/resource/chunk', {
+  const response = await fetch(edgeFunctionUrl, {
     method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''}`,
+    },
     body: formData,
   })
   const parsed = await readUploadResponse(response)
@@ -251,8 +258,8 @@ async function uploadThroughServerFallback(file: File): Promise<UploadResourceRe
   return parsed as UploadResourceResult
 }
 
-// 서버 폴백으로 안전하게 보낼 수 있는 최대 크기 (50MB)
-const SERVER_FALLBACK_MAX_BYTES = 50 * 1024 * 1024
+// Vercel 서버리스 함수 바디 한도 (4.5MB) 이하만 서버 폴백으로 처리
+const SERVER_FALLBACK_MAX_BYTES = 4 * 1024 * 1024
 
 export async function uploadResourceFile(file: File): Promise<UploadResourceResult> {
   const preparedFile = await prepareFileForBrowserUpload(file)
