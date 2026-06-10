@@ -38,14 +38,15 @@ export function LoginForm() {
       email: data.email,
       password: data.password,
       redirect: false,
+      callbackUrl,
     })
 
-    if (result?.error) {
+    if (!result || result.error || result.ok === false) {
       setServerError('이메일 또는 비밀번호가 올바르지 않습니다')
       return
     }
+
     router.push(callbackUrl)
-    router.refresh()
   }
 
   return (

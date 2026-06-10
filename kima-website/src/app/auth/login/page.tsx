@@ -5,12 +5,12 @@ import { LoginForm } from '@/components/auth/LoginForm'
 export const metadata = { title: '로그인 | KIMA' }
 
 interface Props {
-  searchParams: Promise<{ notice?: string }>
+  searchParams: { notice?: string; registered?: string }
 }
 
-export default async function LoginPage({ searchParams }: Props) {
-  const { notice } = await searchParams
-  const isPremiumNotice = notice === 'premium'
+export default function LoginPage({ searchParams }: Props) {
+  const isPremiumNotice = searchParams.notice === 'premium'
+  const isRegistered = searchParams.registered === '1'
 
   return (
     <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center px-4 py-12">
@@ -37,6 +37,13 @@ export default async function LoginPage({ searchParams }: Props) {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-xl font-bold text-[#1A1A1A] mb-6">로그인</h1>
+
+          {isRegistered && (
+            <div className="mb-5 rounded-xl border border-green-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+              가입이 완료되었습니다. 입력하신 이메일과 비밀번호로 로그인해 주세요.
+            </div>
+          )}
+
           <Suspense>
             <LoginForm />
           </Suspense>
