@@ -9,8 +9,6 @@ import { z } from 'zod'
 
 const schema = z.object({
   isEnabled:          z.boolean(),
-  collectHour:        z.number().int().min(0).max(23),
-  collectMinute:      z.number().int().min(0).max(59),
   aiProvider:         z.enum(['gemini', 'claude', 'openai', 'none']),
   relevanceThreshold: z.number().min(0).max(100),
   maxArticlesPerRun:  z.number().int().min(1).max(200),
@@ -22,8 +20,6 @@ type FormValues = z.infer<typeof schema>
 
 interface NewsSettingsData {
   isEnabled:          boolean
-  collectHour:        number
-  collectMinute:      number
   aiProvider:         string
   relevanceThreshold: number  // DB: 0.0~1.0
   maxArticlesPerRun:  number
@@ -33,8 +29,6 @@ interface NewsSettingsData {
 }
 
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────────
-
-function pad(n: number) { return String(n).padStart(2, '0') }
 
 function StatusBadge({ status }: { status: string | null }) {
   if (!status) return <span className="text-xs text-gray-400">없음</span>
@@ -75,15 +69,12 @@ export function NewsSettingsForm() {
     resolver: zodResolver(schema),
     defaultValues: {
       isEnabled:          false,
-      collectHour:        9,
-      collectMinute:      0,
       aiProvider:         'openai',
       relevanceThreshold: 50,
       maxArticlesPerRun:  50,
     },
   })
 
-  const isEnabled          = watch('isEnabled')
   const relevanceThreshold = watch('relevanceThreshold')
 
   // ── 설정 불러오기 ─────────────────────────────────────────────────────────
@@ -94,8 +85,6 @@ export function NewsSettingsForm() {
       .then(({ settings }: { settings: NewsSettingsData }) => {
         reset({
           isEnabled:          settings.isEnabled,
-          collectHour:        settings.collectHour,
-          collectMinute:      settings.collectMinute,
           aiProvider:         (settings.aiProvider as 'gemini' | 'claude' | 'openai' | 'none'),
           relevanceThreshold: Math.round(settings.relevanceThreshold * 100),  // 0-1 → 0-100
           maxArticlesPerRun:  settings.maxArticlesPerRun,
@@ -276,41 +265,19 @@ export function NewsSettingsForm() {
           </label>
         </div>
 
-        {/* 수집 시간 */}
-        <div className={isEnabled ? '' : 'opacity-50 pointer-events-none'}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">수집 시간 (매일)</label>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <select
-                {...register('collectHour', { valueAsNumber: true })}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30"
-              >
-                {Array.from({ length: 24 }, (_, i) => (
-                  <option key={i} value={i}>{pad(i)}시</option>
-                ))}
-              </select>
-              <select
-                {...register('collectMinute', { valueAsNumber: true })}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/30"
-              >
-                {[0, 10, 20, 30, 40, 50].map((m) => (
-                  <option key={m} value={m}>{pad(m)}분</option>
-                ))}
-              </select>
-            </div>
-            <span className="text-xs text-gray-400">(KST 기준)</span>
-          </div>
-          {(errors.collectHour || errors.collectMinute) && (
-            <p className="text-xs text-red-500 mt-1">올바른 시간을 선택해주세요.</p>
-          )}
-          <div className="mt-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            <svg className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        {/* 수집 시간 — 고정 표시 */}
+        <div>
+          <p className="block text-sm font-medium text-gray-700 mb-2">수집 시간 (매일)</p>
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg w-fit">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
             </svg>
-            <p className="text-xs text-amber-700 leading-relaxed">
-              이 설정은 DB에만 저장됩니다. 실제 자동 수집은 <strong>Cloudflare Dashboard → Workers → kima-cron → Triggers → Cron Triggers</strong>에서 별도 설정한 스케줄에 따라 실행됩니다. 시간을 바꾸려면 Cloudflare 대시보드의 cron 스케줄도 함께 수정해야 합니다.
-            </p>
+            <span className="text-sm text-gray-700 font-medium">매일 09:00 KST</span>
+            <span className="text-xs text-gray-400">— Cloudflare Worker 고정 실행</span>
           </div>
+          <p className="mt-1.5 text-xs text-gray-400">
+            수집 시간 변경은 Cloudflare 대시보드 → Workers → kima-cron → Triggers에서 직접 수정하세요.
+          </p>
         </div>
 
         {/* AI 제공자 */}

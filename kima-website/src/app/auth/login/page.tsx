@@ -5,12 +5,13 @@ import { LoginForm } from '@/components/auth/LoginForm'
 export const metadata = { title: '로그인 | KIMA' }
 
 interface Props {
-  searchParams: { notice?: string; registered?: string }
+  searchParams: Promise<{ notice?: string; registered?: string }>
 }
 
-export default function LoginPage({ searchParams }: Props) {
-  const isPremiumNotice = searchParams.notice === 'premium'
-  const isRegistered = searchParams.registered === '1'
+export default async function LoginPage({ searchParams }: Props) {
+  const params = await searchParams
+  const isPremiumNotice = params.notice === 'premium'
+  const isRegistered = params.registered === '1'
 
   return (
     <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center px-4 py-12">

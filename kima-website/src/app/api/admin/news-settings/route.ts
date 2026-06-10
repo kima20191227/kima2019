@@ -9,8 +9,6 @@ function isAdmin(role?: string | null) {
 
 const patchSchema = z.object({
   isEnabled:          z.boolean().optional(),
-  collectHour:        z.number().int().min(0).max(23).optional(),
-  collectMinute:      z.number().int().min(0).max(59).optional(),
   aiProvider:         z.enum(['gemini', 'claude', 'openai', 'none']).optional(),
   relevanceThreshold: z.number().min(0).max(100).optional(),
   maxArticlesPerRun:  z.number().int().min(1).max(200).optional(),
@@ -47,21 +45,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: '입력값이 올바르지 않습니다.' }, { status: 400 })
     }
 
-    const { collectHour, collectMinute, relevanceThreshold, ...rest } = parsed.data
+    const { relevanceThreshold, ...rest } = parsed.data
     const data: Record<string, unknown> = { ...rest }
-
-    if (collectHour !== undefined) data.collectHour = collectHour
-    if (collectMinute !== undefined) data.collectMinute = collectMinute
-    if (collectHour !== undefined || collectMinute !== undefined) {
-      const current = await prisma.newsSettings.findUnique({
-        where: { id: 1 },
-        select: { collectHour: true, collectMinute: true },
-      })
-      const hour = collectHour ?? current?.collectHour ?? 9
-      const minute = collectMinute ?? current?.collectMinute ?? 0
-      const utcHour = (hour + 15) % 24
-      data.cronTime = `${minute} ${utcHour} * * *`
-    }
 
     // relevanceThreshold: UI에서 0-100, DB에는 0.0-1.0 으로 저장
     if (relevanceThreshold !== undefined) {
