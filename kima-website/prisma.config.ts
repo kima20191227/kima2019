@@ -9,7 +9,8 @@ export default defineConfig({
     seed: 'node --env-file=.env.local --require tsx/cjs prisma/seed.ts',
   },
   datasource: {
-    url: process.env.DATABASE_URL,
-    directUrl: process.env.DIRECT_DATABASE_URL,
+    // CLI(db push 등)는 세션 모드 풀러(5432)로 직접 연결 — DDL 지원
+    // 런타임 클라이언트(src/lib/prisma.ts)는 DATABASE_URL을 직접 읽으므로 영향 없음
+    url: process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL,
   },
 })
