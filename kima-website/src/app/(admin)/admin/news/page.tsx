@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import type { Metadata } from 'next'
+import type { Prisma } from '@prisma/client'
 import { NewsSettingsForm } from '@/components/admin/NewsSettingsForm'
 import { NewsSourceManager } from '@/components/admin/NewsSourceManager'
 import { NewsCategoryManager } from '@/components/admin/NewsCategoryManager'
+import { NewsListManager, type NewsSortOption, type NewsStatusFilter } from '@/components/admin/NewsListManager'
 import { ensureDefaultNewsCategories, getAllNewsCategories } from '@/lib/newsCategories'
 import { getNewsCategoryMeta } from '@/lib/newsCategoryConfig'
 
@@ -17,30 +19,46 @@ type Tab = 'settings' | 'list' | 'sources' | 'categories'
 export default async function AdminNewsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; page?: string }>
+  searchParams: Promise<{ tab?: string; page?: string; status?: string; sort?: string }>
 }) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') redirect('/')
 
   await ensureDefaultNewsCategories()
 
-  const { tab: rawTab, page: rawPage } = await searchParams
+  const { tab: rawTab, page: rawPage, status: rawStatus, sort: rawSort } = await searchParams
   const tab: Tab =
     rawTab === 'list' || rawTab === 'sources' || rawTab === 'categories'
       ? rawTab
       : 'settings'
 
+  const status: NewsStatusFilter =
+    rawStatus === 'visible' || rawStatus === 'hidden' ? rawStatus : 'all'
+  const sort: NewsSortOption =
+    rawSort === 'relevance_asc' || rawSort === 'relevance_desc' ? rawSort : 'latest'
+
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
   const PAGE_SIZE = 20
   const skip = (page - 1) * PAGE_SIZE
 
+  const newsWhere: Prisma.NewsWhereInput =
+    status === 'visible' ? { isVisible: true } : status === 'hidden' ? { isVisible: false } : {}
+
+  const newsOrderBy: Prisma.NewsOrderByWithRelationInput =
+    sort === 'relevance_asc'
+      ? { relevanceScore: 'asc' }
+      : sort === 'relevance_desc'
+        ? { relevanceScore: 'desc' }
+        : { publishedAt: 'desc' }
+
   const categories = await getAllNewsCategories()
 
-  const [newsTotal, newsItems, sourceCount, categoryCount] = await Promise.all([
-    tab === 'list' ? prisma.news.count() : Promise.resolve(0),
+  const [newsTotal, newsItems, sourceCount, categoryCount, hiddenCount] = await Promise.all([
+    tab === 'list' ? prisma.news.count({ where: newsWhere }) : Promise.resolve(0),
     tab === 'list'
       ? prisma.news.findMany({
-          orderBy: { publishedAt: 'desc' },
+          where: newsWhere,
+          orderBy: newsOrderBy,
           skip,
           take: PAGE_SIZE,
           select: {
@@ -56,6 +74,7 @@ export default async function AdminNewsPage({
       : Promise.resolve([]),
     prisma.newsSource.count(),
     prisma.newsCategoryConfig.count(),
+    tab === 'list' ? prisma.news.count({ where: { isVisible: false } }) : Promise.resolve(0),
   ])
 
   const sources =
@@ -65,12 +84,22 @@ export default async function AdminNewsPage({
 
   const totalPages = Math.ceil(newsTotal / PAGE_SIZE)
 
+  const listItems = newsItems.map((item) => {
+    const meta = getNewsCategoryMeta(categories, item.category)
+    return {
+      id: item.id,
+      title: item.title,
+      sourceName: item.sourceName,
+      categoryLabel: meta.label,
+      categoryColorClass: meta.colorClass,
+      relevanceLabel: item.relevanceScore != null ? `${Math.round(item.relevanceScore * 100)}%` : '-',
+      publishedAtLabel: new Date(item.publishedAt).toLocaleDateString('ko-KR'),
+      isVisible: item.isVisible,
+    }
+  })
+
   function tabUrl(nextTab: Tab) {
     return `/admin/news?tab=${nextTab}`
-  }
-
-  function pageUrl(nextPage: number) {
-    return `/admin/news?tab=list&page=${nextPage}`
   }
 
   return (
@@ -118,97 +147,14 @@ export default async function AdminNewsPage({
       {tab === 'settings' && <NewsSettingsForm />}
 
       {tab === 'list' && (
-        <div>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-16">상태</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">제목</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">카테고리</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-24">출처</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-20 hidden sm:table-cell">관련도</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-28 hidden md:table-cell">발행일</th>
-                  <th className="w-10" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {newsItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-400">
-                      수집된 뉴스가 없습니다.
-                    </td>
-                  </tr>
-                ) : (
-                  newsItems.map((item) => {
-                    const meta = getNewsCategoryMeta(categories, item.category)
-                    return (
-                      <tr key={item.id} className="hover:bg-gray-50/60 transition-colors">
-                        <td className="px-4 py-3">
-                          <span className={`w-2 h-2 rounded-full inline-block ${item.isVisible ? 'bg-green-400' : 'bg-gray-300'}`} />
-                        </td>
-                        <td className="px-4 py-3 max-w-xs">
-                          <p className="font-medium text-gray-800 truncate">{item.title}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${meta.colorClass}`}>
-                            {meta.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-gray-500 truncate max-w-[96px]">
-                          {item.sourceName}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">
-                          {item.relevanceScore != null
-                            ? `${Math.round(item.relevanceScore * 100)}%`
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-gray-400 hidden md:table-cell">
-                          {new Date(item.publishedAt).toLocaleDateString('ko-KR')}
-                        </td>
-                        <td className="px-4 py-3">
-                          <ToggleVisibleButton id={item.id} isVisible={item.isVisible} />
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1 mt-6">
-              {page > 1 && (
-                <Link href={pageUrl(page - 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
-                  ← 이전
-                </Link>
-              )}
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                const mid = Math.min(Math.max(page, 4), totalPages - 3)
-                const start = Math.max(1, mid - 3)
-                const n = start + i
-                if (n > Math.min(totalPages, start + 6)) return null
-                return (
-                  <Link
-                    key={n}
-                    href={pageUrl(n)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm ${
-                      n === page ? 'bg-[#1B3A6B] text-white' : 'border border-gray-200 hover:bg-gray-50 text-gray-600'
-                    }`}
-                  >
-                    {n}
-                  </Link>
-                )
-              })}
-              {page < totalPages && (
-                <Link href={pageUrl(page + 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
-                  다음 →
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
+        <NewsListManager
+          items={listItems}
+          page={page}
+          totalPages={totalPages}
+          hiddenCount={hiddenCount}
+          status={status}
+          sort={sort}
+        />
       )}
 
       {tab === 'sources' && (
@@ -222,35 +168,5 @@ export default async function AdminNewsPage({
         <NewsCategoryManager initialCategories={categories} />
       )}
     </div>
-  )
-}
-
-function ToggleVisibleButton({ id, isVisible }: { id: string; isVisible: boolean }) {
-  return (
-    <form
-      action={async () => {
-        'use server'
-        const { auth: authFn } = await import('@/lib/auth')
-        const { prisma: db } = await import('@/lib/prisma')
-        const session = await authFn()
-        if (session?.user?.role !== 'ADMIN') return
-        await db.news.update({
-          where: { id },
-          data: { isVisible: !isVisible },
-        })
-      }}
-    >
-      <button
-        type="submit"
-        title={isVisible ? '비공개로 전환' : '공개로 전환'}
-        className={`text-xs px-2 py-1 rounded transition-colors ${
-          isVisible
-            ? 'text-gray-400 hover:text-red-500'
-            : 'text-gray-300 hover:text-green-500'
-        }`}
-      >
-        {isVisible ? '숨김' : '공개'}
-      </button>
-    </form>
   )
 }
