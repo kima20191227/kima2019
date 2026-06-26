@@ -93,7 +93,7 @@ export function PopupBanner() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-1300 flex items-center justify-center bg-black/50 p-4">
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* 닫기 버튼 — 항상 이미지 위에 표시 */}
         <button
