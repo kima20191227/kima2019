@@ -1,0 +1,33 @@
+name: Keep All Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 12 */5 * *'  # 5일마다 실행
+  workflow_dispatch:
+
+jobs:
+  ping-site1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Site1 Supabase
+        run: |
+          curl -X GET "$SUPABASE_URL/rest/v1/" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_SITE1 }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_SITE1 }}
+
+  ping-site2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Site2 Supabase
+        run: |
+          curl -X GET "$SUPABASE_URL/rest/v1/" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_SITE2 }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_SITE2 }}
