@@ -29,15 +29,6 @@ export default auth((req) => {
     return NextResponse.redirect(`${canonical}${pathname}${req.nextUrl.search}`, { status: 301 })
   }
 
-  // www.kima2019.org → kima2019.org 리다이렉트
-  // (세션 쿠키가 www/비www 간에 공유되지 않아, 로그인은 성공해도
-  //  리다이렉트 후 다른 호스트로 넘어가면 로그아웃 상태로 보이는 문제가 있었음.
-  //  public/_redirects의 동일 규칙은 OpenNext 배포에서 /api/* 경로에 적용되지 않으므로
-  //  실제로 요청을 가로채는 이 미들웨어에서 먼저 정규 호스트로 강제 리다이렉트한다.)
-  if (host === 'www.kima2019.org') {
-    return NextResponse.redirect(`https://kima2019.org${pathname}${req.nextUrl.search}`, { status: 308 })
-  }
-
   const isLoggedIn = !!req.auth
   const userRole = req.auth?.user?.role
   const origin = getOrigin(req)
@@ -105,9 +96,5 @@ export const config = {
     '/network/:path*',
     '/story/:path*',
     '/directory/register',
-    // www → 비www 리다이렉트가 로그인(/auth, /api/auth)을 포함한 모든 경로에 적용되도록
-    '/auth/:path*',
-    '/api/auth/:path*',
-    '/',
   ],
 }
