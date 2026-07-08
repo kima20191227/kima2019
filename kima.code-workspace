@@ -1,0 +1,28 @@
+{
+  "folders": [
+    {
+      "name": "🌐 KIMA 웹사이트",
+      "path": "./kima-website"
+    },
+    {
+      "name": "📱 KIMA 안드로이드 앱",
+      "path": "./kima-app"
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.expo": true,
+      "**/.next": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "expo.vscode-expo-tools",
+      "bradlc.vscode-tailwindcss",
+      "prisma.prisma"
+    ]
+  }
+}
