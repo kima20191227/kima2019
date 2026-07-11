@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { loginSchema, type LoginInput } from '@/schemas/auth.schema'
 import { FieldError } from './FieldError'
@@ -22,7 +22,6 @@ function getSafeCallbackUrl(value: string | null): string {
 }
 
 export function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = getSafeCallbackUrl(searchParams.get('callbackUrl'))
   const [serverError, setServerError] = useState('')
@@ -47,7 +46,9 @@ export function LoginForm() {
       return
     }
 
-    router.push(callbackUrl)
+    // 전체 페이지 이동으로 서버 렌더 헤더가 로그인 상태로 갱신되도록 함
+    // (router.push는 클라이언트 이동이라 공유 레이아웃 헤더가 갱신되지 않음)
+    window.location.assign(callbackUrl)
   }
 
   return (
