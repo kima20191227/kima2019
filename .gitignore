@@ -30,8 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # bkit internal
-.bkit/runtime/
-.bkit/snapshots/
+.bkit/
 
 # Claude Code
 .claude/
@@ -39,3 +38,11 @@ yarn-error.log*
 # Cloudflare Wrangler local cache
 .wrangler/
 .gstack/
+
+# Test/audit reports
+report.report.html
+report.report.json
+
+# OpenNext / Supabase local build artifacts
+kima-website/.open-next/
+kima-website/supabase/.temp/
