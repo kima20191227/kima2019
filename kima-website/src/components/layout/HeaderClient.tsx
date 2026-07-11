@@ -167,12 +167,12 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
       )}
 
       {/* Desktop Nav */}
-      <nav className="hidden md:flex items-center gap-1">
+      <nav className="hidden md:flex items-center gap-0.5">
         {NAV_ITEMS.filter((item) => !item.minWeight || roleWeight >= item.minWeight).map((item) => (
           <div key={item.href} className="relative" onMouseEnter={() => openMenu(item.href)} onMouseLeave={closeMenu}>
             <Link
               href={item.href}
-              className={`flex items-center gap-0.5 px-3 py-2 rounded-lg text-base font-semibold transition-colors ${
+              className={`flex items-center gap-0.5 px-2.5 py-2 rounded-lg text-base font-semibold whitespace-nowrap transition-colors ${
                 activeMenu === item.href ? 'text-[#1B3A6B] bg-blue-50' : 'text-gray-800 hover:text-[#1B3A6B] hover:bg-gray-50'
               }`}
             >
@@ -249,12 +249,13 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
         ) : (
           <>
             {/* 계정 찾기 — 데스크탑(lg 이상)에서만 노출 */}
-            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400">
-              <Link href="/auth/find-id" className="hover:text-[#1B3A6B] transition-colors">아이디 찾기</Link>
-              <span className="text-gray-200">|</span>
-              <Link href="/auth/forgot-password" className="hover:text-[#1B3A6B] transition-colors">비밀번호 찾기</Link>
-            </div>
-            <Link href="/auth/login" className="text-sm text-gray-600 hover:text-[#1B3A6B] font-medium transition-colors">
+            <Link
+              href="/auth/find-id"
+              className="hidden lg:inline-flex items-center text-xs text-gray-400 hover:text-[#1B3A6B] whitespace-nowrap transition-colors"
+            >
+              {'ID&PWD 찾기'}
+            </Link>
+            <Link href="/auth/login" className="text-sm text-gray-600 hover:text-[#1B3A6B] font-medium whitespace-nowrap transition-colors">
               로그인
             </Link>
             <Link href="/auth/register"
@@ -412,10 +413,8 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
                     회원가입
                   </Link>
                 </div>
-                <div className="flex items-center justify-center gap-3 text-xs text-gray-400">
-                  <Link href="/auth/find-id" className="hover:text-[#1B3A6B]" onClick={() => setMobileOpen(false)}>아이디 찾기</Link>
-                  <span className="text-gray-200">|</span>
-                  <Link href="/auth/forgot-password" className="hover:text-[#1B3A6B]" onClick={() => setMobileOpen(false)}>비밀번호 찾기</Link>
+                <div className="flex items-center justify-center text-xs text-gray-400">
+                  <Link href="/auth/find-id" className="hover:text-[#1B3A6B]" onClick={() => setMobileOpen(false)}>{'ID&PWD 찾기'}</Link>
                 </div>
               </div>
             )}
