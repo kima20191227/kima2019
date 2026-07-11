@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 
-const SITE_URL = process.env.NEXTAUTH_URL ?? 'https://kima2019.org'
+export const SITE_URL = process.env.NEXTAUTH_URL ?? 'https://kima2019.org'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'kima20191227@gmail.com'
 
 function cleanHeaderValue(value: string): string {
@@ -87,6 +87,17 @@ export function welcomeEmailHtml(name: string) {
     <p style="color:#888;font-size:13px;margin-top:32px;">
       정회원 신청 안내: <a href="${SITE_URL}/member/upgrade" style="color:#1B3A6B;">${SITE_URL}/member/upgrade</a>
     </p>
+  `)
+}
+
+/** 비밀번호 재설정 안내 */
+export function resetPasswordEmailHtml(name: string, resetUrl: string) {
+  return layout(`
+    <h2 style="color:#1B3A6B;margin-top:0;">비밀번호 재설정 안내</h2>
+    <p>${name}님, 비밀번호 재설정을 요청하셨습니다.</p>
+    <p>아래 버튼을 클릭하여 새 비밀번호를 설정해 주세요. 이 링크는 <strong>1시간 동안</strong>만 유효합니다.</p>
+    ${btn('비밀번호 재설정하기', resetUrl)}
+    <p style="color:#888;font-size:13px;margin-top:32px;">본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다.</p>
   `)
 }
 

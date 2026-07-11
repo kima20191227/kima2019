@@ -23,11 +23,14 @@ export const metadata: Metadata = {
     template: "%s | KIMA",
   },
   description: "연결하고 기록하고 보이게 하고 후원으로 이어주는 전국 이주민 사역 연합 플랫폼",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://kima2019.org"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.kima2019.org"),
+  alternates: {
+    canonical: "./",
+  },
   openGraph: {
     title: "KIMA | 한국이주민선교연합회",
     description: "연결하고 기록하고 보이게 하고 후원으로 이어주는 전국 이주민 사역 연합 플랫폼",
-    url: "https://kima2019.org",
+    url: "https://www.kima2019.org",
     siteName: "KIMA",
     locale: "ko_KR",
     type: "website",

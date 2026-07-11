@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signIn } from 'next-auth/react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { loginSchema, type LoginInput } from '@/schemas/auth.schema'
@@ -71,6 +72,12 @@ export function LoginForm() {
           placeholder="8자 이상"
         />
         <FieldError message={errors.password?.message} />
+      </div>
+
+      <div className="flex justify-end gap-3 text-xs text-gray-500">
+        <Link href="/auth/find-id" className="hover:text-[#1B3A6B] hover:underline">아이디 찾기</Link>
+        <span className="text-gray-300">|</span>
+        <Link href="/auth/forgot-password" className="hover:text-[#1B3A6B] hover:underline">비밀번호 찾기</Link>
       </div>
 
       {serverError && (

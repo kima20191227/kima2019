@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card } from '@/components/ui/Card'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
-import { LazyPopupBanner } from '@/components/home/LazyPopupBanner'
+import { PopupBanner } from '@/components/home/PopupBanner'
 import { CounterSection } from '@/components/home/CounterSection'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
@@ -33,6 +33,7 @@ export default async function HomePage() {
     dbEvents, orgCount, memberCount, resourceCount,
     ministryResources,
     recentNews,
+    popups,
   ] = await Promise.all([
     auth().catch(() => null),
     // 3단 게시판
@@ -55,6 +56,12 @@ export default async function HomePage() {
     prisma.resource.findMany({ where: { section: 'MINISTRY' }, orderBy: { createdAt: 'desc' }, take: 4, select: { id: true, title: true, description: true, fileType: true, thumbnail: true, driveUrl: true, accessLevel: true, createdAt: true } }).catch(() => []),
     // 이주민 관련 뉴스
     prisma.news.findMany({ where: { isVisible: true }, orderBy: { publishedAt: 'desc' }, take: 4, select: { id: true, title: true, sourceName: true, sourceUrl: true, publishedAt: true, category: true } }).catch(() => []),
+    // 팝업 배너 (서버 조회 → LCP·CLS 개선)
+    prisma.popup.findMany({
+      where: { isActive: true, startAt: { lte: new Date() }, endAt: { gte: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, title: true, body: true, imageUrl: true, imageWidth: true, youtubeId: true, linkUrl: true, linkLabel: true },
+    }).catch(() => []),
   ])
 
   const stats = [
@@ -85,7 +92,7 @@ export default async function HomePage() {
   return (
     <>
       {/* 팝업 배너 */}
-      <LazyPopupBanner />
+      <PopupBanner popups={popups} />
 
       {/* 1. 히어로 슬라이드 */}
       <HeroCarousel isLoggedIn={!!session?.user} />

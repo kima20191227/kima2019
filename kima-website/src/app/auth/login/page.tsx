@@ -5,13 +5,23 @@ import { LoginForm } from '@/components/auth/LoginForm'
 export const metadata = { title: '로그인 | KIMA' }
 
 interface Props {
-  searchParams: Promise<{ notice?: string; registered?: string }>
+  searchParams: Promise<{ notice?: string; registered?: string; error?: string }>
+}
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  Configuration: '소셜 로그인이 현재 설정 중입니다. 이메일 로그인을 이용해 주세요.',
+  AccessDenied: '로그인이 거부되었습니다.',
+  OAuthAccountNotLinked: '이미 다른 방법으로 가입된 이메일입니다. 이메일 로그인을 이용해 주세요.',
 }
 
 export default async function LoginPage({ searchParams }: Props) {
   const params = await searchParams
   const isPremiumNotice = params.notice === 'premium'
   const isRegistered = params.registered === '1'
+  const oauthError = params.error
+    ? OAUTH_ERROR_MESSAGES[params.error] ??
+      '로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+    : null
 
   return (
     <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center px-4 py-12">
@@ -42,6 +52,12 @@ export default async function LoginPage({ searchParams }: Props) {
           {isRegistered && (
             <div className="mb-5 rounded-xl border border-green-200 bg-emerald-50 p-4 text-sm text-emerald-700">
               가입이 완료되었습니다. 입력하신 이메일과 비밀번호로 로그인해 주세요.
+            </div>
+          )}
+
+          {oauthError && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {oauthError}
             </div>
           )}
 

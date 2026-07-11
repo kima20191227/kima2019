@@ -56,31 +56,28 @@ function YouTubeEmbed({ videoId }: { videoId: string }) {
   )
 }
 
-export function PopupBanner() {
-  const [popups, setPopups] = useState<Popup[]>([])
+export function PopupBanner({ popups }: { popups: Popup[] }) {
+  // SSR에서 바로 팝업이 보이도록 초기값을 prop 기준으로 설정 (hydration mismatch 없음)
+  const [activePopups, setActivePopups] = useState<Popup[]>(popups)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(popups.length > 0)
 
+  // 마운트 후 localStorage "오늘 하루 보지 않기" 필터링
+  // (숨긴 사용자에게 잠깐 보였다 사라지는 flash는 허용된 트레이드오프)
   useEffect(() => {
-    fetch('/api/popups')
-      .then((r) => r.json())
-      .then((data) => {
-        const hidden = getHiddenSet()
-        const active = (data.popups as Popup[] ?? []).filter((p) => !hidden.has(p.id))
-        if (active.length > 0) {
-          setPopups(active)
-          setVisible(true)
-        }
-      })
-      .catch(() => {})
-  }, [])
+    const hidden = getHiddenSet()
+    const filtered = popups.filter((p) => !hidden.has(p.id))
+    setActivePopups(filtered)
+    setCurrentIndex(0)
+    if (filtered.length === 0) setVisible(false)
+  }, [popups])
 
-  if (!visible || popups.length === 0) return null
+  const popup = activePopups[currentIndex]
 
-  const popup = popups[currentIndex]
+  if (!visible || !popup) return null
 
   const handleClose = () => {
-    if (popups.length > 1 && currentIndex < popups.length - 1) {
+    if (activePopups.length > 1 && currentIndex < activePopups.length - 1) {
       setCurrentIndex((i) => i + 1)
     } else {
       setVisible(false)
@@ -106,9 +103,9 @@ export function PopupBanner() {
         </button>
 
         {/* 여러 팝업 인디케이터 */}
-        {popups.length > 1 && (
+        {activePopups.length > 1 && (
           <div className="flex justify-center gap-1.5 pt-3 pb-1">
-            {popups.map((_, i) => (
+            {activePopups.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentIndex(i)}
@@ -118,29 +115,32 @@ export function PopupBanner() {
           </div>
         )}
 
-        {/* 이미지 — imageWidth 미설정 시 팝업 전체 너비, 설정 시 중앙 정렬 */}
+        {/* 이미지 — 고정 높이 컨테이너로 로드 전 높이를 확정하여 CLS 제거.
+            imageWidth 설정 시 내부 래퍼 maxWidth로 축소 표시 의도를 보존(높이는 컨테이너가 확정). */}
         {!popup.youtubeId && popup.imageUrl && (
-          popup.imageWidth ? (
-            <div className={`flex justify-center ${popups.length > 1 ? '' : 'rounded-t-2xl overflow-hidden'}`}>
+          <div className={`relative w-full h-[min(60vh,560px)] ${activePopups.length > 1 ? '' : 'rounded-t-2xl overflow-hidden'}`}>
+            {popup.imageWidth ? (
+              <div className="absolute inset-0 mx-auto" style={{ maxWidth: popup.imageWidth }}>
+                <Image
+                  src={popup.imageUrl}
+                  alt={popup.title}
+                  fill
+                  priority={currentIndex === 0}
+                  sizes="(max-width: 768px) calc(100vw - 2rem), 736px"
+                  className="object-contain"
+                />
+              </div>
+            ) : (
               <Image
                 src={popup.imageUrl}
                 alt={popup.title}
-                width={800}
-                height={600}
-                className="h-auto object-contain"
+                fill
+                priority={currentIndex === 0}
+                sizes="(max-width: 768px) calc(100vw - 2rem), 736px"
+                className="object-contain"
               />
-            </div>
-          ) : (
-            <div className={`relative w-full ${popups.length > 1 ? '' : 'rounded-t-2xl overflow-hidden'}`}>
-              <Image
-                src={popup.imageUrl}
-                alt={popup.title}
-                width={800}
-                height={600}
-                className="w-full h-auto object-contain"
-              />
-            </div>
-          )
+            )}
+          </div>
         )}
 
         {/* 유튜브 */}

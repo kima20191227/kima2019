@@ -64,20 +64,28 @@ export function HeroCarousel({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* 배경 */}
-      {slide.type === 'image' ? (
-        <>
+      {/* 배경 — 이미지 슬라이드 3장을 모두 렌더하고 opacity로 전환(전환 시 재로드 방지) */}
+      {SLIDES.map((s, i) =>
+        s.type === 'image' ? (
           <Image
-            key={slide.id}
-            src={slide.image}
-            alt={slide.badge}
+            key={s.id}
+            src={s.image}
+            alt={s.badge}
             fill
-            className="object-cover transition-opacity duration-700"
-            priority
+            sizes="100vw"
+            priority={i === 0}
+            className={`object-cover transition-opacity duration-700 ${
+              i === current ? 'opacity-100' : 'opacity-0'
+            }`}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-        </>
-      ) : (
+        ) : null
+      )}
+      {/* 그라디언트 오버레이 — 이미지 슬라이드일 때만 표시 */}
+      {slide.type === 'image' && (
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+      )}
+      {/* 텍스트 슬라이드 배경 */}
+      {slide.type === 'text' && (
         <div className="absolute inset-0 bg-[#1B3A6B]">
           <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_20%_50%,#C8922A_0%,transparent_50%),radial-gradient(circle_at_80%_20%,#fff_0%,transparent_40%)]" />
         </div>

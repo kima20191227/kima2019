@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { loginSchema, registerSchema } from '@/schemas/auth.schema'
+import {
+  loginSchema,
+  registerSchema,
+  findIdSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '@/schemas/auth.schema'
 
 describe('loginSchema', () => {
   it('유효한 입력값은 통과한다', () => {
@@ -125,5 +131,103 @@ describe('registerSchema', () => {
     const { organization: _, ...withoutOrg } = validData
     const result = registerSchema.safeParse(withoutOrg)
     expect(result.success).toBe(true)
+  })
+})
+
+describe('findIdSchema', () => {
+  it('유효한 입력값은 통과한다', () => {
+    const result = findIdSchema.safeParse({ name: '홍길동', phone: '010-1234-5678' })
+    expect(result.success).toBe(true)
+  })
+
+  it('이름이 2자 미만이면 에러를 반환한다', () => {
+    const result = findIdSchema.safeParse({ name: '홍', phone: '010-1234-5678' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe('이름은 2자 이상 입력해주세요')
+    }
+  })
+
+  it('전화번호가 비어 있으면 에러를 반환한다', () => {
+    const result = findIdSchema.safeParse({ name: '홍길동', phone: '' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const phoneError = result.error.issues.find((i) => i.path.includes('phone'))
+      expect(phoneError?.message).toBe('전화번호를 입력해주세요')
+    }
+  })
+})
+
+describe('forgotPasswordSchema', () => {
+  it('유효한 이메일은 통과한다', () => {
+    const result = forgotPasswordSchema.safeParse({ email: 'test@kima.org' })
+    expect(result.success).toBe(true)
+  })
+
+  it('이메일 형식이 올바르지 않으면 에러를 반환한다', () => {
+    const result = forgotPasswordSchema.safeParse({ email: 'invalid' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe('올바른 이메일 형식을 입력해주세요')
+    }
+  })
+})
+
+describe('resetPasswordSchema', () => {
+  const valid = {
+    token: 'abc123token',
+    password: 'password123',
+    passwordConfirm: 'password123',
+  }
+
+  it('유효한 입력값은 통과한다', () => {
+    const result = resetPasswordSchema.safeParse(valid)
+    expect(result.success).toBe(true)
+  })
+
+  it('비밀번호가 8자 미만이면 에러를 반환한다', () => {
+    const result = resetPasswordSchema.safeParse({
+      ...valid,
+      password: 'abc1',
+      passwordConfirm: 'abc1',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const pwError = result.error.issues.find((i) => i.path.includes('password'))
+      expect(pwError?.message).toBe('비밀번호는 8자 이상 입력해주세요')
+    }
+  })
+
+  it('비밀번호에 숫자가 없으면 에러를 반환한다', () => {
+    const result = resetPasswordSchema.safeParse({
+      ...valid,
+      password: 'onlyletters',
+      passwordConfirm: 'onlyletters',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const pwError = result.error.issues.find((i) => i.path.includes('password'))
+      expect(pwError?.message).toBe('비밀번호에 숫자를 포함해주세요')
+    }
+  })
+
+  it('비밀번호가 불일치하면 에러를 반환한다', () => {
+    const result = resetPasswordSchema.safeParse({
+      ...valid,
+      password: 'password123',
+      passwordConfirm: 'different123',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const confirmError = result.error.issues.find((i) =>
+        i.path.includes('passwordConfirm')
+      )
+      expect(confirmError?.message).toBe('비밀번호가 일치하지 않습니다')
+    }
+  })
+
+  it('토큰이 비어 있으면 에러를 반환한다', () => {
+    const result = resetPasswordSchema.safeParse({ ...valid, token: '' })
+    expect(result.success).toBe(false)
   })
 })
