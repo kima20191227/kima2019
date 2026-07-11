@@ -248,6 +248,12 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
           </div>
         ) : (
           <>
+            {/* 계정 찾기 — 데스크탑(lg 이상)에서만 노출 */}
+            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400">
+              <Link href="/auth/find-id" className="hover:text-[#1B3A6B] transition-colors">아이디 찾기</Link>
+              <span className="text-gray-200">|</span>
+              <Link href="/auth/forgot-password" className="hover:text-[#1B3A6B] transition-colors">비밀번호 찾기</Link>
+            </div>
             <Link href="/auth/login" className="text-sm text-gray-600 hover:text-[#1B3A6B] font-medium transition-colors">
               로그인
             </Link>
@@ -393,17 +399,24 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
                 </button>
               </div>
             ) : (
-              <div className="flex gap-3">
-                <Link href="/auth/login"
-                  className="flex-1 text-center px-4 py-3 text-sm font-semibold text-[#1B3A6B] border-2 border-[#1B3A6B] rounded-xl"
-                  onClick={() => setMobileOpen(false)}>
-                  로그인
-                </Link>
-                <Link href="/auth/register"
-                  className="flex-1 text-center px-4 py-3 text-sm font-semibold text-white bg-[#1B3A6B] rounded-xl"
-                  onClick={() => setMobileOpen(false)}>
-                  회원가입
-                </Link>
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <Link href="/auth/login"
+                    className="flex-1 text-center px-4 py-3 text-sm font-semibold text-[#1B3A6B] border-2 border-[#1B3A6B] rounded-xl"
+                    onClick={() => setMobileOpen(false)}>
+                    로그인
+                  </Link>
+                  <Link href="/auth/register"
+                    className="flex-1 text-center px-4 py-3 text-sm font-semibold text-white bg-[#1B3A6B] rounded-xl"
+                    onClick={() => setMobileOpen(false)}>
+                    회원가입
+                  </Link>
+                </div>
+                <div className="flex items-center justify-center gap-3 text-xs text-gray-400">
+                  <Link href="/auth/find-id" className="hover:text-[#1B3A6B]" onClick={() => setMobileOpen(false)}>아이디 찾기</Link>
+                  <span className="text-gray-200">|</span>
+                  <Link href="/auth/forgot-password" className="hover:text-[#1B3A6B]" onClick={() => setMobileOpen(false)}>비밀번호 찾기</Link>
+                </div>
               </div>
             )}
           </div>

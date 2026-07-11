@@ -61,6 +61,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // 구글 로그인: 이미 가입된 회원만 허용. 미가입 계정이면 회원가입을 먼저 하도록 안내.
+    async signIn({ user, account }) {
+      if (account?.provider === 'google') {
+        const email = user.email
+        if (!email) return '/auth/login?error=NotRegistered'
+        const existing = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        })
+        if (!existing) return '/auth/login?error=NotRegistered'
+      }
+      return true
+    },
     async jwt({ token, user }) {
       if (user) {
         // 최초 로그인 시: 역할·만료일 저장

@@ -12,12 +12,14 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   Configuration: '소셜 로그인이 현재 설정 중입니다. 이메일 로그인을 이용해 주세요.',
   AccessDenied: '로그인이 거부되었습니다.',
   OAuthAccountNotLinked: '이미 다른 방법으로 가입된 이메일입니다. 이메일 로그인을 이용해 주세요.',
+  NotRegistered: '아직 가입되지 않은 구글 계정입니다. 먼저 회원가입을 완료해 주세요.',
 }
 
 export default async function LoginPage({ searchParams }: Props) {
   const params = await searchParams
   const isPremiumNotice = params.notice === 'premium'
   const isRegistered = params.registered === '1'
+  const isNotRegistered = params.error === 'NotRegistered'
   const oauthError = params.error
     ? OAUTH_ERROR_MESSAGES[params.error] ??
       '로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
@@ -57,7 +59,15 @@ export default async function LoginPage({ searchParams }: Props) {
 
           {oauthError && (
             <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {oauthError}
+              <p>{oauthError}</p>
+              {isNotRegistered && (
+                <Link
+                  href="/auth/register"
+                  className="mt-3 block w-full rounded-lg bg-[#1B3A6B] py-2.5 text-center font-medium text-white hover:opacity-90"
+                >
+                  회원가입 하러 가기
+                </Link>
+              )}
             </div>
           )}
 
