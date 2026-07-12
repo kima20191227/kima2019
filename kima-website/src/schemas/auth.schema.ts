@@ -56,7 +56,8 @@ export const registerSchema = z
 
 export const findIdSchema = z.object({
   name: z.string().min(2, '이름은 2자 이상 입력해주세요'),
-  phone: z.string().min(1, '전화번호를 입력해주세요'),
+  // 전화번호는 선택 — 이름만으로도 조회 가능. 동명이인 구분용으로만 사용.
+  phone: z.string().optional(),
 })
 
 export const forgotPasswordSchema = z.object({

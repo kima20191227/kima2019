@@ -15,7 +15,8 @@ export default function FindIdPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-xl font-bold text-[#1A1A1A] mb-2">아이디 찾기</h1>
           <p className="text-sm text-gray-500 mb-6">
-            가입 시 입력하신 이름과 전화번호로 이메일을 조회합니다.
+            가입 시 입력하신 이름으로 이메일을 조회합니다. 같은 이름의 회원이 있는 경우
+            가입 시 등록한 전화번호를 함께 입력해 주세요.
           </p>
 
           <FindIdForm />

@@ -50,21 +50,35 @@ export async function POST(req: NextRequest) {
     const { name, phone } = parsed.data
     const normalizedPhone = normalizePhone(phone)
 
-    // 이름이 일치하는 회원을 조회한 뒤, 전화번호는 정규화(숫자만) 비교로 필터링
-    // (DB에 저장된 형식과 입력 형식이 다를 수 있음 — 소규모 사이트라 전체 스캔 문제 없음)
+    // 이름으로 후보 조회 — 이름만으로도 조회 가능
+    // (DB에 저장된 전화번호 형식과 입력 형식이 다를 수 있어 정규화(숫자만) 비교)
     const candidates = await prisma.user.findMany({ where: { name } })
-    const matched = candidates.find(
-      (u) => normalizePhone(u.phone) === normalizedPhone && normalizedPhone.length > 0
-    )
 
-    if (!matched) {
+    if (candidates.length === 0) {
       return NextResponse.json(
         { message: '일치하는 회원 정보를 찾을 수 없습니다' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({ email: maskEmail(matched.email) }, { status: 200 })
+    // 전화번호를 입력한 경우, 그 번호와 일치하는 후보가 있으면 그것으로 좁힘
+    let matches = candidates
+    if (normalizedPhone.length > 0) {
+      const byPhone = candidates.filter(
+        (u) => normalizePhone(u.phone) === normalizedPhone
+      )
+      if (byPhone.length > 0) matches = byPhone
+    }
+
+    // 동명이인이 남아 하나로 좁혀지지 않으면 전화번호로 구분 요청
+    if (matches.length > 1) {
+      return NextResponse.json(
+        { message: '같은 이름의 회원이 여러 명입니다. 전화번호를 함께 입력해 주세요.' },
+        { status: 409 }
+      )
+    }
+
+    return NextResponse.json({ email: maskEmail(matches[0].email) }, { status: 200 })
   } catch {
     return NextResponse.json({ message: '서버 오류가 발생했습니다' }, { status: 500 })
   }

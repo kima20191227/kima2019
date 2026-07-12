@@ -63,7 +63,9 @@ export function FindIdForm() {
       </div>
 
       <div>
-        <label className={LABEL}>전화번호</label>
+        <label className={LABEL}>
+          전화번호 <span className="font-normal text-gray-400">(선택 · 동명이인일 때만)</span>
+        </label>
         <input type="tel" {...register('phone')} className={INPUT} placeholder="010-0000-0000" />
         <FieldError message={errors.phone?.message} />
       </div>
