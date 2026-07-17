@@ -4,9 +4,12 @@ import { uploadResourceFile } from '@/lib/uploadClient'
 describe('uploadResourceFile', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
   })
 
   it('returns the uploaded file URL from a signed Drive upload', async () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://project.supabase.co')
+
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(
         new Response(JSON.stringify({
@@ -35,7 +38,9 @@ describe('uploadResourceFile', () => {
     const result = await uploadResourceFile(new File(['hello'], 'file.txt', { type: 'text/plain' }))
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/upload/resource/signed', expect.objectContaining({ method: 'POST' }))
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/upload/resource/chunk', expect.objectContaining({
+    // 청크 전송은 2449bef에서 Vercel 4.5MB 바디 한도 우회를 위해
+    // Supabase Edge Function 중계로 변경되었다.
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://project.supabase.co/functions/v1/upload-chunk', expect.objectContaining({
       method: 'POST',
       body: expect.any(FormData),
     }))

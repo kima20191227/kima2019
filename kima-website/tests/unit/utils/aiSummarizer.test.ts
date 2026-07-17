@@ -17,6 +17,14 @@ async function flushMicrotasks(times = 8) {
   for (let i = 0; i < times; i++) await Promise.resolve()
 }
 
+// 가짜 타이머가 설치된 상태에서 sleep()이 걸리면 그 프라미스는 타이머를 진행시키기 전까지
+// 절대 resolve되지 않는다. 따라서 마이크로태스크를 아무리 많이 돌려도 "sleep 하지 않는다"는
+// 검증은 약해지지 않는다. (429 응답 본문을 읽는 res.text()가 소비하는 tick 수가
+// 구현이 아니라 undici 내부 사정에 좌우되므로 고정 횟수 대신 settle 여부로 대기한다.)
+async function flushUntilSettled(isSettled: () => boolean, maxTicks = 1000) {
+  for (let i = 0; i < maxTicks && !isSettled(); i++) await Promise.resolve()
+}
+
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
@@ -51,8 +59,10 @@ describe('processBatch', () => {
       return result
     })
 
-    await flushMicrotasks()
+    await flushUntilSettled(() => settled)
 
+    // 폴백 진입 후 sleep(BATCH_DELAY_MS)이 예약되지 않았음을 직접 확인한다.
+    expect(vi.getTimerCount()).toBe(0)
     expect(settled).toBe(true)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     await expect(promise).resolves.toHaveLength(2)

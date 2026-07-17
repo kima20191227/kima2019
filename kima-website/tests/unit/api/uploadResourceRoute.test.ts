@@ -51,7 +51,9 @@ describe('POST /api/upload/resource', () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    mocks.auth.mockResolvedValue({ user: { id: 'user-1', role: 'MEMBER' } })
+    // 자료 업로드는 정회원(PREMIUM) 이상만 가능하다. (9f3e98d: "정회원도 파일 업로드 허용")
+    // 업로드 로직 자체를 검증하기 위해 정책을 만족하는 최소 역할을 사용한다.
+    mocks.auth.mockResolvedValue({ user: { id: 'user-1', role: 'PREMIUM' } })
     mocks.cfEnv.mockImplementation((key: string) => {
       const env: Record<string, string> = {
         GOOGLE_SERVICE_ACCOUNT_KEY: JSON.stringify({
@@ -103,25 +105,38 @@ describe('POST /api/upload/resource', () => {
     })
   })
 
-  it('allows uncommon file types instead of rejecting by format', async () => {
-    mocks.uploadFileToDrive.mockResolvedValue('https://drive.google.com/file/d/exe-file/view')
+  // 원래 의도("흔치 않은 형식이라고 막지 않는다")는 allowlist 안의 비주류 확장자로 보존한다.
+  it('allows uncommon file types that are on the allowlist', async () => {
+    mocks.uploadFileToDrive.mockResolvedValue('https://drive.google.com/file/d/archive-file/view')
 
-    const response = await POST(makeRequest(new File(['<html></html>'], 'page.html', { type: 'text/html' })) as never)
+    const response = await POST(makeRequest(new File(['data'], 'archive.7z', { type: 'application/x-7z-compressed' })) as never)
     const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(mocks.uploadFileToDrive).toHaveBeenCalledWith(
       expect.any(Buffer),
-      'page.html',
-      'text/html',
+      'archive.7z',
+      'application/x-7z-compressed',
       expect.objectContaining({ folderId: 'drive-folder-id' }),
     )
     expect(mocks.upload).not.toHaveBeenCalled()
     expect(body).toEqual({
-      url: 'https://drive.google.com/file/d/exe-file/view',
-      fileType: 'text/html',
+      url: 'https://drive.google.com/file/d/archive-file/view',
+      fileType: 'application/x-7z-compressed',
       storage: 'drive',
     })
+  })
+
+  // a30f153("파일 업로드 보안 강화")이 .exe 제거와 함께 확장자 allowlist를 의도적으로 도입했다.
+  // f27f887의 "모든 형식 허용" 전제는 이 커밋으로 폐기되었으므로 거부 동작을 검증한다.
+  it('rejects file types outside the allowlist before uploading', async () => {
+    const response = await POST(makeRequest(new File(['<html></html>'], 'page.html', { type: 'text/html' })) as never)
+    const body = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(body.error).toContain('허용되지 않는 파일 형식')
+    expect(mocks.uploadFileToDrive).not.toHaveBeenCalled()
+    expect(mocks.upload).not.toHaveBeenCalled()
   })
 
   it('allows common Korean document uploads when the browser sends octet-stream', async () => {

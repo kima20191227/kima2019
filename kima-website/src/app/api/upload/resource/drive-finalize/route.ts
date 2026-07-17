@@ -3,6 +3,13 @@ import { auth } from '@/lib/auth'
 import { cfEnv } from '@/lib/cfEnv'
 import { makeDriveFilePublic, parseServiceAccountKey } from '@/lib/googleDrive'
 
+// route.ts·signed/route.ts와 반드시 같은 기준을 유지할 것.
+// signed에서 허용된 사용자가 파일을 전부 전송한 뒤 여기서 거부되면,
+// 업로드를 마친 시점에 실패하게 된다.
+function canUploadResource(role?: string | null) {
+  return role === 'ADMIN' || role === 'OFFICER' || role === 'PREMIUM'
+}
+
 const DEFAULT_DRIVE_FOLDER_ID = '0AGil8dGKJPdzUk9PVA'
 
 type FinalizeRequest = {
@@ -29,9 +36,8 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
     }
-    const role = session.user.role
-    if (role !== 'ADMIN' && role !== 'OFFICER') {
-      return NextResponse.json({ error: '임원 이상만 자료를 업로드할 수 있습니다.' }, { status: 403 })
+    if (!canUploadResource(session.user.role)) {
+      return NextResponse.json({ error: '정회원 이상만 자료를 업로드할 수 있습니다.' }, { status: 403 })
     }
 
     const body = await request.json().catch(() => null) as FinalizeRequest | null
