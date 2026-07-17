@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { uploadResourceFile } from '@/lib/uploadClient'
 
 type ForumType = 'FORUM' | 'LISTENING_CALL'
 
@@ -45,6 +46,9 @@ interface Props {
 }
 
 const FILE_TYPES = ['PDF', 'PPT', 'DOCX', 'HWP', 'VIDEO', 'LINK', 'ZIP', '기타']
+
+// 구글 드라이브 청크 업로드 상한 — 다른 메뉴(자료실 등)와 동일 경로 사용
+const MATERIAL_MAX_BYTES = 50 * 1024 * 1024
 
 const emptySchedule = (): ScheduleItem => ({ time: '', title: '', speaker: '' })
 const emptyMaterial = (): MaterialItem => ({ title: '', fileType: 'PDF', url: '' })
@@ -146,32 +150,39 @@ export function ForumArchiveForm({ mode = 'create', initialData, defaultType, tr
   // --- Material file upload (immediate) ---
   const handleMaterialFileSelect = async (idx: number, file: File) => {
     setError('')
+
+    if (file.size > MATERIAL_MAX_BYTES) {
+      setError(
+        `파일이 너무 큽니다 (${(file.size / (1024 * 1024)).toFixed(1)}MB). ` +
+        '50MB 이하 파일만 업로드할 수 있습니다. 더 큰 파일은 구글 드라이브에 올린 뒤 ' +
+        '위 "파일 URL" 칸에 공유 링크를 직접 붙여넣어 주세요.'
+      )
+      return
+    }
+
     setMaterials((prev) =>
       prev.map((m, i) => i === idx ? { ...m, file, uploading: true } : m)
     )
-    setUploadMsg('자료 업로드 중...')
+    setUploadMsg('자료 업로드 중... (구글 드라이브)')
 
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('folder', 'materials')
-
-    const res = await fetch('/api/upload/forum', { method: 'POST', body: fd })
-    const data = await res.json()
-
-    setUploadMsg('')
-    if (res.ok && data.url) {
+    try {
+      // 다른 메뉴와 동일하게 구글 드라이브로 업로드(청크 방식 → Vercel 4.5MB 한도 우회)
+      const uploaded = await uploadResourceFile(file)
       const ext = file.name.split('.').pop()?.toUpperCase() || '기타'
       const detectedType = FILE_TYPES.includes(ext) ? ext : '기타'
       setMaterials((prev) =>
         prev.map((m, i) =>
-          i === idx ? { ...m, url: data.url, fileType: detectedType, uploading: false, file: undefined } : m
+          i === idx ? { ...m, url: uploaded.url, fileType: detectedType, uploading: false, file: undefined } : m
         )
       )
-    } else {
+    } catch (err) {
+      // 실패해도 업로드중 상태를 반드시 해제 — 무한 "업로드중..." 방지
       setMaterials((prev) =>
         prev.map((m, i) => i === idx ? { ...m, uploading: false, file: undefined } : m)
       )
-      setError(data.error ?? '자료 업로드에 실패했습니다.')
+      setError(err instanceof Error ? err.message : '자료 업로드에 실패했습니다.')
+    } finally {
+      setUploadMsg('')
     }
   }
 
