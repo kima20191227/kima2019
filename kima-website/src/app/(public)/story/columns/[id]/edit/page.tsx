@@ -31,6 +31,7 @@ export default async function ColumnEditPage({ params }: Props) {
       thumbnail: true,
       imageUrls: true,
       fileUrls: true,
+      attachments: true,
       tags: true,
       authorId: true,
     },
@@ -66,6 +67,7 @@ export default async function ColumnEditPage({ params }: Props) {
               thumbnail: column.thumbnail,
               imageUrls: column.imageUrls,
               fileUrls: column.fileUrls,
+              attachments: (column.attachments as unknown as { url: string; name: string; type: string }[] | null) ?? undefined,
               tags: column.tags,
             }}
           />

@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ColumnEditor } from '@/components/column/ColumnEditor'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 export default function RestWalkWritePage() {
   const router = useRouter()
@@ -15,6 +17,8 @@ export default function RestWalkWritePage() {
     videoUrls: '',
     tags: '',
   })
+  const [attachments, setAttachments] = useState<AttachedFile[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -31,6 +35,10 @@ export default function RestWalkWritePage() {
     setSubmitting(true)
     setError('')
     try {
+      const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+      const firstImage = attachments.find((a) => a.type.startsWith('image/'))
+      const thumbnail = firstImage?.url ?? null
+
       const res = await fetch('/api/stories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,6 +49,9 @@ export default function RestWalkWritePage() {
           excerpt: form.excerpt || null,
           authorName: form.authorName || null,
           ministryLocation: form.ministryLocation || null,
+          thumbnail,
+          images,
+          attachments,
           videoUrls: form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean),
           tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         }),
@@ -146,6 +157,19 @@ export default function RestWalkWritePage() {
             <p className="text-xs text-gray-400 mt-1">입력한 영상은 게시글 내에서 바로 시청할 수 있습니다.</p>
           </div>
 
+          {/* 사진·자료 첨부 */}
+          <div>
+            <FileAttachmentZone
+              label="사진·자료 첨부 (선택) — 이미지·PDF·문서"
+              initialFiles={attachments}
+              onChange={(files, uploading) => {
+                setAttachments(files)
+                setIsUploading(uploading)
+              }}
+            />
+            <p className="text-xs text-gray-400 mt-1.5">첫 번째 이미지가 썸네일로 사용됩니다.</p>
+          </div>
+
           {/* 태그 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">태그 (선택, 쉼표로 구분)</label>
@@ -170,10 +194,10 @@ export default function RestWalkWritePage() {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || isUploading}
               className="flex-1 py-3 bg-[#1B3A6B] text-white font-semibold rounded-lg hover:bg-[#15305a] transition-colors disabled:opacity-50 text-sm"
             >
-              {submitting ? '올리는 중...' : '올리기'}
+              {isUploading ? '업로드 중...' : submitting ? '올리는 중...' : '올리기'}
             </button>
           </div>
         </form>

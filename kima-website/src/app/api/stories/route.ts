@@ -16,6 +16,7 @@ const storySchema = z.object({
   excerpt:          z.string().max(300).optional().nullable(),
   thumbnail:        z.string().url().optional().nullable(),
   images:           z.array(z.string()).optional(),
+  attachments:      z.array(z.object({ url: z.string(), name: z.string(), type: z.string() })).optional().nullable(),
   videoUrls:        z.array(z.string()).optional(),
   tags:             z.array(z.string()).optional(),
   // status와 isPublished는 클라이언트 입력 무시 → 서버에서 역할 기반으로 결정
@@ -140,6 +141,7 @@ export async function POST(request: NextRequest) {
         excerpt:          parsed.data.excerpt ?? null,
         thumbnail:        parsed.data.thumbnail ?? null,
         images:           parsed.data.images ?? [],
+        attachments:      parsed.data.attachments ?? undefined,
         videoUrls:        parsed.data.videoUrls ?? [],
         tags:             parsed.data.tags ?? [],
         isPublished:      resolvedPublished,

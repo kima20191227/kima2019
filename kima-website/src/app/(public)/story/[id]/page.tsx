@@ -8,6 +8,7 @@ import type { Metadata } from 'next'
 import { convertDriveUrl } from '@/lib/utils'
 import { sanitizeRichHtml } from '@/lib/sanitizeHtml'
 import { StoryDeleteButton } from '@/components/story/StoryDeleteButton'
+import { AttachmentSection, type Attachment } from '@/components/ui/AttachmentSection'
 
 const VideoEmbed = nextDynamic(
   () => import('@/components/story/VideoEmbed').then((m) => m.VideoEmbed),
@@ -74,6 +75,8 @@ export default async function StoryDetailPage({ params }: PageProps) {
 
   const editSlug = TYPE_EDIT[story.type]
   const editUrl  = editSlug ? `/story/${editSlug}/${id}/edit` : null
+
+  const attachments = (story.attachments ?? []) as unknown as Attachment[]
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -164,8 +167,15 @@ export default async function StoryDetailPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* 이미지 그리드 (EVENT_MEDIA) */}
-            {story.images.length > 0 && (
+            {/* 첨부파일 (이미지 갤러리 + PDF 뷰어 + 문서 다운로드) — 신규 글 */}
+            {attachments.length > 0 && (
+              <div className="mt-6">
+                <AttachmentSection attachments={attachments} />
+              </div>
+            )}
+
+            {/* 이미지 그리드 (EVENT_MEDIA) — 구 글 하위호환 (attachments 없을 때만) */}
+            {attachments.length === 0 && story.images.length > 0 && (
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-2">
                 {story.images.map((img, i) => (
                   <div key={i} className="relative w-full h-32">

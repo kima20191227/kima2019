@@ -2,14 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
-import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 import { convertDriveUrl } from '@/lib/utils'
+import { AttachmentSection } from '@/components/ui/AttachmentSection'
 
 interface Answer {
   id: string
   content: string
-  attachments?: PhotoAttachment[]
+  attachments?: AttachedFile[]
   createdAt: string
   author: { id: string; name: string | null }
 }
@@ -50,7 +51,7 @@ export function AnswerSection({ questionId, answers, currentUserId, isAdmin, isL
 
   // New answer state
   const [newContent, setNewContent] = useState('')
-  const [newAttachments, setNewAttachments] = useState<PhotoAttachment[]>([])
+  const [newAttachments, setNewAttachments] = useState<AttachedFile[]>([])
   const [newIsUploading, setNewIsUploading] = useState(false)
   const [submittingNew, setSubmittingNew] = useState(false)
   const [newError, setNewError] = useState('')
@@ -58,7 +59,7 @@ export function AnswerSection({ questionId, answers, currentUserId, isAdmin, isL
   // Edit answer state
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
-  const [editAttachments, setEditAttachments] = useState<PhotoAttachment[]>([])
+  const [editAttachments, setEditAttachments] = useState<AttachedFile[]>([])
   const [editIsUploading, setEditIsUploading] = useState(false)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -147,13 +148,13 @@ export function AnswerSection({ questionId, answers, currentUserId, isAdmin, isL
           <p className="text-sm text-gray-400 py-4">아직 등록된 답변이 없습니다.</p>
         )}
         {answers.map((answer) => {
-          const attachedImages = (answer.attachments ?? []).filter((a) =>
-            a.type?.startsWith('image/')
-          )
           const inlineNames = new Set(
             Array.from(answer.content.matchAll(/\[img:([^\]]*)\]/g)).map((m) => m[1])
           )
-          const galleryImages = attachedImages.filter((a) => !inlineNames.has(a.name))
+          // 본문에 인라인으로 이미 표시되는 이미지는 제외 (비인라인 이미지 + PDF + 문서)
+          const answerAttachments = (answer.attachments ?? []).filter(
+            (a) => !inlineNames.has(a.name)
+          )
 
           return (
             <div key={answer.id} className="rounded-xl border border-blue-100 bg-blue-50 p-5">
@@ -221,10 +222,11 @@ export function AnswerSection({ questionId, answers, currentUserId, isAdmin, isL
                     title="답변 내용"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#1B3A6B] bg-white"
                   />
-                  <PhotoUploadZone
-                    initialAttachments={editAttachments}
-                    onAttachmentsChange={(atts, uploading) => {
-                      setEditAttachments(atts)
+                  <FileAttachmentZone
+                    label="파일 첨부 (선택) — 이미지·PDF·문서"
+                    initialFiles={editAttachments}
+                    onChange={(files, uploading) => {
+                      setEditAttachments(files)
                       setEditIsUploading(uploading)
                     }}
                   />
@@ -249,17 +251,9 @@ export function AnswerSection({ questionId, answers, currentUserId, isAdmin, isL
               ) : (
                 <div className="text-sm text-gray-700 leading-relaxed">
                   {renderContent(answer.content)}
-                  {galleryImages.length > 0 && (
-                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {galleryImages.map((img, i) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={i}
-                          src={convertDriveUrl(img.url)}
-                          alt={img.name}
-                          className="w-full rounded-lg object-cover aspect-square"
-                        />
-                      ))}
+                  {answerAttachments.length > 0 && (
+                    <div className="mt-3">
+                      <AttachmentSection attachments={answerAttachments} />
                     </div>
                   )}
                 </div>
@@ -281,9 +275,11 @@ export function AnswerSection({ questionId, answers, currentUserId, isAdmin, isL
               placeholder="답변을 입력해주세요 (5자 이상)"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
             />
-            <PhotoUploadZone
-              onAttachmentsChange={(atts, uploading) => {
-                setNewAttachments(atts)
+            <FileAttachmentZone
+              label="파일 첨부 (선택) — 이미지·PDF·문서"
+              initialFiles={newAttachments}
+              onChange={(files, uploading) => {
+                setNewAttachments(files)
                 setNewIsUploading(uploading)
               }}
             />

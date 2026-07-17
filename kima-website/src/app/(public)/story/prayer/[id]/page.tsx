@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { sanitizeRichHtml } from '@/lib/sanitizeHtml'
+import { AttachmentSection, type Attachment } from '@/components/ui/AttachmentSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,6 +42,7 @@ export default async function PrayerDetailPage({ params }: Props) {
     notFound()
 
   const isUrgent = prayer.urgency === 'URGENT'
+  const attachments = (prayer.attachments ?? []) as unknown as Attachment[]
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -102,8 +104,15 @@ export default async function PrayerDetailPage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(prayer.content) }}
         />
 
-        {/* 첨부 사진 */}
-        {prayer.images && (prayer.images as string[]).length > 0 && (
+        {/* 첨부파일 (이미지 갤러리 + PDF 뷰어 + 문서 다운로드) — 신규 글 */}
+        {attachments.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <AttachmentSection attachments={attachments} />
+          </div>
+        )}
+
+        {/* 첨부 사진 — 구 글 하위호환 (attachments 없을 때만) */}
+        {attachments.length === 0 && prayer.images && (prayer.images as string[]).length > 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <p className="text-sm font-semibold text-gray-700 mb-3">첨부 사진</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
-import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 import { ColumnEditor } from '@/components/column/ColumnEditor'
 
 export default function PrayerWritePage() {
@@ -16,7 +16,7 @@ export default function PrayerWritePage() {
     requesterName: '',
     agree: false,
   })
-  const [storyImages, setStoryImages] = useState<PhotoAttachment[]>([])
+  const [attachments, setAttachments] = useState<AttachedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -31,9 +31,9 @@ export default function PrayerWritePage() {
     setSubmitting(true)
     setError('')
     try {
-      const images = storyImages.map((a) => a.url)
-      const coverImage = storyImages.find((a) => a.isCover)
-      const thumbnail = coverImage?.url ?? images[0] ?? null
+      const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+      const firstImage = attachments.find((a) => a.type.startsWith('image/'))
+      const thumbnail = firstImage?.url ?? null
 
       const res = await fetch('/api/stories', {
         method: 'POST',
@@ -47,6 +47,7 @@ export default function PrayerWritePage() {
           requesterName: form.requesterName || null,
           thumbnail,
           images,
+          attachments,
           status: 'APPROVED',
         }),
       })
@@ -136,10 +137,11 @@ export default function PrayerWritePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">사진 첨부 (선택)</label>
-            <PhotoUploadZone
-              onAttachmentsChange={(atts, uploading) => {
-                setStoryImages(atts)
+            <FileAttachmentZone
+              label="사진·자료 첨부 (선택) — 이미지·PDF·문서"
+              initialFiles={attachments}
+              onChange={(files, uploading) => {
+                setAttachments(files)
                 setIsUploading(uploading)
               }}
             />

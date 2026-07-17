@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ColumnEditor } from './ColumnEditor'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 interface InitialData {
   id?: string
@@ -12,6 +14,7 @@ interface InitialData {
   thumbnail?: string | null
   imageUrls?: string[]
   fileUrls?: string[]
+  attachments?: { url: string; name: string; type: string }[] | null
   tags?: string[]
   authorName?: string | null
 }
@@ -19,6 +22,23 @@ interface InitialData {
 interface Props {
   initialData?: InitialData
   mode: 'create' | 'edit'
+}
+
+function buildInitialFiles(initialData?: InitialData): AttachedFile[] {
+  if (initialData?.attachments && initialData.attachments.length > 0) {
+    return initialData.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type }))
+  }
+  const fromImages = (initialData?.imageUrls ?? []).map((url) => ({
+    url,
+    name: '이미지',
+    type: 'image/*',
+  }))
+  const fromFiles = (initialData?.fileUrls ?? []).map((url) => ({
+    url,
+    name: '첨부파일',
+    type: 'application/octet-stream',
+  }))
+  return [...fromImages, ...fromFiles]
 }
 
 export function ColumnWriteForm({ initialData, mode }: Props) {
@@ -29,10 +49,8 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '')
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail ?? '')
   const [tagInput, setTagInput] = useState((initialData?.tags ?? []).join(', '))
-  const [imageUrls, setImageUrls] = useState<string[]>(initialData?.imageUrls ?? [])
-  const [fileUrls, setFileUrls] = useState<string[]>(initialData?.fileUrls ?? [])
-  const [newImageUrl, setNewImageUrl] = useState('')
-  const [newFileUrl, setNewFileUrl] = useState('')
+  const [attachments, setAttachments] = useState<AttachedFile[]>(() => buildInitialFiles(initialData))
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -45,22 +63,6 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean)
-  }
-
-  function addImageUrl() {
-    const trimmed = newImageUrl.trim()
-    if (trimmed && !imageUrls.includes(trimmed)) {
-      setImageUrls((prev) => [...prev, trimmed])
-    }
-    setNewImageUrl('')
-  }
-
-  function addFileUrl() {
-    const trimmed = newFileUrl.trim()
-    if (trimmed && !fileUrls.includes(trimmed)) {
-      setFileUrls((prev) => [...prev, trimmed])
-    }
-    setNewFileUrl('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,15 +80,20 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
 
     setSubmitting(true)
     try {
+      const imageUrls = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+      const fileUrls = attachments.filter((a) => !a.type.startsWith('image/')).map((a) => a.url)
+      const resolvedThumbnail = thumbnail.trim() || imageUrls[0] || null
+
       const body = {
         title: title.trim(),
         content,
         authorName: authorName.trim() || null,
         excerpt: excerpt.trim() || null,
-        thumbnail: thumbnail.trim() || null,
+        thumbnail: resolvedThumbnail,
         tags: parseTags(tagInput),
         imageUrls,
         fileUrls,
+        attachments,
       }
 
       const url = mode === 'edit' ? `/api/columns/${initialData!.id}` : '/api/columns'
@@ -196,85 +203,15 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
         />
       </div>
 
-      {/* Image URLs */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          본문 이미지 URL <span className="text-gray-400 text-xs">(선택 — 별도 저장)</span>
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="url"
-            value={newImageUrl}
-            onChange={(e) => setNewImageUrl(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addImageUrl())}
-            placeholder="https://..."
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
-          />
-          <button
-            type="button"
-            onClick={addImageUrl}
-            className="px-3 py-2 text-sm bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200"
-          >
-            추가
-          </button>
-        </div>
-        {imageUrls.length > 0 && (
-          <ul className="space-y-1">
-            {imageUrls.map((url, i) => (
-              <li key={i} className="flex items-center gap-2 text-xs text-gray-600">
-                <span className="flex-1 truncate">{url}</span>
-                <button
-                  type="button"
-                  onClick={() => setImageUrls((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="text-red-400 hover:text-red-600 flex-shrink-0"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* File URLs */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          첨부파일 URL <span className="text-gray-400 text-xs">(선택 — 구글 드라이브 등)</span>
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="url"
-            value={newFileUrl}
-            onChange={(e) => setNewFileUrl(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFileUrl())}
-            placeholder="https://drive.google.com/..."
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]"
-          />
-          <button
-            type="button"
-            onClick={addFileUrl}
-            className="px-3 py-2 text-sm bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200"
-          >
-            추가
-          </button>
-        </div>
-        {fileUrls.length > 0 && (
-          <ul className="space-y-1">
-            {fileUrls.map((url, i) => (
-              <li key={i} className="flex items-center gap-2 text-xs text-gray-600">
-                <span className="flex-1 truncate">{url}</span>
-                <button
-                  type="button"
-                  onClick={() => setFileUrls((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="text-red-400 hover:text-red-600 flex-shrink-0"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* 사진·자료 첨부 */}
+      <FileAttachmentZone
+        label="사진·자료 첨부 (선택) — 이미지·PDF·문서"
+        initialFiles={attachments}
+        onChange={(files, uploading) => {
+          setAttachments(files)
+          setIsUploading(uploading)
+        }}
+      />
 
       {/* Error */}
       {error && (
@@ -294,10 +231,10 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
         </button>
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || isUploading}
           className="px-5 py-2 text-sm bg-[#1B3A6B] text-white rounded-lg hover:bg-[#15305a] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? '저장 중...' : mode === 'edit' ? '수정 완료' : '칼럼 등록'}
+          {isUploading ? '업로드 중...' : submitting ? '저장 중...' : mode === 'edit' ? '수정 완료' : '칼럼 등록'}
         </button>
       </div>
     </form>

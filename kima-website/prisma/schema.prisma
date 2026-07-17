@@ -314,6 +314,7 @@ model Story {
   excerpt          String?
   thumbnail        String?
   images           String[]
+  attachments      Json?           // [{url, name, type}]
   videoUrls        String[]
   tags             String[]
   isPublished      Boolean         @default(true)
@@ -527,6 +528,7 @@ model ColumnPost {
   thumbnail   String?  // 대표 이미지 URL
   imageUrls   String[] // 본문 이미지 URL 목록
   fileUrls    String[] // 첨부파일 URL 목록
+  attachments Json?    // [{url, name, type}]
   tags        String[]
   viewCount   Int      @default(0)
   isPublished Boolean  @default(true)

@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ColumnEditor } from '@/components/column/ColumnEditor'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 interface StoryData {
   id: string
@@ -13,6 +15,15 @@ interface StoryData {
   ministryLocation: string | null
   videoUrls: string[]
   tags: string[]
+  images?: string[]
+  attachments?: { url: string; name: string; type: string }[] | null
+}
+
+function buildInitialFiles(story: StoryData): AttachedFile[] {
+  if (story.attachments && story.attachments.length > 0) {
+    return story.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type }))
+  }
+  return (story.images ?? []).map((url) => ({ url, name: '이미지', type: 'image/*' }))
 }
 
 export function RestWalkEditForm({ story }: { story: StoryData }) {
@@ -26,6 +37,8 @@ export function RestWalkEditForm({ story }: { story: StoryData }) {
     videoUrls: story.videoUrls.join('\n'),
     tags: story.tags.join(', '),
   })
+  const [attachments, setAttachments] = useState<AttachedFile[]>(() => buildInitialFiles(story))
+  const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -42,6 +55,10 @@ export function RestWalkEditForm({ story }: { story: StoryData }) {
     setSubmitting(true)
     setError('')
     try {
+      const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+      const firstImage = attachments.find((a) => a.type.startsWith('image/'))
+      const thumbnail = firstImage?.url ?? null
+
       const res = await fetch(`/api/stories/${story.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -51,6 +68,9 @@ export function RestWalkEditForm({ story }: { story: StoryData }) {
           excerpt: form.excerpt || null,
           authorName: form.authorName || null,
           ministryLocation: form.ministryLocation || null,
+          thumbnail,
+          images,
+          attachments,
           videoUrls: form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean),
           tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         }),
@@ -141,6 +161,19 @@ export function RestWalkEditForm({ story }: { story: StoryData }) {
         />
       </div>
 
+      {/* 사진·자료 첨부 */}
+      <div>
+        <FileAttachmentZone
+          label="사진·자료 첨부 (선택) — 이미지·PDF·문서"
+          initialFiles={attachments}
+          onChange={(files, uploading) => {
+            setAttachments(files)
+            setIsUploading(uploading)
+          }}
+        />
+        <p className="text-xs text-gray-400 mt-1.5">첫 번째 이미지가 썸네일로 사용됩니다.</p>
+      </div>
+
       {/* 태그 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">태그 (선택, 쉼표로 구분)</label>
@@ -165,10 +198,10 @@ export function RestWalkEditForm({ story }: { story: StoryData }) {
         </button>
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || isUploading}
           className="flex-1 py-3 bg-[#1B3A6B] text-white font-semibold rounded-lg hover:bg-[#15305a] transition-colors disabled:opacity-50 text-sm"
         >
-          {submitting ? '저장 중...' : '수정 완료'}
+          {isUploading ? '업로드 중...' : submitting ? '저장 중...' : '수정 완료'}
         </button>
       </div>
     </form>

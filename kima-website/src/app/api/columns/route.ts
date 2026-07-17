@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         thumbnail: parsed.data.thumbnail ?? null,
         imageUrls: parsed.data.imageUrls ?? [],
         fileUrls: parsed.data.fileUrls ?? [],
+        attachments: parsed.data.attachments ?? undefined,
         tags: parsed.data.tags ?? [],
         authorId: session.user.id,
       },

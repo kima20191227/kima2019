@@ -29,6 +29,16 @@ export const columnPostSchema = z.object({
   fileUrls: z
     .array(z.string().url('올바른 파일 URL 형식을 입력해주세요'))
     .optional(),
+  attachments: z
+    .array(
+      z.object({
+        url: z.string(),
+        name: z.string(),
+        type: z.string(),
+      }),
+    )
+    .optional()
+    .nullable(),
   tags: z
     .array(z.string().max(30, '태그는 30자 이하로 입력해주세요'))
     .optional(),

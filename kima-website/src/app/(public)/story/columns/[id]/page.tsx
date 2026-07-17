@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import type { UserRole } from '@prisma/client'
 import { ColumnDeleteButton } from '@/components/column/ColumnDeleteButton'
 import { sanitizeRichHtml } from '@/lib/sanitizeHtml'
+import { AttachmentSection, type Attachment } from '@/components/ui/AttachmentSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +49,8 @@ export default async function ColumnDetailPage({ params }: Props) {
   const role = session?.user?.role as UserRole | undefined
   const canManage =
     role === 'ADMIN' || role === 'OFFICER' || (!!session?.user?.id && column.author.id === session.user.id)
+
+  const attachments = (column.attachments ?? []) as unknown as Attachment[]
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -118,8 +121,15 @@ export default async function ColumnDetailPage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(column.content) }}
         />
 
-        {/* Attachments */}
-        {column.fileUrls.length > 0 && (
+        {/* Attachments (이미지 갤러리 + PDF 뷰어 + 문서 다운로드) — 신규 글 */}
+        {attachments.length > 0 && (
+          <div className="mt-6 rounded-lg bg-gray-50 border border-gray-200 p-4">
+            <AttachmentSection attachments={attachments} />
+          </div>
+        )}
+
+        {/* Attachments — 구 글 하위호환 (attachments 없을 때만) */}
+        {attachments.length === 0 && column.fileUrls.length > 0 && (
           <div className="mt-6 rounded-lg bg-gray-50 border border-gray-200 p-4">
             <p className="text-sm font-medium text-gray-700 mb-2">첨부파일</p>
             <ul className="space-y-1.5">

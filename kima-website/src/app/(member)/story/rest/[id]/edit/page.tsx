@@ -19,6 +19,7 @@ export default async function RestWalkEditPage({ params }: Props) {
     select: {
       id: true, title: true, content: true, excerpt: true,
       authorName: true, ministryLocation: true, videoUrls: true, tags: true,
+      thumbnail: true, images: true, attachments: true,
       authorId: true,
     },
   })
@@ -39,7 +40,12 @@ export default async function RestWalkEditPage({ params }: Props) {
       </div>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          <RestWalkEditForm story={story} />
+          <RestWalkEditForm
+            story={{
+              ...story,
+              attachments: (story.attachments as unknown as { url: string; name: string; type: string }[] | null) ?? null,
+            }}
+          />
         </div>
       </div>
     </div>

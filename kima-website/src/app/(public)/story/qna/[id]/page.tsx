@@ -7,6 +7,7 @@ import type { UserRole } from '@prisma/client'
 import { AnswerSection } from '@/components/qna/AnswerSection'
 import { QuestionDeleteButton } from '@/components/qna/QuestionDeleteButton'
 import { convertDriveUrl } from '@/lib/utils'
+import { AttachmentSection } from '@/components/ui/AttachmentSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,11 +54,13 @@ export default async function QnaDetailPage({ params }: Props) {
   const questionAttachments = Array.isArray(question.attachments)
     ? (question.attachments as AttachmentItem[])
     : []
-  const questionImages = questionAttachments.filter((a) => a.type?.startsWith('image/'))
   const inlineNamesInQuestion = new Set(
     Array.from(question.content.matchAll(/\[img:([^\]]*)\]/g)).map((m) => m[1])
   )
-  const questionGallery = questionImages.filter((a) => !inlineNamesInQuestion.has(a.name))
+  // 본문에 인라인으로 이미 표시되는 이미지는 제외하고, 나머지(비인라인 이미지 + PDF + 문서) 전체를 첨부 섹션에 넘김
+  const questionNonInlineAttachments = questionAttachments.filter(
+    (a) => !inlineNamesInQuestion.has(a.name)
+  )
   const questionInlineImages = Array.from(question.content.matchAll(/\[img:([^\]]*)\]\(([^)]*)\)/g)).map((m) => ({
     name: m[1],
     url: m[2],
@@ -110,10 +113,10 @@ export default async function QnaDetailPage({ params }: Props) {
               {questionContentText}
             </div>
           )}
-          {/* 이미지 (인라인 + 첨부) */}
-          {(questionInlineImages.length > 0 || questionGallery.length > 0) && (
+          {/* 본문 인라인 이미지 (마커로 삽입된 것) */}
+          {questionInlineImages.length > 0 && (
             <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 ${questionContentText.length > 0 ? 'mt-4' : ''}`}>
-              {[...questionInlineImages, ...questionGallery].map((img, i) => (
+              {questionInlineImages.map((img, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={i}
@@ -122,6 +125,12 @@ export default async function QnaDetailPage({ params }: Props) {
                   className="w-full rounded-lg object-cover aspect-square"
                 />
               ))}
+            </div>
+          )}
+          {/* 첨부파일 (비인라인 이미지 + PDF 뷰어 + 문서 다운로드) */}
+          {questionNonInlineAttachments.length > 0 && (
+            <div className={questionContentText.length > 0 || questionInlineImages.length > 0 ? 'mt-4' : ''}>
+              <AttachmentSection attachments={questionNonInlineAttachments} />
             </div>
           )}
 
