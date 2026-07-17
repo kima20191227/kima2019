@@ -19,22 +19,46 @@
 
 ## 기술 스택
 
+> 아래 버전은 실제 설치본(`package.json` / `node_modules`) 기준이다.
+> **메이저 버전이 문서와 다르면 코드가 정답이다.** 특히 Next 15 / React 19 /
+> Prisma 7 / Zod 4 / Tailwind 4는 학습 데이터와 API가 다르므로 추측하지 말 것.
+
 | 레이어 | 기술 | 버전 |
 |--------|------|------|
-| 프레임워크 | Next.js (App Router) | 14.x |
-| 언어 | TypeScript | 5.x |
-| 스타일 | Tailwind CSS | 3.x |
-| 인증 | NextAuth.js (Auth.js) | 5.x |
-| DB·백엔드 | Supabase (PostgreSQL) | latest |
-| ORM | Prisma | 5.x |
-| 스키마 검증 | Zod | 3.x |
-| 폼 관리·검증 | React Hook Form + Zod resolver | latest |
-| 단위·컴포넌트 테스트 | Vitest + Testing Library | latest |
-| E2E 테스트 | Playwright | latest |
-| 배포 | Cloudflare Pages | - |
+| 프레임워크 | Next.js (App Router) | 15.5.x |
+| UI 런타임 | React | 19.2.x |
+| 언어 | TypeScript | 5.9.x |
+| 스타일 | Tailwind CSS | 4.3.x |
+| 인증 | NextAuth.js (Auth.js) | 5.0 beta |
+| DB·백엔드 | Supabase (PostgreSQL) | supabase-js 2.x |
+| ORM | Prisma | 7.8.x |
+| 스키마 검증 | Zod | 4.4.x |
+| 폼 관리·검증 | React Hook Form + Zod resolver | 7.75.x |
+| 단위·컴포넌트 테스트 | Vitest + Testing Library | 4.1.x |
+| E2E 테스트 | Playwright | 1.59.x |
+| 배포 | Vercel + Cloudflare Pages (**둘 다 운영 중**) | - |
 | CDN·보안 | Cloudflare (프록시·WAF·DDoS) | - |
-| Cron Jobs | Cloudflare Workers Cron | - |
+| Cron Jobs | Vercel Cron (`vercel.json`) | - |
 | 도메인 | 가비아 구매 → Cloudflare 네임서버 위임 | - |
+
+### 메이저 버전별 함정 (실제로 걸렸던 것들)
+
+- **Prisma 7** — `db push`의 `--schema`·`--skip-generate` 플래그가 **없어졌다.**
+  설정은 전부 `prisma.config.ts`로 받는다. `PrismaClient`의 `datasources` 옵션도
+  폐지되어 **어댑터(`PrismaPg`)가 필수**다 (`src/lib/prisma.ts` 참고).
+- **Zod 4** — `z.string().url()`은 스킴을 검사하지 않아 `javascript:`·`data:`가
+  **통과한다.** URL을 그대로 `href`에 렌더한다면 `z.url({ protocol: /^https?$/ })`로
+  스킴을 제한할 것 (`src/schemas/attachment.schema.ts` 참고).
+- **Tailwind 4** — 설정 방식이 3.x와 다르다.
+- **배포는 Vercel과 Cloudflare Pages 둘 다 운영 중이다.** 어느 한쪽만 가정하고
+  고치면 다른 쪽에서 깨진다. 두 플랫폼의 제약이 **모두** 코드에 반영돼 있다:
+  - Vercel — 서버리스 **본문 4.5MB 한도**. 이것 때문에 큰 파일은 서버를 거치지 않고
+    드라이브로 직접 청크 업로드한다 (`src/lib/uploadClient.ts`).
+  - Cloudflare — 업로드 청크가 크면 **413**이 난다 (`d97ead6`에서 4MB로 복원).
+  - 크론은 `vercel.json`에만 있다. Cloudflare Pages는 `[[triggers.crons]]`를
+    지원하지 않아 `wrangler.toml`에서 제거됐다 (`1c3c9f2`).
+  - Cloudflare Pages 빌드는 OpenNext(`npm run build:cf`)를 쓴다. 아래 STEP 12의
+    `next-on-pages` 절차는 낡았다 (`554dc80`에서 OpenNext로 이전).
 
 ---
 
