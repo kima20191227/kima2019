@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { uploadResourceFile } from '@/lib/uploadClient'
 
 export interface AttachedFile {
@@ -103,16 +103,22 @@ export function FileAttachmentZone({
   const [driveError, setDriveError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const notify = useCallback(
-    (updated: UploadItem[]) => {
-      const done = updated
-        .filter((item) => item.status === 'done' && item.url)
-        .map((item) => ({ url: item.url!, name: item.name, type: item.type, isCover: item.isCover }))
-      const isUploading = updated.some((item) => item.status === 'uploading')
-      onChange(done, isUploading)
-    },
-    [onChange],
-  )
+  // onChange를 ref로 잡아두는 이유: 부모들이 인라인 화살표 함수를 넘기므로
+  // 매 렌더마다 신원이 바뀐다. 아래 useEffect의 의존성에 onChange를 넣으면
+  // onChange → 부모 setState → 리렌더 → 새 onChange → … 무한 루프가 된다.
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+
+  // items가 바뀐 뒤(커밋 이후)에 부모로 알린다.
+  // setItems 업데이터 안에서 부모 setState를 호출하면 렌더 도중 다른 컴포넌트를
+  // 갱신하는 것이라 React가 경고한다. 반드시 여기서만 알릴 것.
+  useEffect(() => {
+    const done = items
+      .filter((item) => item.status === 'done' && item.url)
+      .map((item) => ({ url: item.url!, name: item.name, type: item.type, isCover: item.isCover }))
+    const isUploading = items.some((item) => item.status === 'uploading')
+    onChangeRef.current(done, isUploading)
+  }, [items])
 
   const uploadOne = useCallback(
     async (itemId: string, file: File) => {
@@ -127,22 +133,19 @@ export function FileAttachmentZone({
                 : item,
             ),
           )
-          notify(next)
           return next
         })
       } catch (err) {
-        setItems((prev) => {
-          const next = prev.map((item) =>
+        setItems((prev) =>
+          prev.map((item) =>
             item.id === itemId
               ? { ...item, status: 'error' as const, errorMsg: err instanceof Error ? err.message : '업로드 실패' }
               : item,
-          )
-          notify(next)
-          return next
-        })
+          ),
+        )
       }
     },
-    [notify],
+    [],
   )
 
   const addFiles = useCallback(
@@ -160,14 +163,13 @@ export function FileAttachmentZone({
           isCover: false,
         }))
         const next = ensureCover([...prev, ...newItems])
-        notify(next)
         setTimeout(() => {
           newItems.forEach((item, index) => uploadOne(item.id, selected[index]))
         }, 0)
         return next
       })
     },
-    [maxFiles, uploadOne, notify],
+    [maxFiles, uploadOne],
   )
 
   const addDriveLink = useCallback(() => {
@@ -190,37 +192,21 @@ export function FileAttachmentZone({
         url,
         isCover: false,
       }
-      const next = [...prev, newItem]
-      notify(next)
-      return next
+      return [...prev, newItem]
     })
     setDriveInput('')
     setDriveError('')
     setDriveOpen(false)
-  }, [driveInput, maxFiles, notify])
+  }, [driveInput, maxFiles])
 
-  const setCover = useCallback(
-    (id: string) => {
-      setItems((prev) => {
-        const next = prev.map((item) => ({ ...item, isCover: item.id === id }))
-        notify(next)
-        return next
-      })
-    },
-    [notify],
-  )
+  const setCover = useCallback((id: string) => {
+    setItems((prev) => prev.map((item) => ({ ...item, isCover: item.id === id })))
+  }, [])
 
-  const removeItem = useCallback(
-    (id: string) => {
-      setItems((prev) => {
-        // 대표 이미지를 지우면 남은 첫 이미지가 대표로 승격된다.
-        const next = ensureCover(prev.filter((item) => item.id !== id))
-        notify(next)
-        return next
-      })
-    },
-    [notify],
-  )
+  const removeItem = useCallback((id: string) => {
+    // 대표 이미지를 지우면 남은 첫 이미지가 대표로 승격된다.
+    setItems((prev) => ensureCover(prev.filter((item) => item.id !== id)))
+  }, [])
 
   return (
     <div className={className}>
