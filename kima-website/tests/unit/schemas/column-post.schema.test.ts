@@ -158,6 +158,45 @@ describe('columnPostSchema - attachments', () => {
     }
   })
 
+  // XSS 회귀 가드 — 첨부 url은 AttachmentSection에서 href로 그대로 렌더되므로
+  // javascript: 스킴이 저장되면 클릭 시 실행된다. z.url()만으로는 막히지 않으므로
+  // protocol 제한(http/https)이 살아 있는지 반드시 지킨다.
+  it.each([
+    ['javascript 스킴', 'javascript:alert(1)'],
+    ['대소문자 섞인 javascript 스킴', 'JaVaScRiPt:alert(1)'],
+    ['data 스킴', 'data:text/html,<script>alert(1)</script>'],
+    ['vbscript 스킴', 'vbscript:msgbox(1)'],
+  ])('첨부 url에 %s이 오면 거부한다', (_label, url) => {
+    const result = columnPostSchema.safeParse({
+      ...validData,
+      attachments: [{ url, name: 'evil', type: 'image/png' }],
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const err = result.error.issues.find((i) => i.path.includes('url'))
+      expect(err?.path).toEqual(['attachments', 0, 'url'])
+    }
+  })
+
+  it('첨부 url이 상대 경로면 거부한다', () => {
+    const result = columnPostSchema.safeParse({
+      ...validData,
+      attachments: [{ url: '/uploads/a.png', name: 'a.png', type: 'image/png' }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('첨부 url이 http/https면 통과한다', () => {
+    const result = columnPostSchema.safeParse({
+      ...validData,
+      attachments: [
+        { url: 'http://example.org/a.pdf', name: 'a.pdf', type: 'application/pdf' },
+        { url: 'https://drive.google.com/file/d/abc/view', name: 'b.pdf', type: 'application/pdf' },
+      ],
+    })
+    expect(result.success).toBe(true)
+  })
+
   it('name이 없으면 에러를 반환한다', () => {
     const result = columnPostSchema.safeParse({
       ...validData,

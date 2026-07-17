@@ -148,12 +148,16 @@ describe('findIdSchema', () => {
     }
   })
 
-  it('전화번호가 비어 있으면 에러를 반환한다', () => {
+  it('전화번호가 비어 있어도 통과한다 — 이름만으로도 조회 가능', () => {
     const result = findIdSchema.safeParse({ name: '홍길동', phone: '' })
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      const phoneError = result.error.issues.find((i) => i.path.includes('phone'))
-      expect(phoneError?.message).toBe('전화번호를 입력해주세요')
+    expect(result.success).toBe(true)
+  })
+
+  it('전화번호가 없어도 통과한다 — 전화번호는 선택 항목이다', () => {
+    const result = findIdSchema.safeParse({ name: '홍길동' })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.phone).toBeUndefined()
     }
   })
 })

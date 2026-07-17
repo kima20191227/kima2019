@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { attachmentSchema } from './attachment.schema'
 
 export const columnPostSchema = z.object({
   title: z
@@ -30,14 +31,7 @@ export const columnPostSchema = z.object({
     .array(z.string().url('올바른 파일 URL 형식을 입력해주세요'))
     .optional(),
   attachments: z
-    .array(
-      z.object({
-        url: z.string(),
-        name: z.string(),
-        type: z.string(),
-        isCover: z.boolean().optional(),
-      }),
-    )
+    .array(attachmentSchema)
     .optional()
     .nullable(),
   tags: z

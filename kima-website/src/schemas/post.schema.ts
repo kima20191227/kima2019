@@ -1,11 +1,9 @@
 import { z } from 'zod'
+import { attachmentSchema } from './attachment.schema'
 
-export const attachmentSchema = z.object({
-  url: z.string().url(),
-  name: z.string(),
-  type: z.string(),
-  isCover: z.boolean().optional(),
-})
+// 첨부 스키마는 attachment.schema.ts가 단일 정의처.
+// 기존 import 경로 호환을 위해 re-export 유지.
+export { attachmentSchema }
 
 export const postSchema = z.object({
   title: z

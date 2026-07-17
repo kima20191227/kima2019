@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
+import { attachmentSchema } from '@/schemas/attachment.schema'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 const OFFICER_TYPES = ['NOTICE', 'NEWS', 'EVENT_MEDIA'] as const
@@ -16,7 +17,7 @@ const storySchema = z.object({
   excerpt:          z.string().max(300).optional().nullable(),
   thumbnail:        z.string().url().optional().nullable(),
   images:           z.array(z.string()).optional(),
-  attachments:      z.array(z.object({ url: z.string(), name: z.string(), type: z.string(), isCover: z.boolean().optional() })).optional().nullable(),
+  attachments:      z.array(attachmentSchema).optional().nullable(),
   videoUrls:        z.array(z.string()).optional(),
   tags:             z.array(z.string()).optional(),
   // status와 isPublished는 클라이언트 입력 무시 → 서버에서 역할 기반으로 결정

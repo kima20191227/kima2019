@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
+import { attachmentSchema } from '@/schemas/attachment.schema'
 
 function isAdmin(role?: string) {
   return role === 'ADMIN' || role === 'OFFICER'
@@ -17,7 +18,7 @@ const adminPatchSchema = z.object({
   excerpt: z.string().max(300).nullable().optional(),
   thumbnail: z.string().nullable().optional(),
   images: z.array(z.string()).optional(),
-  attachments: z.array(z.object({ url: z.string(), name: z.string(), type: z.string(), isCover: z.boolean().optional() })).nullable().optional(),
+  attachments: z.array(attachmentSchema).nullable().optional(),
   linkUrl: z.string().nullable().optional(),
   source: z.string().max(100).nullable().optional(),
   publishedAt: z.string().nullable().optional(),
@@ -35,7 +36,7 @@ const authorPatchSchema = z.object({
   excerpt: z.string().max(300).nullable().optional(),
   thumbnail: z.string().nullable().optional(),
   images: z.array(z.string()).optional(),
-  attachments: z.array(z.object({ url: z.string(), name: z.string(), type: z.string(), isCover: z.boolean().optional() })).nullable().optional(),
+  attachments: z.array(attachmentSchema).nullable().optional(),
   linkUrl: z.string().nullable().optional(),
   authorName: z.string().max(50).nullable().optional(),
   eventLocation: z.string().max(100).nullable().optional(),
