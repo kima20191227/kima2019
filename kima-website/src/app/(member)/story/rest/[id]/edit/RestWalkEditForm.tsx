@@ -15,15 +15,22 @@ interface StoryData {
   ministryLocation: string | null
   videoUrls: string[]
   tags: string[]
+  thumbnail?: string | null
   images?: string[]
-  attachments?: { url: string; name: string; type: string }[] | null
+  attachments?: { url: string; name: string; type: string; isCover?: boolean }[] | null
 }
 
 function buildInitialFiles(story: StoryData): AttachedFile[] {
   if (story.attachments && story.attachments.length > 0) {
-    return story.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type }))
+    return story.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type, isCover: a.isCover }))
   }
-  return (story.images ?? []).map((url) => ({ url, name: '이미지', type: 'image/*' }))
+  // 구 데이터: attachments 없이 images만 있는 글은 thumbnail로 대표를 복원한다.
+  return (story.images ?? []).map((url) => ({
+    url,
+    name: '이미지',
+    type: 'image/*',
+    isCover: story.thumbnail ? url === story.thumbnail : undefined,
+  }))
 }
 
 export function RestWalkEditForm({ story }: { story: StoryData }) {
@@ -56,8 +63,9 @@ export function RestWalkEditForm({ story }: { story: StoryData }) {
     setError('')
     try {
       const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+      const coverImage = attachments.find((a) => a.isCover && a.type.startsWith('image/'))
       const firstImage = attachments.find((a) => a.type.startsWith('image/'))
-      const thumbnail = firstImage?.url ?? null
+      const thumbnail = coverImage?.url ?? firstImage?.url ?? null
 
       const res = await fetch(`/api/stories/${story.id}`, {
         method: 'PATCH',
@@ -171,7 +179,7 @@ export function RestWalkEditForm({ story }: { story: StoryData }) {
             setIsUploading(uploading)
           }}
         />
-        <p className="text-xs text-gray-400 mt-1.5">첫 번째 이미지가 썸네일로 사용됩니다.</p>
+        <p className="text-xs text-gray-400 mt-1.5">첫 번째 이미지(또는 &apos;대표 설정&apos; 이미지)가 썸네일로 사용됩니다.</p>
       </div>
 
       {/* 태그 */}

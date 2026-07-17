@@ -35,6 +35,7 @@ export const columnPostSchema = z.object({
         url: z.string(),
         name: z.string(),
         type: z.string(),
+        isCover: z.boolean().optional(),
       }),
     )
     .optional()

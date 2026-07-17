@@ -36,8 +36,9 @@ export default function RestWalkWritePage() {
     setError('')
     try {
       const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+      const coverImage = attachments.find((a) => a.isCover && a.type.startsWith('image/'))
       const firstImage = attachments.find((a) => a.type.startsWith('image/'))
-      const thumbnail = firstImage?.url ?? null
+      const thumbnail = coverImage?.url ?? firstImage?.url ?? null
 
       const res = await fetch('/api/stories', {
         method: 'POST',
@@ -167,7 +168,7 @@ export default function RestWalkWritePage() {
                 setIsUploading(uploading)
               }}
             />
-            <p className="text-xs text-gray-400 mt-1.5">첫 번째 이미지가 썸네일로 사용됩니다.</p>
+            <p className="text-xs text-gray-400 mt-1.5">첫 번째 이미지(또는 &apos;대표 설정&apos; 이미지)가 썸네일로 사용됩니다.</p>
           </div>
 
           {/* 태그 */}

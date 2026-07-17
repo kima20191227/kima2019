@@ -7,6 +7,7 @@ export interface AttachedFile {
   url: string
   name: string
   type: string
+  isCover?: boolean
 }
 
 interface UploadItem {
@@ -16,6 +17,7 @@ interface UploadItem {
   status: 'uploading' | 'done' | 'error'
   url?: string
   errorMsg?: string
+  isCover: boolean
 }
 
 interface Props {
@@ -28,6 +30,20 @@ interface Props {
 
 function makeId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
+function isImage(type: string) {
+  return type.startsWith('image/')
+}
+
+// 이미지가 하나라도 있으면 대표 이미지는 항상 하나 존재하도록 보정한다.
+// 이미 지정된 대표가 있으면 그대로 두고, 없으면 첫 번째 이미지를 대표로 승격한다.
+function ensureCover(items: UploadItem[]): UploadItem[] {
+  const images = items.filter((item) => isImage(item.type))
+  if (images.length === 0) return items
+  if (images.some((item) => item.isCover)) return items
+  const firstImageId = images[0].id
+  return items.map((item) => ({ ...item, isCover: item.id === firstImageId }))
 }
 
 function FileIcon({ type }: { type: string }) {
@@ -70,13 +86,16 @@ export function FileAttachmentZone({
   className = '',
 }: Props) {
   const [items, setItems] = useState<UploadItem[]>(() =>
-    initialFiles.map((file) => ({
-      id: makeId(),
-      name: file.name,
-      type: file.type,
-      status: 'done' as const,
-      url: file.url,
-    })),
+    ensureCover(
+      initialFiles.map((file) => ({
+        id: makeId(),
+        name: file.name,
+        type: file.type,
+        status: 'done' as const,
+        url: file.url,
+        isCover: file.isCover ?? false,
+      })),
+    ),
   )
   const [isDragging, setIsDragging] = useState(false)
   const [driveOpen, setDriveOpen] = useState(false)
@@ -88,7 +107,7 @@ export function FileAttachmentZone({
     (updated: UploadItem[]) => {
       const done = updated
         .filter((item) => item.status === 'done' && item.url)
-        .map((item) => ({ url: item.url!, name: item.name, type: item.type }))
+        .map((item) => ({ url: item.url!, name: item.name, type: item.type, isCover: item.isCover }))
       const isUploading = updated.some((item) => item.status === 'uploading')
       onChange(done, isUploading)
     },
@@ -100,10 +119,13 @@ export function FileAttachmentZone({
       try {
         const uploaded = await uploadResourceFile(file)
         setItems((prev) => {
-          const next = prev.map((item) =>
-            item.id === itemId
-              ? { ...item, status: 'done' as const, url: uploaded.url, type: uploaded.fileType ?? item.type }
-              : item,
+          // 업로드 응답으로 실제 MIME 타입이 확정되므로 대표 이미지 보정을 다시 수행한다.
+          const next = ensureCover(
+            prev.map((item) =>
+              item.id === itemId
+                ? { ...item, status: 'done' as const, url: uploaded.url, type: uploaded.fileType ?? item.type }
+                : item,
+            ),
           )
           notify(next)
           return next
@@ -135,12 +157,14 @@ export function FileAttachmentZone({
           name: file.name,
           type: file.type || 'application/octet-stream',
           status: 'uploading' as const,
+          isCover: false,
         }))
-        notify([...prev, ...newItems])
+        const next = ensureCover([...prev, ...newItems])
+        notify(next)
         setTimeout(() => {
           newItems.forEach((item, index) => uploadOne(item.id, selected[index]))
         }, 0)
-        return [...prev, ...newItems]
+        return next
       })
     },
     [maxFiles, uploadOne, notify],
@@ -164,6 +188,7 @@ export function FileAttachmentZone({
         type: 'application/x-drive-link',
         status: 'done',
         url,
+        isCover: false,
       }
       const next = [...prev, newItem]
       notify(next)
@@ -174,10 +199,22 @@ export function FileAttachmentZone({
     setDriveOpen(false)
   }, [driveInput, maxFiles, notify])
 
+  const setCover = useCallback(
+    (id: string) => {
+      setItems((prev) => {
+        const next = prev.map((item) => ({ ...item, isCover: item.id === id }))
+        notify(next)
+        return next
+      })
+    },
+    [notify],
+  )
+
   const removeItem = useCallback(
     (id: string) => {
       setItems((prev) => {
-        const next = prev.filter((item) => item.id !== id)
+        // 대표 이미지를 지우면 남은 첫 이미지가 대표로 승격된다.
+        const next = ensureCover(prev.filter((item) => item.id !== id))
         notify(next)
         return next
       })
@@ -288,6 +325,20 @@ export function FileAttachmentZone({
               </div>
 
               <span className="flex-1 text-xs text-gray-700 truncate">{item.name}</span>
+
+              {item.status === 'done' && isImage(item.type) && (
+                <button
+                  type="button"
+                  onClick={() => setCover(item.id)}
+                  className={`shrink-0 px-2 py-1 text-[11px] font-medium rounded transition-colors ${
+                    item.isCover
+                      ? 'bg-[#C8922A] text-white'
+                      : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {item.isCover ? '대표이미지 ✓' : '대표 설정'}
+                </button>
+              )}
 
               {item.status === 'uploading' && (
                 <div className="w-4 h-4 border-2 border-[#1B3A6B] border-t-transparent rounded-full animate-spin shrink-0" />

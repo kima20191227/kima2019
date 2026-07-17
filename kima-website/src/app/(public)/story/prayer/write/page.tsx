@@ -32,8 +32,9 @@ export default function PrayerWritePage() {
     setError('')
     try {
       const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+      const coverImage = attachments.find((a) => a.isCover && a.type.startsWith('image/'))
       const firstImage = attachments.find((a) => a.type.startsWith('image/'))
-      const thumbnail = firstImage?.url ?? null
+      const thumbnail = coverImage?.url ?? firstImage?.url ?? null
 
       const res = await fetch('/api/stories', {
         method: 'POST',

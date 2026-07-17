@@ -18,7 +18,7 @@ export default async function EventPromoEditPage({ params }: Props) {
     select: {
       id: true, title: true, content: true, excerpt: true,
       authorName: true, eventLocation: true, linkUrl: true,
-      thumbnail: true, images: true, videoUrls: true, tags: true, authorId: true,
+      thumbnail: true, images: true, attachments: true, videoUrls: true, tags: true, authorId: true,
     },
   }).catch(() => null)
 
@@ -33,7 +33,12 @@ export default async function EventPromoEditPage({ params }: Props) {
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-[#1B3A6B] mb-1">행사 홍보 수정</h1>
         <p className="text-sm text-gray-500 mb-8">등록한 행사 홍보 내용을 수정합니다.</p>
-        <EventPromoEditForm story={story} />
+        <EventPromoEditForm
+          story={{
+            ...story,
+            attachments: (story.attachments as unknown as { url: string; name: string; type: string; isCover?: boolean }[] | null) ?? null,
+          }}
+        />
       </div>
     </div>
   )

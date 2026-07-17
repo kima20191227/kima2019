@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
-import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 export default function EventPromoWritePage() {
   const router = useRouter()
@@ -17,7 +17,7 @@ export default function EventPromoWritePage() {
     videoUrls: '',
     tags: '',
   })
-  const [storyImages, setStoryImages] = useState<PhotoAttachment[]>([])
+  const [attachments, setAttachments] = useState<AttachedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -27,8 +27,8 @@ export default function EventPromoWritePage() {
     setSubmitting(true)
     setError('')
 
-    const images = storyImages.map((a) => a.url)
-    const coverImage = storyImages.find((a) => a.isCover)
+    const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+    const coverImage = attachments.find((a) => a.isCover && a.type.startsWith('image/'))
     const thumbnail = coverImage?.url ?? images[0] ?? null
     const videoUrls = form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean)
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean)
@@ -47,6 +47,7 @@ export default function EventPromoWritePage() {
           linkUrl: form.websiteUrl || null,
           thumbnail,
           images,
+          attachments,
           videoUrls,
           tags,
         }),
@@ -155,17 +156,18 @@ export default function EventPromoWritePage() {
             <p className="text-xs text-gray-400 mt-1">행사 공식 홈페이지, 신청 폼, SNS 링크 등을 입력하세요.</p>
           </div>
 
-          {/* 이미지 업로드 */}
+          {/* 사진·자료 첨부 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">행사 사진 (선택)</label>
-            <PhotoUploadZone
-              onAttachmentsChange={(atts, uploading) => {
-                setStoryImages(atts)
+            <FileAttachmentZone
+              label="행사 사진·자료 첨부 (선택) — 이미지·PDF·문서"
+              initialFiles={attachments}
+              onChange={(files, uploading) => {
+                setAttachments(files)
                 setIsUploading(uploading)
               }}
             />
             <p className="text-xs text-gray-400 mt-1.5">
-              &apos;대표 설정&apos; 버튼을 눌러 대표 이미지를 지정하거나 첫 번째 사진이 자동으로 대표 이미지가 됩니다.
+              첫 번째 이미지(또는 &apos;대표 설정&apos; 이미지)가 썸네일로 사용됩니다.
             </p>
           </div>
 

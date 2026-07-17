@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
-import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 interface MediaStory {
   id: string
@@ -16,10 +16,24 @@ interface MediaStory {
   images: string[]
   videoUrls: string[]
   tags: string[]
+  attachments?: { url: string; name: string; type: string; isCover?: boolean }[] | null
 }
 
 interface Props {
   story: MediaStory
+}
+
+function buildInitialFiles(story: MediaStory): AttachedFile[] {
+  if (story.attachments && story.attachments.length > 0) {
+    return story.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type, isCover: a.isCover }))
+  }
+  // 구 데이터: attachments 없이 images만 있는 글은 thumbnail로 대표를 복원한다.
+  return story.images.map((url, i) => ({
+    url,
+    name: url.split('/').pop() ?? `image-${i}`,
+    type: 'image/*',
+    isCover: story.thumbnail ? url === story.thumbnail : undefined,
+  }))
 }
 
 export function MediaEditForm({ story }: Props) {
@@ -39,14 +53,7 @@ export function MediaEditForm({ story }: Props) {
     tags: story.tags.join(', '),
   })
 
-  const [photos, setPhotos] = useState<PhotoAttachment[]>(
-    story.images.map((url, i) => ({
-      url,
-      name: url.split('/').pop() ?? `image-${i}`,
-      type: 'image/jpeg',
-      isCover: url === story.thumbnail || (i === 0 && !story.thumbnail),
-    }))
-  )
+  const [attachments, setAttachments] = useState<AttachedFile[]>(() => buildInitialFiles(story))
   const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -56,8 +63,8 @@ export function MediaEditForm({ story }: Props) {
     setSubmitting(true)
     setError('')
 
-    const images = photos.map((a) => a.url)
-    const coverImage = photos.find((a) => a.isCover)
+    const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+    const coverImage = attachments.find((a) => a.isCover && a.type.startsWith('image/'))
     const thumbnail = coverImage?.url ?? images[0] ?? null
     const videoUrls = form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean)
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean)
@@ -74,6 +81,7 @@ export function MediaEditForm({ story }: Props) {
           publishedAt: form.eventDate ? new Date(form.eventDate).toISOString() : null,
           thumbnail,
           images,
+          attachments,
           videoUrls,
           tags,
         }),
@@ -156,15 +164,17 @@ export function MediaEditForm({ story }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">행사 사진</label>
-        <PhotoUploadZone
-          initialAttachments={photos}
-          onAttachmentsChange={(atts, uploading) => {
-            setPhotos(atts)
+        <FileAttachmentZone
+          label="행사 사진·자료 첨부 — 이미지·PDF·문서"
+          initialFiles={attachments}
+          onChange={(files, uploading) => {
+            setAttachments(files)
             setIsUploading(uploading)
           }}
         />
-        <p className="text-xs text-gray-400 mt-1.5">기존 사진을 유지하거나 새 사진을 추가·삭제할 수 있습니다.</p>
+        <p className="text-xs text-gray-400 mt-1.5">
+          첫 번째 이미지(또는 &apos;대표 설정&apos; 이미지)가 썸네일로 사용됩니다.
+        </p>
       </div>
 
       <div>

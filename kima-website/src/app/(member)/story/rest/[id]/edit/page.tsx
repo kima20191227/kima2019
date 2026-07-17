@@ -43,7 +43,7 @@ export default async function RestWalkEditPage({ params }: Props) {
           <RestWalkEditForm
             story={{
               ...story,
-              attachments: (story.attachments as unknown as { url: string; name: string; type: string }[] | null) ?? null,
+              attachments: (story.attachments as unknown as { url: string; name: string; type: string; isCover?: boolean }[] | null) ?? null,
             }}
           />
         </div>

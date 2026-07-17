@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PhotoUploadZone } from '@/components/ui/PhotoUploadZone'
-import type { PhotoAttachment } from '@/components/ui/PhotoUploadZone'
+import { FileAttachmentZone } from '@/components/ui/FileAttachmentZone'
+import type { AttachedFile } from '@/components/ui/FileAttachmentZone'
 
 interface StoryData {
   id: string
@@ -17,20 +17,25 @@ interface StoryData {
   images: string[]
   videoUrls: string[]
   tags: string[]
+  attachments?: { url: string; name: string; type: string; isCover?: boolean }[] | null
+}
+
+function buildInitialFiles(story: StoryData): AttachedFile[] {
+  if (story.attachments && story.attachments.length > 0) {
+    return story.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type, isCover: a.isCover }))
+  }
+  // 구 데이터: attachments 없이 images만 있는 글은 thumbnail로 대표를 복원한다.
+  const all = story.images.length > 0 ? story.images : (story.thumbnail ? [story.thumbnail] : [])
+  return all.map((url, idx) => ({
+    url,
+    name: `image-${idx + 1}`,
+    type: 'image/*',
+    isCover: story.thumbnail ? url === story.thumbnail : undefined,
+  }))
 }
 
 export function EventPromoEditForm({ story }: { story: StoryData }) {
   const router = useRouter()
-
-  const initialAttachments: PhotoAttachment[] = (() => {
-    const all = story.images.length > 0 ? story.images : (story.thumbnail ? [story.thumbnail] : [])
-    return all.map((url, idx) => ({
-      url,
-      name: `image-${idx + 1}`,
-      type: 'image/jpeg',
-      isCover: url === story.thumbnail || idx === 0,
-    }))
-  })()
 
   const [form, setForm] = useState({
     title: story.title,
@@ -42,7 +47,7 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
     videoUrls: story.videoUrls.join('\n'),
     tags: story.tags.join(', '),
   })
-  const [storyImages, setStoryImages] = useState<PhotoAttachment[]>(initialAttachments)
+  const [attachments, setAttachments] = useState<AttachedFile[]>(() => buildInitialFiles(story))
   const [isUploading, setIsUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -52,8 +57,8 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
     setSubmitting(true)
     setError('')
 
-    const images = storyImages.map((a) => a.url)
-    const coverImage = storyImages.find((a) => a.isCover)
+    const images = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
+    const coverImage = attachments.find((a) => a.isCover && a.type.startsWith('image/'))
     const thumbnail = coverImage?.url ?? images[0] ?? null
     const videoUrls = form.videoUrls.split('\n').map((v) => v.trim()).filter(Boolean)
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean)
@@ -71,6 +76,7 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
           linkUrl: form.websiteUrl || null,
           thumbnail,
           images,
+          attachments,
           videoUrls,
           tags,
         }),
@@ -167,18 +173,18 @@ export function EventPromoEditForm({ story }: { story: StoryData }) {
         <p className="text-xs text-gray-400 mt-1">행사 공식 홈페이지, 신청 폼, SNS 링크 등을 입력하세요.</p>
       </div>
 
-      {/* 이미지 업로드 */}
+      {/* 사진·자료 첨부 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">행사 사진 (선택)</label>
-        <PhotoUploadZone
-          initialAttachments={initialAttachments}
-          onAttachmentsChange={(atts, uploading) => {
-            setStoryImages(atts)
+        <FileAttachmentZone
+          label="행사 사진·자료 첨부 (선택) — 이미지·PDF·문서"
+          initialFiles={attachments}
+          onChange={(files, uploading) => {
+            setAttachments(files)
             setIsUploading(uploading)
           }}
         />
         <p className="text-xs text-gray-400 mt-1.5">
-          &apos;대표 설정&apos; 버튼을 눌러 대표 이미지를 지정하거나 첫 번째 사진이 자동으로 대표 이미지가 됩니다.
+          첫 번째 이미지(또는 &apos;대표 설정&apos; 이미지)가 썸네일로 사용됩니다.
         </p>
       </div>
 

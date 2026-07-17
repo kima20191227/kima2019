@@ -14,7 +14,7 @@ interface InitialData {
   thumbnail?: string | null
   imageUrls?: string[]
   fileUrls?: string[]
-  attachments?: { url: string; name: string; type: string }[] | null
+  attachments?: { url: string; name: string; type: string; isCover?: boolean }[] | null
   tags?: string[]
   authorName?: string | null
 }
@@ -26,12 +26,14 @@ interface Props {
 
 function buildInitialFiles(initialData?: InitialData): AttachedFile[] {
   if (initialData?.attachments && initialData.attachments.length > 0) {
-    return initialData.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type }))
+    return initialData.attachments.map((a) => ({ url: a.url, name: a.name, type: a.type, isCover: a.isCover }))
   }
+  // 구 데이터: attachments 없이 imageUrls만 있는 글은 thumbnail로 대표를 복원한다.
   const fromImages = (initialData?.imageUrls ?? []).map((url) => ({
     url,
     name: '이미지',
     type: 'image/*',
+    isCover: initialData?.thumbnail ? url === initialData.thumbnail : undefined,
   }))
   const fromFiles = (initialData?.fileUrls ?? []).map((url) => ({
     url,
@@ -82,7 +84,9 @@ export function ColumnWriteForm({ initialData, mode }: Props) {
     try {
       const imageUrls = attachments.filter((a) => a.type.startsWith('image/')).map((a) => a.url)
       const fileUrls = attachments.filter((a) => !a.type.startsWith('image/')).map((a) => a.url)
-      const resolvedThumbnail = thumbnail.trim() || imageUrls[0] || null
+      const coverImage = attachments.find((a) => a.isCover && a.type.startsWith('image/'))
+      // 직접 입력한 대표 이미지 URL이 최우선, 없으면 '대표 설정' 이미지, 그 다음 첫 이미지
+      const resolvedThumbnail = thumbnail.trim() || coverImage?.url || imageUrls[0] || null
 
       const body = {
         title: title.trim(),
