@@ -26,6 +26,7 @@ const NAV = [
   { href: '/admin/columns',       label: '칼럼 관리',    icon: '✍️', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/qna',           label: 'Q&A 관리',    icon: '💬', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/forum-archives', label: '포럼·리스닝콜', icon: '🏛', exact: false, minRole: 'OFFICER' as const },
+  { href: '/admin/forum2026',     label: '2026 포럼 신청', icon: '📝', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/email',         label: '메일 발송',    icon: '✉️', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/bulk-register', label: '회원 일괄등록', icon: '👤', exact: false, minRole: 'ADMIN'   as const },
   { href: '/admin/popups',        label: '팝업 관리',    icon: '🪟', exact: false, minRole: 'ADMIN'   as const },

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { FORUM_INFO, FORUM_BANK, getForumDayLabel } from '@/lib/forum2026'
 
 export const SITE_URL = process.env.NEXTAUTH_URL ?? 'https://kima2019.org'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'kima20191227@gmail.com'
@@ -176,5 +177,55 @@ export function eventReminderEmailHtml(eventTitle: string, scheduledAt: Date, zo
     </div>
     <p>참석을 기대합니다. 문의 사항이 있으시면 <a href="mailto:${ADMIN_EMAIL}" style="color:#1B3A6B;">${ADMIN_EMAIL}</a>으로 연락해 주세요.</p>
     ${zoomUrl ? btn('Zoom 참여하기', zoomUrl) : ''}
+  `)
+}
+
+// 비로그인 공개 폼 입력값이 들어가므로 HTML 이스케이프
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/** 2026 KIMA 포럼 참가 신청 완료 */
+export function forum2026RegisteredEmailHtml(name: string, depositorName: string, attendDays: string[]) {
+  const days = attendDays.map(getForumDayLabel).join(', ')
+  return layout(`
+    <h2 style="color:#1B3A6B;margin-top:0;">${FORUM_INFO.title} 참가 신청이 접수되었습니다</h2>
+    <p>${escapeHtml(name)}님, <strong>${FORUM_INFO.title}</strong>(${FORUM_INFO.subtitle}) 참가 신청을 접수하였습니다.</p>
+    <div style="background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:16px 20px;margin:24px 0;">
+      <p style="margin:0;font-size:13px;color:#666;">일시</p>
+      <p style="margin:4px 0 0;font-weight:700;color:#1B3A6B;">${FORUM_INFO.dateText}</p>
+      <p style="margin:12px 0 0;font-size:13px;color:#666;">장소</p>
+      <p style="margin:4px 0 0;font-weight:700;color:#1B3A6B;">${FORUM_INFO.venueName}</p>
+      <p style="margin:2px 0 0;font-size:13px;color:#666;">${FORUM_INFO.venueAddress}</p>
+      <p style="margin:12px 0 0;font-size:13px;color:#666;">신청한 참석일</p>
+      <p style="margin:4px 0 0;font-weight:700;color:#1B3A6B;">${escapeHtml(days)}</p>
+    </div>
+    <div style="background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:16px 20px;margin:24px 0;">
+      <p style="margin:0;font-weight:600;">참가비 입금 계좌 (${FORUM_INFO.feeText})</p>
+      <p style="margin:8px 0 0;font-size:18px;font-weight:700;color:#1B3A6B;">${FORUM_BANK.bank} ${FORUM_BANK.account}</p>
+      <p style="margin:4px 0 0;color:#666;font-size:13px;">예금주: ${FORUM_BANK.holder}</p>
+      <p style="margin:12px 0 0;font-size:14px;">입금자명은 <strong>${escapeHtml(depositorName)}</strong>(으)로 입금해 주세요.</p>
+    </div>
+    <p>입금이 확인되면 신청이 확정됩니다. 문의 사항이 있으시면 <a href="mailto:${ADMIN_EMAIL}" style="color:#1B3A6B;">${ADMIN_EMAIL}</a>으로 연락해 주세요.</p>
+    ${btn('포럼 안내 다시 보기', `${SITE_URL}/forum2026`)}
+  `)
+}
+
+/** 2026 KIMA 포럼 신규 신청 — 관리자 알림 */
+export function forum2026AdminNotifyEmailHtml(name: string, organization: string, phone: string, depositorName: string) {
+  return layout(`
+    <h2 style="color:#1B3A6B;margin-top:0;">${FORUM_INFO.title} 신규 참가 신청</h2>
+    <ul style="padding-left:20px;line-height:2;">
+      <li>이름: ${escapeHtml(name)}</li>
+      <li>소속: ${escapeHtml(organization)}</li>
+      <li>휴대폰: ${escapeHtml(phone)}</li>
+      <li>입금자명: ${escapeHtml(depositorName)}</li>
+    </ul>
+    ${btn('신청자 관리', `${SITE_URL}/admin/forum2026`)}
   `)
 }

@@ -304,6 +304,42 @@ model EventAttendee {
   @@unique([eventId, email])
 }
 
+// ─── 포럼 참가 신청 (비로그인 공개 신청) ────────────────────────────────────────
+// Event/EventAttendee와 별도 — forumKey로 연도별 포럼을 구분해 재사용한다.
+
+enum ForumPaymentStatus {
+  PENDING    // 입금 대기
+  CONFIRMED  // 입금 확인
+  CANCELLED  // 취소
+}
+
+model ForumRegistration {
+  id                String             @id @default(cuid())
+  forumKey          String             @default("2026")
+  name              String
+  phone             String
+  email             String
+  organization      String                               // 소속 단체/교회
+  position          String?                              // 직분
+  region            String?                              // 사역 지역
+  ministryLanguages String[]                             // 사역 언어권
+  attendDays        String[]                             // 참석일 (YYYY-MM-DD)
+  needsLodging      Boolean            @default(false)   // 숙박 여부
+  needsMeals        Boolean            @default(false)   // 식사 여부
+  depositorName     String                               // 입금자명
+  depositDate       DateTime?                            // 입금 예정일
+  requests          String?                              // 기타 요청사항
+  privacyAgreedAt   DateTime                             // 개인정보 동의 시각
+  paymentStatus     ForumPaymentStatus @default(PENDING)
+  adminMemo         String?
+  userId            String?                              // 로그인 신청 시 User.id (관계 없음)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@unique([forumKey, email])
+  @@index([forumKey, paymentStatus])
+}
+
 model Story {
   id               String          @id @default(cuid())
   title            String
