@@ -66,7 +66,7 @@ describe('ForumRegisterForm', () => {
       needsMeals: 'Y',
       privacyAgreed: true,
     })
-    expect(screen.getByText('263101-04-561156')).toBeInTheDocument()
+    expect(screen.getByText('435-910079-52904')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '계좌번호 복사' })).toBeInTheDocument()
   })
 

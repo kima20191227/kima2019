@@ -25,9 +25,9 @@ export const FORUM_INFO = {
 } as const
 
 export const FORUM_BANK = {
-  bank: '국민은행',
-  account: '263101-04-561156',
-  holder: '이창호(한국이주민선교연합회)',
+  bank: '하나은행',
+  account: '435-910079-52904',
+  holder: '한국이주민선교연합회',
 } as const
 
 /** 개인정보 보유 기간 (신청 폼 동의 문구) — 확정 필요 시 이 값만 수정 */
