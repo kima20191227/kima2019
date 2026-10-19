@@ -101,7 +101,7 @@ export default async function PublicResourcesPage() {
         <div className="mt-6 rounded-lg bg-blue-50 border border-blue-100 p-4 text-sm text-blue-700">
           <p className="font-medium mb-1">구글 드라이브 자료 이용 안내</p>
           <p className="text-blue-600">
-            자료는 구글 드라이브로 연결됩니다. 문의: kima20191227@gmail.com
+            자료는 구글 드라이브로 연결됩니다. 문의: info@kima2019.org
           </p>
         </div>
       </div>

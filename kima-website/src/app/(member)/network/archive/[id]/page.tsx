@@ -328,8 +328,8 @@ function ArchiveDetailView({
         <div className="text-center pt-2 pb-4">
           <p className="text-xs text-gray-400">
             자료 문의:{' '}
-            <a href="mailto:kima20191227@gmail.com" className="underline hover:text-gray-600">
-              kima20191227@gmail.com
+            <a href="mailto:info@kima2019.org" className="underline hover:text-gray-600">
+              info@kima2019.org
             </a>
           </p>
         </div>

@@ -5,7 +5,7 @@ import { forum2026RegisterSchema } from '@/schemas/forum2026.schema'
 import { sendEmail, forum2026RegisteredEmailHtml, forum2026AdminNotifyEmailHtml } from '@/lib/email'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { formatPhone } from '@/lib/utils'
-import { FORUM_INFO, FORUM_KEY, isForumRegistrationOpen } from '@/lib/forum2026'
+import { FORUM_DAYS, FORUM_INFO, FORUM_KEY, FORUM_LODGING_NIGHTS, isForumRegistrationOpen } from '@/lib/forum2026'
 
 export async function POST(req: NextRequest) {
   // IP당 10분에 5회 신청 시도 제한
@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
     const session = await auth()
     const email = data.email.toLowerCase()
     const phone = formatPhone(data.phone)
+    // 정해진 순서로 정렬·중복 제거 (스키마에서 허용값·참석일 포함 여부는 이미 검증)
+    const lodgingDays = FORUM_LODGING_NIGHTS.map((n) => n.value).filter((v) => data.lodgingDays.includes(v))
+    const mealDays = FORUM_DAYS.map((d) => d.value).filter((v) => data.mealDays.includes(v))
 
     await prisma.forumRegistration.create({
       data: {
@@ -55,8 +58,11 @@ export async function POST(req: NextRequest) {
         region: data.region || null,
         ministryLanguages: data.ministryLanguages,
         attendDays: data.attendDays,
-        needsLodging: data.needsLodging === 'Y',
-        needsMeals: data.needsMeals === 'Y',
+        lodgingDays,
+        mealDays,
+        // 구 형식 컬럼 — 날짜별 값과 함께 유지 (기존 조회·통계 호환)
+        needsLodging: lodgingDays.length > 0,
+        needsMeals: mealDays.length > 0,
         depositorName: data.depositorName,
         depositDate: data.depositDate ? new Date(`${data.depositDate}T00:00:00+09:00`) : null,
         requests: data.requests || null,
@@ -69,7 +75,17 @@ export async function POST(req: NextRequest) {
     sendEmail(
       email,
       `[KIMA] ${FORUM_INFO.title} 참가 신청이 접수되었습니다`,
-      forum2026RegisteredEmailHtml(data.name, data.depositorName, data.attendDays)
+      forum2026RegisteredEmailHtml({
+        name: data.name,
+        organization: data.organization,
+        position: data.position,
+        attendDays: data.attendDays,
+        lodgingDays,
+        mealDays,
+        depositorName: data.depositorName,
+        depositDate: data.depositDate,
+        requests: data.requests,
+      })
     ).catch(() => {})
 
     // 관리자 알림 (ADMIN_EMAIL 설정 시)
@@ -78,7 +94,15 @@ export async function POST(req: NextRequest) {
       sendEmail(
         adminEmail,
         `[KIMA] ${FORUM_INFO.title} 신규 신청 — ${data.name}`,
-        forum2026AdminNotifyEmailHtml(data.name, data.organization, phone, data.depositorName)
+        forum2026AdminNotifyEmailHtml({
+          name: data.name,
+          organization: data.organization,
+          phone,
+          depositorName: data.depositorName,
+          attendDays: data.attendDays,
+          lodgingDays,
+          mealDays,
+        })
       ).catch(() => {})
     }
 

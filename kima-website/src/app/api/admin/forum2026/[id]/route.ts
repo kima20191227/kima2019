@@ -24,16 +24,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       )
     }
 
-    const existing = await prisma.forumRegistration.findUnique({ where: { id }, select: { id: true } })
+    const existing = await prisma.forumRegistration.findUnique({
+      where: { id },
+      select: { id: true, paymentStatus: true },
+    })
     if (!existing) {
       return NextResponse.json({ error: '신청 내역을 찾을 수 없습니다.' }, { status: 404 })
     }
 
+    const statusChanged = existing.paymentStatus !== parsed.data.paymentStatus
     const registration = await prisma.forumRegistration.update({
       where: { id },
       data: {
         paymentStatus: parsed.data.paymentStatus,
         adminMemo: parsed.data.adminMemo || null,
+        updatedByName: session?.user?.name || session?.user?.email || null,
+        ...(statusChanged ? { statusChangedAt: new Date() } : {}),
       },
     })
 

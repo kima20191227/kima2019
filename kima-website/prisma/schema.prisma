@@ -324,14 +324,18 @@ model ForumRegistration {
   region            String?                              // 사역 지역
   ministryLanguages String[]                             // 사역 언어권
   attendDays        String[]                             // 참석일 (YYYY-MM-DD)
-  needsLodging      Boolean            @default(false)   // 숙박 여부
-  needsMeals        Boolean            @default(false)   // 식사 여부
+  needsLodging      Boolean            @default(false)   // 숙박 여부 (구 형식 — 신규 신청은 lodgingDays.length > 0)
+  needsMeals        Boolean            @default(false)   // 식사 여부 (구 형식 — 신규 신청은 mealDays.length > 0)
+  lodgingDays       String[]           @default([])      // 숙박하는 밤 (YYYY-MM-DD = 그날 밤)
+  mealDays          String[]           @default([])      // 식사하는 날 (YYYY-MM-DD)
   depositorName     String                               // 입금자명
   depositDate       DateTime?                            // 입금 예정일
   requests          String?                              // 기타 요청사항
   privacyAgreedAt   DateTime                             // 개인정보 동의 시각
   paymentStatus     ForumPaymentStatus @default(PENDING)
   adminMemo         String?
+  updatedByName     String?                              // 마지막으로 수정한 관리자 (이름 또는 이메일)
+  statusChangedAt   DateTime?                            // 입금 상태가 마지막으로 바뀐 시각
   userId            String?                              // 로그인 신청 시 User.id (관계 없음)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt

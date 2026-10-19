@@ -190,7 +190,7 @@ export default async function ListeningCallPage() {
           )}
           <p className="text-center text-xs text-gray-400 pt-6">
             더 이전 기록(1차~9차)은{' '}
-            <a href="mailto:kima20191227@gmail.com" className="underline hover:text-gray-600">
+            <a href="mailto:info@kima2019.org" className="underline hover:text-gray-600">
               사무국으로 문의
             </a>
             해 주세요.

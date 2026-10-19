@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { forum2026RegisterSchema, forum2026AdminUpdateSchema } from '@/schemas/forum2026.schema'
+import {
+  forum2026RegisterSchema,
+  forum2026AdminUpdateSchema,
+  forum2026AdminFilterSchema,
+  forum2026ExportColsSchema,
+  FORUM_EXPORT_COLUMN_KEYS,
+} from '@/schemas/forum2026.schema'
 
 function messageFor(result: ReturnType<typeof forum2026RegisterSchema.safeParse>, field: string) {
   if (result.success) return undefined
@@ -16,8 +22,8 @@ describe('forum2026RegisterSchema', () => {
     region: '경기',
     ministryLanguages: ['베트남어'],
     attendDays: ['2026-12-08', '2026-12-09'],
-    needsLodging: 'Y',
-    needsMeals: 'N',
+    lodgingDays: ['2026-12-08'],
+    mealDays: ['2026-12-08', '2026-12-09'],
     depositorName: '홍길동',
     depositDate: '2026-11-30',
     requests: '',
@@ -70,9 +76,43 @@ describe('forum2026RegisterSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('숙박 여부를 선택하지 않으면 에러를 반환한다', () => {
-    const result = forum2026RegisterSchema.safeParse({ ...validData, needsLodging: undefined })
-    expect(messageFor(result, 'needsLodging')).toBe('숙박 여부를 선택해주세요')
+  it('숙박·식사를 하나도 선택하지 않아도 통과한다', () => {
+    expect(forum2026RegisterSchema.safeParse({ ...validData, lodgingDays: [], mealDays: [] }).success).toBe(true)
+  })
+
+  it('참석하지 않는 날의 밤 숙박은 거부한다', () => {
+    const result = forum2026RegisterSchema.safeParse({
+      ...validData,
+      attendDays: ['2026-12-08'],
+      lodgingDays: ['2026-12-09'],
+      mealDays: [],
+    })
+    expect(messageFor(result, 'lodgingDays')).toBe('참석하는 날짜의 밤만 숙박을 선택할 수 있습니다')
+  })
+
+  it('마지막 날(12/10) 밤 숙박은 선택지에 없어 거부한다', () => {
+    const result = forum2026RegisterSchema.safeParse({
+      ...validData,
+      attendDays: ['2026-12-10'],
+      lodgingDays: ['2026-12-10'],
+      mealDays: [],
+    })
+    expect(messageFor(result, 'lodgingDays')).toBe('올바른 숙박 날짜를 선택해주세요')
+  })
+
+  it('참석하지 않는 날의 식사는 거부한다', () => {
+    const result = forum2026RegisterSchema.safeParse({
+      ...validData,
+      attendDays: ['2026-12-08'],
+      lodgingDays: [],
+      mealDays: ['2026-12-10'],
+    })
+    expect(messageFor(result, 'mealDays')).toBe('참석하는 날짜만 식사를 선택할 수 있습니다')
+  })
+
+  it('행사 기간이 아닌 식사 날짜는 거부한다', () => {
+    const result = forum2026RegisterSchema.safeParse({ ...validData, mealDays: ['2026-12-11'] })
+    expect(messageFor(result, 'mealDays')).toBe('올바른 식사 날짜를 선택해주세요')
   })
 
   it('입금자명은 필수다', () => {
@@ -98,5 +138,48 @@ describe('forum2026AdminUpdateSchema', () => {
 
   it('알 수 없는 상태값을 거부한다', () => {
     expect(forum2026AdminUpdateSchema.safeParse({ paymentStatus: 'PAID' }).success).toBe(false)
+  })
+})
+
+describe('forum2026AdminFilterSchema', () => {
+  it('올바른 필터 값을 그대로 통과시킨다', () => {
+    expect(
+      forum2026AdminFilterSchema.parse({ status: 'PENDING', q: ' 홍길동 ', day: '2026-12-09', lodging: 'Y', meal: 'N' })
+    ).toEqual({ status: 'PENDING', q: '홍길동', day: '2026-12-09', lodging: 'Y', meal: 'N' })
+  })
+
+  it('숙박·식사 필터는 특정 날짜도 받는다 (12/10 숙박은 무시)', () => {
+    expect(forum2026AdminFilterSchema.parse({ lodging: '2026-12-09', meal: '2026-12-10' })).toMatchObject({
+      lodging: '2026-12-09',
+      meal: '2026-12-10',
+    })
+    expect(forum2026AdminFilterSchema.parse({ lodging: '2026-12-10' }).lodging).toBeUndefined()
+  })
+
+  it('잘못된 값은 에러 없이 무시한다', () => {
+    expect(
+      forum2026AdminFilterSchema.parse({ status: 'PAID', day: '2026-12-11', lodging: 'yes', meal: 1 })
+    ).toEqual({ status: undefined, day: undefined, lodging: undefined, meal: undefined })
+  })
+
+  it('빈 검색어는 undefined, 긴 검색어는 100자로 자른다', () => {
+    expect(forum2026AdminFilterSchema.parse({ q: '   ' }).q).toBeUndefined()
+    expect(forum2026AdminFilterSchema.parse({ q: '가'.repeat(150) }).q).toHaveLength(100)
+  })
+})
+
+describe('forum2026ExportColsSchema', () => {
+  it('비어 있으면 전체 열을 반환한다', () => {
+    expect(forum2026ExportColsSchema.parse([])).toEqual([...FORUM_EXPORT_COLUMN_KEYS])
+  })
+
+  it('선택한 열을 정해진 순서로, 중복 없이 반환한다', () => {
+    expect(forum2026ExportColsSchema.parse(['status', 'name', 'name'])).toEqual(['name', 'status'])
+  })
+
+  it('허용 목록 밖의 열을 거부한다', () => {
+    const result = forum2026ExportColsSchema.safeParse(['name', 'password'])
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.issues[0].message).toBe('알 수 없는 열이 포함되어 있습니다')
   })
 })

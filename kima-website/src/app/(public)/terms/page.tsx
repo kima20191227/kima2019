@@ -60,7 +60,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-[#1B3A6B]">제6조 (회원 탈퇴)</h2>
             <p>
-              회원은 언제든지 kima20191227@gmail.com에 탈퇴를 요청할 수 있으며,
+              회원은 언제든지 info@kima2019.org에 탈퇴를 요청할 수 있으며,
               KIMA는 즉시 처리합니다. 단, 게시한 콘텐츠는 별도 요청이 없는 한 유지될 수 있습니다.
             </p>
           </section>

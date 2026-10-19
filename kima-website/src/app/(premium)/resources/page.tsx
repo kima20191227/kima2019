@@ -130,7 +130,7 @@ export default async function ResourcesPage({ searchParams }: PageProps) {
           <p className="font-medium mb-1">구글 드라이브 자료 이용 안내</p>
           <p className="text-blue-600">
             자료는 구글 드라이브로 연결됩니다. 정회원 전용 자료의 경우 드라이브 접근 권한이 별도로
-            필요할 수 있습니다. 문의: kima20191227@gmail.com
+            필요할 수 있습니다. 문의: info@kima2019.org
           </p>
         </div>
       </div>

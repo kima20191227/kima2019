@@ -13,7 +13,7 @@ export function Footer() {
               Korea Immigrants Missions Association
             </p>
             <div className="mt-4 space-y-1 text-sm text-blue-200">
-              <p>이메일: kima20191227@gmail.com</p>
+              <p>이메일: info@kima2019.org</p>
             </div>
           </div>
 

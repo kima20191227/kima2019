@@ -127,7 +127,7 @@ export default async function LeadershipPage() {
         )}
 
         <p className="text-center text-sm text-gray-400 mt-4">
-          문의: kima20191227@gmail.com
+          문의: info@kima2019.org
         </p>
       </div>
     </div>

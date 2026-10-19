@@ -31,7 +31,7 @@ export default function BrandPage() {
             </div>
           </div>
           <p className="mt-4 text-sm text-gray-500">
-            ※ 공식 로고 파일(PNG)은 사무국(kima20191227@gmail.com)으로 요청해 주세요.
+            ※ 공식 로고 파일(PNG)은 사무국(info@kima2019.org)으로 요청해 주세요.
           </p>
         </section>
 

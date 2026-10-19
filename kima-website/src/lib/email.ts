@@ -1,8 +1,18 @@
 import nodemailer from 'nodemailer'
-import { FORUM_INFO, FORUM_BANK, getForumDayLabel } from '@/lib/forum2026'
+import {
+  FORUM_INFO,
+  FORUM_BANK,
+  FORUM_CONTACT_EMAIL,
+  FORUM_DIRECTIONS_TEXT,
+  FORUM_FEE_NOTE,
+  FORUM_PAYMENT_CONFIRM_TEXT,
+  FORUM_REFUND_TEXT,
+  getForumDayLabel,
+  getForumNightLabel,
+} from '@/lib/forum2026'
 
 export const SITE_URL = process.env.NEXTAUTH_URL ?? 'https://kima2019.org'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'kima20191227@gmail.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'info@kima2019.org'
 
 function cleanHeaderValue(value: string): string {
   return value.replace(/[\r\n]+/g, ' ').trim()
@@ -191,40 +201,103 @@ function escapeHtml(value: string) {
 }
 
 /** 2026 KIMA 포럼 참가 신청 완료 */
-export function forum2026RegisteredEmailHtml(name: string, depositorName: string, attendDays: string[]) {
-  const days = attendDays.map(getForumDayLabel).join(', ')
+export interface Forum2026RegisteredEmailData {
+  name: string
+  organization: string
+  position?: string | null
+  attendDays: string[]
+  lodgingDays: string[] // 숙박하는 밤 (YYYY-MM-DD)
+  mealDays: string[] // 식사하는 날 (YYYY-MM-DD)
+  depositorName: string
+  depositDate?: string | null // YYYY-MM-DD
+  requests?: string | null
+}
+
+function forumLodgingText(lodgingDays: string[]) {
+  return lodgingDays.length ? lodgingDays.map(getForumNightLabel).join(', ') : '숙박 안 함'
+}
+
+function forumMealText(mealDays: string[]) {
+  return mealDays.length ? mealDays.map(getForumDayLabel).join(', ') : '식사 안 함'
+}
+
+export function forum2026RegisteredEmailHtml(data: Forum2026RegisteredEmailData) {
+  const days = data.attendDays.map(getForumDayLabel).join(', ')
+  const orgText = data.position ? `${data.organization} / ${data.position}` : data.organization
+  const detailRows: [string, string][] = [
+    ['이름', data.name],
+    ['소속/직분', orgText],
+    ['참석일', days],
+    ['숙박', forumLodgingText(data.lodgingDays)],
+    ['식사', forumMealText(data.mealDays)],
+    ['입금자명', data.depositorName],
+    ['입금 예정일', data.depositDate || '-'],
+    ['요청사항', data.requests || '-'],
+  ]
+  const detailHtml = detailRows
+    .map(
+      ([label, value]) => `<tr>
+        <td style="padding:6px 12px 6px 0;color:#666;font-size:13px;white-space:nowrap;vertical-align:top;">${label}</td>
+        <td style="padding:6px 0;color:#1A1A1A;font-size:14px;white-space:pre-wrap;word-break:break-all;">${escapeHtml(value)}</td>
+      </tr>`
+    )
+    .join('')
   return layout(`
     <h2 style="color:#1B3A6B;margin-top:0;">${FORUM_INFO.title} 참가 신청이 접수되었습니다</h2>
-    <p>${escapeHtml(name)}님, <strong>${FORUM_INFO.title}</strong>(${FORUM_INFO.subtitle}) 참가 신청을 접수하였습니다.</p>
+    <p>${escapeHtml(data.name)}님, <strong>${FORUM_INFO.title}</strong>(${FORUM_INFO.subtitle}) 참가 신청을 접수하였습니다.</p>
     <div style="background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:16px 20px;margin:24px 0;">
       <p style="margin:0;font-size:13px;color:#666;">일시</p>
       <p style="margin:4px 0 0;font-weight:700;color:#1B3A6B;">${FORUM_INFO.dateText}</p>
       <p style="margin:12px 0 0;font-size:13px;color:#666;">장소</p>
       <p style="margin:4px 0 0;font-weight:700;color:#1B3A6B;">${FORUM_INFO.venueName}</p>
       <p style="margin:2px 0 0;font-size:13px;color:#666;">${FORUM_INFO.venueAddress}</p>
-      <p style="margin:12px 0 0;font-size:13px;color:#666;">신청한 참석일</p>
-      <p style="margin:4px 0 0;font-weight:700;color:#1B3A6B;">${escapeHtml(days)}</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#666;">${FORUM_DIRECTIONS_TEXT}</p>
     </div>
+    <p style="margin:24px 0 8px;font-weight:600;color:#1B3A6B;">신청 내용</p>
+    <table cellpadding="0" cellspacing="0" style="width:100%;border-top:1px solid #eee;border-bottom:1px solid #eee;">
+      ${detailHtml}
+    </table>
     <div style="background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:16px 20px;margin:24px 0;">
       <p style="margin:0;font-weight:600;">참가비 입금 계좌 (${FORUM_INFO.feeText})</p>
+      <p style="margin:4px 0 0;color:#666;font-size:13px;">${FORUM_FEE_NOTE}</p>
       <p style="margin:8px 0 0;font-size:18px;font-weight:700;color:#1B3A6B;">${FORUM_BANK.bank} ${FORUM_BANK.account}</p>
       <p style="margin:4px 0 0;color:#666;font-size:13px;">예금주: ${FORUM_BANK.holder}</p>
-      <p style="margin:12px 0 0;font-size:14px;">입금자명은 <strong>${escapeHtml(depositorName)}</strong>(으)로 입금해 주세요.</p>
+      <p style="margin:12px 0 0;font-size:14px;">입금자명은 <strong>${escapeHtml(data.depositorName)}</strong>(으)로 입금해 주세요.</p>
     </div>
-    <p>입금이 확인되면 신청이 확정됩니다. 문의 사항이 있으시면 <a href="mailto:${ADMIN_EMAIL}" style="color:#1B3A6B;">${ADMIN_EMAIL}</a>으로 연락해 주세요.</p>
+    <ul style="padding-left:20px;line-height:1.8;font-size:14px;">
+      <li>입금이 확인되면 신청이 확정됩니다 (${FORUM_PAYMENT_CONFIRM_TEXT}).</li>
+      <li>환불: ${FORUM_REFUND_TEXT}</li>
+      <li>문의·수정·취소: <a href="mailto:${FORUM_CONTACT_EMAIL}" style="color:#1B3A6B;">${FORUM_CONTACT_EMAIL}</a></li>
+    </ul>
     ${btn('포럼 안내 다시 보기', `${SITE_URL}/forum2026`)}
   `)
 }
 
 /** 2026 KIMA 포럼 신규 신청 — 관리자 알림 */
-export function forum2026AdminNotifyEmailHtml(name: string, organization: string, phone: string, depositorName: string) {
+export interface Forum2026AdminNotifyEmailData {
+  name: string
+  organization: string
+  phone: string
+  depositorName: string
+  attendDays: string[]
+  lodgingDays: string[]
+  mealDays: string[]
+}
+
+export function forum2026AdminNotifyEmailHtml(data: Forum2026AdminNotifyEmailData) {
+  const rows: [string, string][] = [
+    ['이름', data.name],
+    ['소속', data.organization],
+    ['휴대폰', data.phone],
+    ['입금자명', data.depositorName],
+    ['참석일', data.attendDays.map(getForumDayLabel).join(', ')],
+    ['숙박', forumLodgingText(data.lodgingDays)],
+    ['식사', forumMealText(data.mealDays)],
+  ]
   return layout(`
     <h2 style="color:#1B3A6B;margin-top:0;">${FORUM_INFO.title} 신규 참가 신청</h2>
     <ul style="padding-left:20px;line-height:2;">
-      <li>이름: ${escapeHtml(name)}</li>
-      <li>소속: ${escapeHtml(organization)}</li>
-      <li>휴대폰: ${escapeHtml(phone)}</li>
-      <li>입금자명: ${escapeHtml(depositorName)}</li>
+      ${rows.map(([label, value]) => `<li>${label}: ${escapeHtml(value)}</li>`).join('')}
     </ul>
     ${btn('신청자 관리', `${SITE_URL}/admin/forum2026`)}
   `)

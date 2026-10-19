@@ -121,7 +121,7 @@ export default function DataPage() {
               </div>
             ))}
             <p className="text-xs text-gray-400">
-              백서 파일은 kima20191227@gmail.com로 요청하시면 제공해 드립니다.
+              백서 파일은 info@kima2019.org로 요청하시면 제공해 드립니다.
             </p>
           </div>
         </section>

@@ -11,7 +11,18 @@ import {
 } from '@/schemas/forum2026.schema'
 import { REGIONS } from '@/schemas/member.schema'
 import { MINISTRY_LANGUAGES } from '@/schemas/auth.schema'
-import { FORUM_BANK, FORUM_DAYS, FORUM_INFO, FORUM_PRIVACY_RETENTION } from '@/lib/forum2026'
+import {
+  FORUM_BANK,
+  FORUM_CONTACT_EMAIL,
+  FORUM_DAYS,
+  FORUM_FEE_NOTE,
+  FORUM_INFO,
+  FORUM_LODGING_NIGHTS,
+  FORUM_MEAL_DAYS,
+  FORUM_PAYMENT_CONFIRM_TEXT,
+  FORUM_PRIVACY_RETENTION,
+  FORUM_REFUND_TEXT,
+} from '@/lib/forum2026'
 import { FieldError } from '@/components/auth/FieldError'
 
 const INPUT =
@@ -20,9 +31,15 @@ const LABEL = 'block text-sm font-medium text-gray-700 mb-1'
 const SECTION = 'bg-gray-50 rounded-xl p-5 space-y-4'
 const SECTION_TITLE = 'text-sm font-semibold text-[#1B3A6B] mb-3 pb-1 border-b border-gray-200'
 const CHOICE =
-  'flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 cursor-pointer has-[:checked]:border-[#1B3A6B] has-[:checked]:bg-blue-50'
+  'flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 cursor-pointer has-[:checked]:border-[#1B3A6B] has-[:checked]:bg-blue-50 has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-gray-100 has-[:disabled]:text-gray-400'
 
 const ACCOUNT_TEXT = `${FORUM_BANK.bank} ${FORUM_BANK.account}`
+const HELPER = 'text-xs text-gray-500 -mt-0.5 mb-2'
+
+// 사역 언어권 — 기본으로 앞의 9개(베트남어…영어)만 보이고 나머지는 '전체 보기'로 펼친다
+const PRIMARY_LANGUAGE_COUNT = 9
+const PRIMARY_LANGUAGES = MINISTRY_LANGUAGES.slice(0, PRIMARY_LANGUAGE_COUNT)
+const EXTRA_LANGUAGES = MINISTRY_LANGUAGES.slice(PRIMARY_LANGUAGE_COUNT)
 
 // 카카오톡 인앱 브라우저 등 clipboard API 미지원 환경 대비 fallback
 async function copyText(text: string): Promise<boolean> {
@@ -91,6 +108,16 @@ function SuccessView({ depositorName }: { depositorName: string }) {
         입금자명이 다르면 확인이 늦어질 수 있습니다.
       </div>
 
+      <ul className="text-left text-sm text-gray-700 space-y-1 list-disc pl-5 leading-relaxed">
+        <li>참가비: {FORUM_FEE_NOTE}</li>
+        <li>{FORUM_PAYMENT_CONFIRM_TEXT}되면 신청이 확정됩니다.</li>
+        <li>환불: {FORUM_REFUND_TEXT}</li>
+        <li>
+          문의·수정·취소:{' '}
+          <a href={`mailto:${FORUM_CONTACT_EMAIL}`} className="text-[#1B3A6B] underline break-all">{FORUM_CONTACT_EMAIL}</a>
+        </li>
+      </ul>
+
       <Link
         href="/"
         className="inline-block w-full py-3 rounded-lg border border-[#1B3A6B] text-[#1B3A6B] font-semibold hover:bg-blue-50 transition-colors"
@@ -104,15 +131,21 @@ function SuccessView({ depositorName }: { depositorName: string }) {
 interface ForumRegisterFormProps {
   defaultName?: string
   defaultEmail?: string
+  /** 신청 마감 표시 문구 (서버에서 포맷해 전달 — 하이드레이션 불일치 방지) */
+  deadlineText?: string
 }
 
-export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: ForumRegisterFormProps) {
+export function ForumRegisterForm({ defaultName = '', defaultEmail = '', deadlineText }: ForumRegisterFormProps) {
   const [serverError, setServerError] = useState('')
   const [completedDepositor, setCompletedDepositor] = useState<string | null>(null)
+  const [showAllLanguages, setShowAllLanguages] = useState(false)
 
   const {
     register,
     handleSubmit,
+    watch,
+    getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<Forum2026RegisterInput>({
     resolver: zodResolver(forum2026RegisterSchema),
@@ -121,6 +154,8 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
       email: defaultEmail,
       ministryLanguages: [],
       attendDays: [],
+      lodgingDays: [],
+      mealDays: [],
       privacyAgreed: false,
     },
   })
@@ -143,6 +178,21 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
     } catch {
       setServerError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')
     }
+  }
+
+  // 숨겨질 언어가 이미 선택돼 있으면 접지 않는다 (선택이 화면에서 사라지지 않도록)
+  const selectedLanguages = watch('ministryLanguages') ?? []
+  const hasHiddenSelection = EXTRA_LANGUAGES.some((lang) => selectedLanguages.includes(lang))
+  const languagesExpanded = showAllLanguages || hasHiddenSelection
+  const visibleLanguages = languagesExpanded ? MINISTRY_LANGUAGES : PRIMARY_LANGUAGES
+
+  // 숙박·식사는 참석하는 날만 선택 가능 — 참석을 해제하면 그날의 숙박·식사 선택도 지운다
+  const attendDays = watch('attendDays') ?? []
+  const dropUnattendedStay = () => {
+    const attending = getValues('attendDays') ?? []
+    const keep = (list: string[] | undefined) => (list ?? []).filter((v) => attending.includes(v))
+    setValue('lodgingDays', keep(getValues('lodgingDays')))
+    setValue('mealDays', keep(getValues('mealDays')))
   }
 
   if (completedDepositor !== null) {
@@ -212,13 +262,34 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
         <fieldset>
           <legend className={LABEL}>사역 언어권 (복수 선택)</legend>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {MINISTRY_LANGUAGES.map((lang) => (
+            {visibleLanguages.map((lang) => (
               <label key={lang} className={CHOICE}>
                 <input type="checkbox" value={lang} {...register('ministryLanguages')} className="accent-[#1B3A6B]" />
                 <span className="break-keep">{lang}</span>
               </label>
             ))}
           </div>
+          {!languagesExpanded ? (
+            <button
+              type="button"
+              onClick={() => setShowAllLanguages(true)}
+              aria-expanded={false}
+              className="mt-2 text-sm font-medium text-[#1B3A6B] underline underline-offset-2"
+            >
+              전체 보기 (+{EXTRA_LANGUAGES.length})
+            </button>
+          ) : (
+            !hasHiddenSelection && (
+              <button
+                type="button"
+                onClick={() => setShowAllLanguages(false)}
+                aria-expanded={true}
+                className="mt-2 text-sm font-medium text-[#1B3A6B] underline underline-offset-2"
+              >
+                접기
+              </button>
+            )
+          )}
           <FieldError message={errors.ministryLanguages?.message} />
         </fieldset>
       </div>
@@ -232,7 +303,12 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {FORUM_DAYS.map((day) => (
               <label key={day.value} className={CHOICE}>
-                <input type="checkbox" value={day.value} {...register('attendDays')} className="accent-[#1B3A6B]" />
+                <input
+                  type="checkbox"
+                  value={day.value}
+                  {...register('attendDays', { onChange: dropUnattendedStay })}
+                  className="accent-[#1B3A6B]"
+                />
                 {day.label}
               </label>
             ))}
@@ -241,33 +317,51 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
         </fieldset>
 
         <fieldset>
-          <legend className={LABEL}>숙박 여부 *</legend>
-          <div className="grid grid-cols-2 gap-2">
-            <label className={CHOICE}>
-              <input type="radio" value="Y" {...register('needsLodging')} className="accent-[#1B3A6B]" />
-              숙박함
-            </label>
-            <label className={CHOICE}>
-              <input type="radio" value="N" {...register('needsLodging')} className="accent-[#1B3A6B]" />
-              숙박 안 함
-            </label>
+          <legend className={LABEL}>숙박</legend>
+          <p className={HELPER}>
+            {attendDays.length
+              ? '숙박할 날짜를 선택하세요 (해당 없으면 선택하지 않음)'
+              : '참석 일정을 먼저 선택하세요'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {FORUM_LODGING_NIGHTS.map((night) => (
+              <label key={night.value} className={CHOICE}>
+                <input
+                  type="checkbox"
+                  value={night.value}
+                  disabled={!attendDays.includes(night.value)}
+                  {...register('lodgingDays')}
+                  className="accent-[#1B3A6B]"
+                />
+                {night.label}
+              </label>
+            ))}
           </div>
-          <FieldError message={errors.needsLodging?.message} />
+          <FieldError message={errors.lodgingDays?.message} />
         </fieldset>
 
         <fieldset>
-          <legend className={LABEL}>식사 여부 *</legend>
-          <div className="grid grid-cols-2 gap-2">
-            <label className={CHOICE}>
-              <input type="radio" value="Y" {...register('needsMeals')} className="accent-[#1B3A6B]" />
-              식사함
-            </label>
-            <label className={CHOICE}>
-              <input type="radio" value="N" {...register('needsMeals')} className="accent-[#1B3A6B]" />
-              식사 안 함
-            </label>
+          <legend className={LABEL}>식사</legend>
+          <p className={HELPER}>
+            {attendDays.length
+              ? '식사할 날짜를 선택하세요 (해당 없으면 선택하지 않음)'
+              : '참석 일정을 먼저 선택하세요'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {FORUM_MEAL_DAYS.map((day) => (
+              <label key={day.value} className={CHOICE}>
+                <input
+                  type="checkbox"
+                  value={day.value}
+                  disabled={!attendDays.includes(day.value)}
+                  {...register('mealDays')}
+                  className="accent-[#1B3A6B]"
+                />
+                {day.label}
+              </label>
+            ))}
           </div>
-          <FieldError message={errors.needsMeals?.message} />
+          <FieldError message={errors.mealDays?.message} />
         </fieldset>
       </div>
 
@@ -278,6 +372,7 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
         <div className="rounded-lg bg-white border border-gray-200 p-4 text-sm text-gray-700">
           <p className="font-semibold text-[#1B3A6B]">{ACCOUNT_TEXT}</p>
           <p className="text-gray-500 mt-0.5">예금주: {FORUM_BANK.holder}</p>
+          <p className="text-xs text-gray-500 mt-2">{FORUM_FEE_NOTE} · {FORUM_PAYMENT_CONFIRM_TEXT}</p>
         </div>
 
         <div>
@@ -310,8 +405,8 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
       {/* 개인정보 동의 */}
       <div className="rounded-xl border border-gray-200 p-5 space-y-3">
         <p className="text-sm font-semibold text-gray-800">개인정보 수집·이용 동의</p>
-        <ul className="text-xs text-gray-500 space-y-1 list-disc pl-4">
-          <li>수집 항목: 이름, 휴대폰, 이메일, 소속, 직분, 사역 정보, 참석·숙박·식사 여부, 입금자명</li>
+        <ul className="text-sm text-gray-700 space-y-1 list-disc pl-4 leading-relaxed">
+          <li>수집 항목: 이름, 휴대폰, 이메일, 소속, 직분, 사역 정보, 참석·숙박·식사 일정, 입금자명</li>
           <li>이용 목적: {FORUM_INFO.title} 참가 신청 접수, 참가비 입금 확인, 행사 안내 연락</li>
           <li>보유 기간: {FORUM_PRIVACY_RETENTION}</li>
           <li>
@@ -329,6 +424,40 @@ export function ForumRegisterForm({ defaultName = '', defaultEmail = '' }: Forum
       {serverError && (
         <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{serverError}</p>
       )}
+
+      {/* 제출 직전 요약 */}
+      <dl aria-label="신청 요약" className="rounded-xl border border-[#1B3A6B]/20 bg-blue-50/60 p-4 space-y-1.5 text-sm">
+        <div className="flex gap-3">
+          <dt className="w-16 flex-shrink-0 text-gray-500">참가비</dt>
+          <dd className="text-gray-900">
+            <span className="font-semibold">{FORUM_INFO.feeText}</span>
+            <span className="block text-xs text-gray-500">{FORUM_FEE_NOTE}</span>
+          </dd>
+        </div>
+        {deadlineText && (
+          <div className="flex gap-3">
+            <dt className="w-16 flex-shrink-0 text-gray-500">신청 마감</dt>
+            <dd className="font-semibold text-gray-900">{deadlineText}</dd>
+          </div>
+        )}
+        <div className="flex gap-3">
+          <dt className="w-16 flex-shrink-0 text-gray-500">입금 계좌</dt>
+          <dd className="font-semibold text-gray-900 break-all">
+            {ACCOUNT_TEXT}
+            <span className="block text-xs font-normal text-gray-500">예금주: {FORUM_BANK.holder}</span>
+          </dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-16 flex-shrink-0 text-gray-500">환불</dt>
+          <dd className="text-gray-900">{FORUM_REFUND_TEXT}</dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-16 flex-shrink-0 text-gray-500">문의</dt>
+          <dd className="text-gray-900 break-all">
+            <a href={`mailto:${FORUM_CONTACT_EMAIL}`} className="text-[#1B3A6B] underline">{FORUM_CONTACT_EMAIL}</a>
+          </dd>
+        </div>
+      </dl>
 
       <button
         type="submit"

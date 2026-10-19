@@ -52,7 +52,7 @@ export default function DonatePage() {
           <h2 className="font-bold text-[#1B3A6B] text-lg mb-5">입금 후 연락</h2>
           <div className="space-y-3">
             <a
-              href="mailto:kima20191227@gmail.com"
+              href="mailto:info@kima2019.org"
               className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 hover:bg-blue-50 transition-colors group"
             >
               <div className="w-10 h-10 rounded-xl bg-[#1B3A6B] flex items-center justify-center text-white flex-shrink-0">
@@ -62,7 +62,7 @@ export default function DonatePage() {
               </div>
               <div>
                 <p className="text-xs text-gray-400">이메일</p>
-                <p className="font-semibold text-gray-800 group-hover:text-[#1B3A6B]">kima20191227@gmail.com</p>
+                <p className="font-semibold text-gray-800 group-hover:text-[#1B3A6B]">info@kima2019.org</p>
               </div>
             </a>
 

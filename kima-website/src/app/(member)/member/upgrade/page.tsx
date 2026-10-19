@@ -175,7 +175,7 @@ export default async function UpgradePage() {
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-base font-bold text-[#1B3A6B] mb-4">사무국 문의</h2>
               <a
-                href="mailto:kima20191227@gmail.com"
+                href="mailto:info@kima2019.org"
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
               >
                 <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -185,7 +185,7 @@ export default async function UpgradePage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">이메일</p>
-                  <p className="font-medium text-gray-700 group-hover:text-[#1B3A6B]">kima20191227@gmail.com</p>
+                  <p className="font-medium text-gray-700 group-hover:text-[#1B3A6B]">info@kima2019.org</p>
                 </div>
               </a>
             </div>
