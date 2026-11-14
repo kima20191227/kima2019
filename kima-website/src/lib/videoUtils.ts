@@ -2,6 +2,7 @@ export type VideoInfo = {
   platform: 'youtube' | 'vimeo' | 'gdrive'
   embedUrl: string
   thumbnailUrl: string
+  id?: string
 } | null
 
 export function parseVideoUrl(url: string): VideoInfo {
@@ -14,6 +15,7 @@ export function parseVideoUrl(url: string): VideoInfo {
       platform: 'youtube',
       embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`,
       thumbnailUrl: `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`,
+      id: ytMatch[1],
     }
   }
 

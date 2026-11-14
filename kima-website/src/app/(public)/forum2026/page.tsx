@@ -149,7 +149,7 @@ export default async function Forum2026Page() {
 
         <section id="video" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <h2 className="text-lg font-bold text-[#1B3A6B] mb-4">포럼 홍보영상</h2>
-          <VideoEmbed url={FORUM_PROMO_VIDEO_URL} title={`${FORUM_INFO.title} 홍보영상`} />
+          <VideoEmbed url={FORUM_PROMO_VIDEO_URL} title={`${FORUM_INFO.title} 홍보영상`} autoPlayLoop />
         </section>
 
         <section id="form" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
