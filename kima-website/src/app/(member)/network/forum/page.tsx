@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { ARCHIVE_RECORDS } from '../archive/data'
 import { ForumArchiveForm } from '@/components/admin/ForumArchiveForm'
+import { FORUM_DEADLINE, FORUM_INFO, isForumRegistrationOpen } from '@/lib/forum2026'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -82,6 +83,31 @@ export default async function ForumPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+
+        {/* 2026 포럼 참가 신청 배너 */}
+        {isForumRegistrationOpen() && (
+          <Link
+            href="/forum2026"
+            className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#1B3A6B] rounded-xl p-6 sm:p-7 text-white shadow-sm hover:shadow-md transition-shadow group"
+          >
+            <div>
+              <p className="text-[#C8922A] text-xs font-semibold tracking-widest uppercase mb-1">
+                {FORUM_INFO.subtitle} · 참가 신청 접수 중
+              </p>
+              <h2 className="text-xl sm:text-2xl font-bold">{FORUM_INFO.title}</h2>
+              <p className="mt-1 text-sm text-blue-200">
+                {FORUM_INFO.dateText} · {FORUM_INFO.venueName} · 신청 마감{' '}
+                {FORUM_DEADLINE.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-[#C8922A] text-white text-sm font-semibold group-hover:bg-[#b07f22] transition-colors">
+              참가 신청하기
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </span>
+          </Link>
+        )}
 
         {/* 안내 */}
         <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 space-y-4 text-gray-700 leading-relaxed">
