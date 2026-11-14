@@ -7,8 +7,8 @@ export const FORUM_KEY = '2026'
 /** 신청 접수 on/off (false면 페이지는 보이되 신청을 받지 않는다) */
 export const FORUM_IS_OPEN = true
 
-/** 신청 마감 — 2026-12-07 23:59:59 KST */
-export const FORUM_DEADLINE = new Date('2026-12-07T23:59:59+09:00')
+/** 신청 마감 — 2026-12-02 23:59:59 KST */
+export const FORUM_DEADLINE = new Date('2026-12-02T23:59:59+09:00')
 
 export const FORUM_INFO = {
   title: '2026 KIMA 포럼',
