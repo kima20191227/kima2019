@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { auth } from '@/lib/auth'
 import { ForumRegisterForm } from '@/components/forum2026/ForumRegisterForm'
+import { VideoEmbed } from '@/components/story/VideoEmbed'
 import {
   FORUM_BANK,
   FORUM_CONTACT_EMAIL,
@@ -8,7 +10,9 @@ import {
   FORUM_DIRECTIONS_TEXT,
   FORUM_FEE_NOTE,
   FORUM_INFO,
+  FORUM_MISSIONFUND_URL,
   FORUM_PAYMENT_CONFIRM_TEXT,
+  FORUM_PROMO_VIDEO_URL,
   FORUM_REFUND_TEXT,
   isForumRegistrationOpen,
 } from '@/lib/forum2026'
@@ -54,8 +58,10 @@ const MAP_LINKS = [
 
 const PAGE_NAV = [
   { href: '#info', label: '행사 안내' },
+  { href: '#video', label: '홍보영상' },
   { href: '#form', label: '신청서' },
   { href: '#payment', label: '입금 안내' },
+  { href: '#missionfund', label: '미션펀드 후원' },
 ]
 
 export default async function Forum2026Page() {
@@ -71,20 +77,18 @@ export default async function Forum2026Page() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
-      {/* 포스터형 행사 요약 */}
-      <section className="bg-[#1B3A6B] text-white px-4 pt-12 pb-10">
-        <div className="max-w-xl mx-auto text-center">
-          <p className="text-[#C8922A] text-sm font-semibold tracking-widest uppercase mb-3">
-            {FORUM_INFO.subtitle}
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-bold">{FORUM_INFO.title}</h1>
-          <p className="mt-4 text-base sm:text-lg leading-relaxed break-keep text-blue-50">
-            {FORUM_INFO.theme}
-          </p>
-          <blockquote className="mt-6 border-t border-white/15 pt-5 text-sm text-blue-200 leading-relaxed break-keep">
-            “{FORUM_INFO.verse}”
-            <span className="block mt-1 text-[#C8922A] font-semibold">— {FORUM_INFO.verseRef}</span>
-          </blockquote>
+      {/* 포스터 */}
+      <section className="bg-[#1B3A6B] px-4 pt-8 pb-8">
+        <h1 className="sr-only">{`${FORUM_INFO.title} — ${FORUM_INFO.theme}`}</h1>
+        <div className="max-w-xs sm:max-w-sm mx-auto">
+          <Image
+            src="/images/forum2026-poster.jpg"
+            alt={`${FORUM_INFO.title} (${FORUM_INFO.subtitle}) 포스터 — ${FORUM_INFO.dateText}, ${FORUM_INFO.venueName}`}
+            width={900}
+            height={1273}
+            priority
+            className="w-full h-auto rounded-xl shadow-lg"
+          />
         </div>
       </section>
 
@@ -143,6 +147,11 @@ export default async function Forum2026Page() {
           </dl>
         </section>
 
+        <section id="video" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-bold text-[#1B3A6B] mb-4">포럼 홍보영상</h2>
+          <VideoEmbed url={FORUM_PROMO_VIDEO_URL} title={`${FORUM_INFO.title} 홍보영상`} />
+        </section>
+
         <section id="form" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <div className="mb-5">
             <h2 className="text-xl font-bold text-[#1B3A6B]">참가 신청</h2>
@@ -182,6 +191,32 @@ export default async function Forum2026Page() {
               <a href={`mailto:${FORUM_CONTACT_EMAIL}`} className="text-[#1B3A6B] underline break-all">{FORUM_CONTACT_EMAIL}</a>
             </li>
           </ul>
+        </section>
+
+        <section id="missionfund" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-bold text-[#1B3A6B]">미션펀드로 후원하기</h2>
+          <p className="mt-2 text-sm text-gray-600 leading-relaxed break-keep">
+            2026 KIMA 포럼과 전국 이주민 사역을 미션펀드를 통해 후원하실 수 있습니다.
+            아래 QR코드를 스캔하거나 버튼을 눌러 후원 페이지로 이동해 주세요.
+          </p>
+          <div className="mt-5 flex flex-col items-center gap-4">
+            <Image
+              src="/images/missionfund-qr.png"
+              alt="미션펀드 2026 KIMA 포럼 후원 QR코드"
+              width={200}
+              height={200}
+              className="w-40 h-40 rounded-lg border border-gray-200"
+            />
+            <a
+              href={FORUM_MISSIONFUND_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[#C8922A] text-white text-sm font-semibold hover:bg-[#b07f22] transition-colors"
+            >
+              미션펀드로 후원하기
+            </a>
+            <p className="text-xs text-gray-400 break-all">{FORUM_MISSIONFUND_URL}</p>
+          </div>
         </section>
       </div>
     </div>

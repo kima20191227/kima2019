@@ -30,6 +30,12 @@ export const FORUM_BANK = {
   holder: '한국이주민선교연합회',
 } as const
 
+/** 포럼 홍보 영상 (유튜브) */
+export const FORUM_PROMO_VIDEO_URL = 'https://www.youtube.com/watch?v=7TCjqJNXklk'
+
+/** 미션펀드 후원 페이지 — QR코드는 이 주소로 생성됨 (public/images/missionfund-qr.png) */
+export const FORUM_MISSIONFUND_URL = 'https://go.missionfund.org/2026kimaforum'
+
 /** 참가비 안내 — 참석 일수와 무관한 정액 */
 export const FORUM_FEE_NOTE = '참석 일수와 관계없이 동일 (1일만 참석해도 5만 원)'
 
