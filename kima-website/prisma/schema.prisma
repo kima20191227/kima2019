@@ -344,6 +344,22 @@ model ForumRegistration {
   @@index([forumKey, paymentStatus])
 }
 
+// ─── 포럼 만족도·피드백 설문 ────────────────────────────────────────────────
+// 문항은 src/lib/forumSurvey.ts에서 정의한다. answers는 { 문항id: 값 } JSON —
+// 연도마다 문항이 달라도 같은 테이블을 쓰고, forumKey로 구분한다.
+// 소속·이름·연락처는 선택이라 비어 있으면 무기명 응답이다.
+model ForumSurveyResponse {
+  id                String   @id @default(cuid())
+  forumKey          String   @default("2026")
+  answers           Json
+  respondentName    String?
+  respondentOrg     String?
+  respondentContact String?
+  createdAt         DateTime @default(now())
+
+  @@index([forumKey, createdAt])
+}
+
 model Story {
   id               String          @id @default(cuid())
   title            String

@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth'
 import { ARCHIVE_RECORDS } from '../archive/data'
 import { ForumArchiveForm } from '@/components/admin/ForumArchiveForm'
 import { FORUM_DEADLINE, FORUM_INFO, isForumRegistrationOpen } from '@/lib/forum2026'
+import { getForumSurveyState } from '@/lib/forumSurvey'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -105,6 +106,23 @@ export default async function ForumPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
+            </span>
+          </Link>
+        )}
+
+        {/* 2026 포럼 피드백 설문 배너 */}
+        {getForumSurveyState() === 'open' && (
+          <Link
+            href="/forum2026/survey"
+            className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-[#C8922A] rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group"
+          >
+            <div>
+              <p className="text-[#C8922A] text-xs font-semibold tracking-widest uppercase mb-1">Feedback</p>
+              <h2 className="text-lg sm:text-xl font-bold text-[#1B3A6B]">{FORUM_INFO.title} 피드백 설문</h2>
+              <p className="mt-1 text-sm text-gray-600">참석하셨나요? 5분 설문으로 내년 포럼을 함께 만들어 주세요. (무기명 가능)</p>
+            </div>
+            <span className="shrink-0 inline-flex items-center px-5 py-2.5 rounded-lg bg-[#1B3A6B] text-white text-sm font-semibold group-hover:bg-[#142d54] transition-colors">
+              설문 참여하기
             </span>
           </Link>
         )}

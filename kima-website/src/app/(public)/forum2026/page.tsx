@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { ForumRegisterForm } from '@/components/forum2026/ForumRegisterForm'
 import { VideoEmbed } from '@/components/story/VideoEmbed'
@@ -16,6 +17,7 @@ import {
   FORUM_REFUND_TEXT,
   isForumRegistrationOpen,
 } from '@/lib/forum2026'
+import { FORUM_SURVEY_OPENS_TEXT, getForumSurveyState } from '@/lib/forumSurvey'
 
 const OG_TITLE = `${FORUM_INFO.title} 참가 신청 — ${FORUM_INFO.subtitle}`
 const OG_DESCRIPTION = `${FORUM_INFO.theme} | ${FORUM_INFO.dateText} · ${FORUM_INFO.venueName}`
@@ -62,11 +64,13 @@ const PAGE_NAV = [
   { href: '#form', label: '신청서' },
   { href: '#payment', label: '입금 안내' },
   { href: '#missionfund', label: '미션펀드 후원' },
+  { href: '#survey', label: '피드백 설문' },
 ]
 
 export default async function Forum2026Page() {
   const session = await auth()
   const isOpen = isForumRegistrationOpen()
+  const surveyState = getForumSurveyState()
 
   const infoRows: { label: string; value: string; sub?: string; links?: typeof MAP_LINKS; note?: string }[] = [
     { label: '일시', value: FORUM_INFO.dateText },
@@ -217,6 +221,28 @@ export default async function Forum2026Page() {
             </a>
             <p className="text-xs text-gray-400 break-all">{FORUM_MISSIONFUND_URL}</p>
           </div>
+        </section>
+
+        <section id="survey" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-bold text-[#1B3A6B]">포럼 피드백 설문</h2>
+          <p className="mt-2 text-sm text-gray-600 leading-relaxed break-keep">
+            포럼에 참석하신 분들의 의견을 듣습니다. 약 5분이 걸리며 이름 없이(무기명) 제출할 수 있습니다.
+            보내 주신 의견은 내년 포럼을 준비하는 데 귀하게 쓰겠습니다.
+          </p>
+          {surveyState === 'open' ? (
+            <Link
+              href="/forum2026/survey"
+              className="mt-4 inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[#1B3A6B] text-white text-sm font-semibold hover:bg-[#142d54] transition-colors"
+            >
+              설문 참여하기
+            </Link>
+          ) : (
+            <p className="mt-4 rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
+              {surveyState === 'before'
+                ? `${FORUM_SURVEY_OPENS_TEXT}부터 참여하실 수 있습니다.`
+                : '설문이 마감되었습니다. 참여해 주셔서 감사합니다.'}
+            </p>
+          )}
         </section>
       </div>
     </div>
