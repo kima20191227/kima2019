@@ -1,4 +1,6 @@
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
+import { getLeaderPhoto } from '@/lib/leaderPhotos'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -30,11 +32,26 @@ type Leader = {
 }
 
 function MemberCard({ title, name, org, position, phone, email, nations, mission }: Leader) {
+  const photo = getLeaderPhoto(name)
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-start gap-4">
-      <div className="w-11 h-11 rounded-full bg-[#1B3A6B] flex items-center justify-center text-white font-bold text-base flex-shrink-0">
-        {name[0]}
-      </div>
+      {/* 반명함(3:4) 사진 — 없으면 이름 첫 글자 */}
+      {photo ? (
+        <Image
+          src={photo}
+          alt={`${name} ${title}`}
+          width={72}
+          height={96}
+          className="w-[72px] h-24 rounded-lg object-cover flex-shrink-0 bg-gray-100"
+        />
+      ) : (
+        <div
+          aria-hidden="true"
+          className="w-[72px] h-24 rounded-lg bg-[#1B3A6B] flex items-center justify-center text-white font-bold text-2xl flex-shrink-0"
+        >
+          {name[0]}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-xs text-[#C8922A] font-semibold">{title}</p>
         <div className="flex items-baseline gap-2 flex-wrap mt-0.5">
