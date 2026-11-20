@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { GRANTABLE_ADMIN_MENUS } from '@/lib/adminAccess'
+import { GRANTABLE_ADMIN_MENUS } from '@/lib/adminMenus'
 
 interface Props {
   userId: string
