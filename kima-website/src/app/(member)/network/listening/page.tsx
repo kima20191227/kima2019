@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { getEventType } from '@/lib/eventTypes'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { ARCHIVE_RECORDS } from '../archive/data'
 import { ForumArchiveForm } from '@/components/admin/ForumArchiveForm'
 import type { Metadata } from 'next'
@@ -25,13 +26,9 @@ type RecordItem = {
   isPublished: boolean
 }
 
-function isOfficer(role?: string | null) {
-  return role === 'ADMIN' || role === 'OFFICER'
-}
-
 export default async function ListeningCallPage() {
   const session = await auth()
-  const canManage = isOfficer(session?.user?.role)
+  const canManage = await hasAdminMenu(session, 'forumArchives')
 
   // DB records — 임원/관리자는 비공개 포함 전체 조회
   const dbRecords = await prisma.forumArchive.findMany({

@@ -13,6 +13,7 @@ export const GRANTABLE_ADMIN_MENUS = [
   { key: 'qna', label: 'Q&A 관리', href: '/admin/qna' },
   { key: 'email', label: '메일 발송', href: '/admin/email' },
   { key: 'popups', label: '팝업 관리', href: '/admin/popups' },
+  { key: 'forumArchives', label: '포럼·리스닝콜', href: '/admin/forum-archives' },
 ] as const
 
 export type AdminMenuKey = (typeof GRANTABLE_ADMIN_MENUS)[number]['key']

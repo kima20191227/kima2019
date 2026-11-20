@@ -25,7 +25,7 @@ const NAV = [
   { href: '/admin/news',          label: '뉴스 관리',    icon: '📰', exact: false, minRole: 'ADMIN'   as const, menuKey: 'news' as const },
   { href: '/admin/columns',       label: '칼럼 관리',    icon: '✍️', exact: false, minRole: 'ADMIN'   as const, menuKey: 'columns' as const },
   { href: '/admin/qna',           label: 'Q&A 관리',    icon: '💬', exact: false, minRole: 'ADMIN'   as const, menuKey: 'qna' as const },
-  { href: '/admin/forum-archives', label: '포럼·리스닝콜', icon: '🏛', exact: false, minRole: 'OFFICER' as const },
+  { href: '/admin/forum-archives', label: '포럼·리스닝콜', icon: '🏛', exact: false, minRole: 'ADMIN'   as const, menuKey: 'forumArchives' as const },
   { href: '/admin/forum2026',     label: '2026 포럼 신청', icon: '📝', exact: true,  minRole: 'OFFICER' as const },
   { href: '/admin/forum2026/survey', label: '2026 포럼 설문', icon: '📋', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/email',         label: '메일 발송',    icon: '✉️', exact: false, minRole: 'ADMIN'   as const, menuKey: 'email' as const },

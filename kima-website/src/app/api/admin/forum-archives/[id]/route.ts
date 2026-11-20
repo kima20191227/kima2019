@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
 
@@ -32,16 +33,12 @@ const updateSchema = z.object({
   materials: z.array(materialSchema).optional().default([]),
 })
 
-function isOfficer(role: string | undefined | null) {
-  return role === 'ADMIN' || role === 'OFFICER'
-}
-
 type RouteCtx = { params: Promise<{ id: string }> }
 
 export async function GET(_request: NextRequest, { params }: RouteCtx) {
   try {
     const session = await auth()
-    if (!isOfficer(session?.user?.role)) {
+    if (!(await hasAdminMenu(session, 'forumArchives'))) {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
@@ -68,7 +65,7 @@ export async function GET(_request: NextRequest, { params }: RouteCtx) {
 export async function PUT(request: NextRequest, { params }: RouteCtx) {
   try {
     const session = await auth()
-    if (!isOfficer(session?.user?.role)) {
+    if (!(await hasAdminMenu(session, 'forumArchives'))) {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 
@@ -114,7 +111,7 @@ export async function PUT(request: NextRequest, { params }: RouteCtx) {
 export async function DELETE(_request: NextRequest, { params }: RouteCtx) {
   try {
     const session = await auth()
-    if (!isOfficer(session?.user?.role)) {
+    if (!(await hasAdminMenu(session, 'forumArchives'))) {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
     }
 

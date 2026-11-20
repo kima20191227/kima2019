@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { ForumArchiveForm } from '@/components/admin/ForumArchiveForm'
@@ -17,7 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default async function AdminForumArchivesPage() {
   const session = await auth()
   const role = session?.user?.role
-  if (role !== 'ADMIN' && role !== 'OFFICER') redirect('/')
+  if (!(await hasAdminMenu(session, 'forumArchives'))) redirect('/')
 
   const archives = await prisma.forumArchive.findMany({
     include: {
