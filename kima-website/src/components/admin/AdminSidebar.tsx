@@ -75,7 +75,7 @@ export function AdminSidebar({ userRole }: Props) {
       {/* 모바일 토글 버튼 */}
       <button
         type="button"
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-[#1B3A6B] text-white shadow"
+        className="lg:hidden fixed top-[4.5rem] left-4 z-[1250] p-2 rounded-lg bg-[#1B3A6B] text-white shadow"
         onClick={() => setOpen((v) => !v)}
         aria-label="메뉴 열기"
       >
@@ -87,7 +87,7 @@ export function AdminSidebar({ userRole }: Props) {
       {/* 모바일 오버레이 */}
       {open && (
         <div
-          className="lg:hidden fixed inset-0 z-40 bg-black/50"
+          className="lg:hidden fixed inset-x-0 bottom-0 top-16 z-[1230] bg-black/50"
           onClick={() => setOpen(false)}
         />
       )}
@@ -95,7 +95,9 @@ export function AdminSidebar({ userRole }: Props) {
       {/* 사이드바 */}
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-60 bg-[#1B3A6B] z-40 flex flex-col transition-transform duration-300',
+          // 모바일: 사이트 헤더(sticky, z-1200, 높이 4rem) 아래에 열린다. 그보다 낮은 z-index면 헤더에 가려진다.
+          'fixed left-0 top-16 bottom-0 w-60 bg-[#1B3A6B] z-[1240] flex flex-col transition-transform duration-300',
+          'lg:top-0 lg:h-full lg:z-40',
           'lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
