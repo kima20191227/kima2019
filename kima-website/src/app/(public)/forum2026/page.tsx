@@ -88,8 +88,8 @@ export default async function Forum2026Page() {
           <Image
             src="/images/forum2026-poster.jpg"
             alt={`${FORUM_INFO.title} (${FORUM_INFO.subtitle}) 포스터 — ${FORUM_INFO.dateText}, ${FORUM_INFO.venueName}`}
-            width={900}
-            height={1273}
+            width={1200}
+            height={1697}
             priority
             className="w-full h-auto rounded-xl shadow-lg"
           />
