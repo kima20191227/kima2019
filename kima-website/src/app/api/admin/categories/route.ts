@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
 
@@ -17,7 +18,7 @@ const createSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'categories'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
 

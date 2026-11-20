@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { sendEmail, organizationApprovedEmailHtml } from '@/lib/email'
 import { geocodeAddress } from '@/lib/kakaoGeocoding'
@@ -9,7 +10,7 @@ import { z } from 'zod/v4'
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'organizations'))) {
       return NextResponse.json({ error: '최고 관리자만 단체를 삭제할 수 있습니다.' }, { status: 403 })
     }
     const { id } = await params
@@ -44,7 +45,7 @@ const editSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'organizations'))) {
       return NextResponse.json({ error: '최고 관리자만 단체를 승인·반려할 수 있습니다.' }, { status: 403 })
     }
 

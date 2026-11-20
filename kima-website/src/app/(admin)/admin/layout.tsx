@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth'
+import { getGrantedAdminMenus } from '@/lib/adminAccess'
 import { redirect } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import type { Metadata } from 'next'
@@ -20,9 +21,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/')
   }
 
+  const grantedMenus = role === 'OFFICER' ? await getGrantedAdminMenus(session) : []
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <AdminSidebar userRole={role} />
+      <AdminSidebar userRole={role} grantedMenus={grantedMenus} />
       <main className="flex-1 lg:ml-60 pt-14 lg:pt-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</div>
       </main>

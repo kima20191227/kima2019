@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { AdminQnaList } from '@/components/admin/AdminQnaList'
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: 'Q&A 관리 | KIMA 관리자' }
 
 export default async function AdminQnaPage() {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') redirect('/')
+  if (!(await hasAdminMenu(session, 'qna'))) redirect('/')
 
   const questions = await prisma.question.findMany({
     select: {

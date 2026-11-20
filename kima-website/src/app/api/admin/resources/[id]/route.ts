@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'resources'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
 

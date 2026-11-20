@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { legalDocumentSchema } from '@/schemas/legal.schema'
 import type { LegalDocumentInput } from '@/schemas/legal.schema'
-
-function isAdmin(role?: string | null) {
-  return role === 'ADMIN'
-}
 
 type Context = { params: Promise<{ id: string }> }
 
@@ -29,7 +26,7 @@ function mapSections(sections: LegalDocumentInput['sections']) {
 export async function PATCH(request: NextRequest, { params }: Context) {
   try {
     const session = await auth()
-    if (!isAdmin(session?.user?.role)) {
+    if (!(await hasAdminMenu(session, 'legal'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
 
@@ -78,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: Context) {
 export async function DELETE(_request: NextRequest, { params }: Context) {
   try {
     const session = await auth()
-    if (!isAdmin(session?.user?.role)) {
+    if (!(await hasAdminMenu(session, 'legal'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
 

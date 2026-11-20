@@ -15,34 +15,40 @@ function hasRole(role: UserRole, required: keyof typeof ROLE_HIERARCHY) {
 const NAV = [
   { href: '/admin',               label: '대시보드',     icon: '🏠', exact: true,  minRole: 'OFFICER' as const },
   { href: '/admin/members',       label: '회원 관리',    icon: '👥', exact: false, minRole: 'OFFICER' as const },
-  { href: '/admin/organizations', label: '전체 단체관리', icon: '🏢', exact: false, minRole: 'OFFICER' as const },
-  { href: '/admin/categories',    label: '커뮤니티별 담당자 관리', icon: '📂', exact: false, minRole: 'ADMIN'   as const },
-  { href: '/admin/resources',     label: '자료 관리',    icon: '📄', exact: false, minRole: 'ADMIN'   as const },
+  { href: '/admin/organizations', label: '전체 단체관리', icon: '🏢', exact: false, minRole: 'ADMIN'   as const, menuKey: 'organizations' as const },
+  { href: '/admin/categories',    label: '커뮤니티별 담당자 관리', icon: '📂', exact: false, minRole: 'ADMIN'   as const, menuKey: 'categories' as const },
+  { href: '/admin/resources',     label: '자료 관리',    icon: '📄', exact: false, minRole: 'ADMIN'   as const, menuKey: 'resources' as const },
   { href: '/admin/events',        label: '일정 관리',    icon: '📅', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/leadership',     label: '임원단 관리',  icon: '👤', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/stories',       label: '현장스토리',   icon: '📖', exact: false, minRole: 'OFFICER' as const },
-  { href: '/admin/legal',         label: '법령&제도',    icon: '§', exact: false, minRole: 'ADMIN'   as const },
-  { href: '/admin/news',          label: '뉴스 관리',    icon: '📰', exact: false, minRole: 'ADMIN'   as const },
-  { href: '/admin/columns',       label: '칼럼 관리',    icon: '✍️', exact: false, minRole: 'ADMIN'   as const },
-  { href: '/admin/qna',           label: 'Q&A 관리',    icon: '💬', exact: false, minRole: 'ADMIN'   as const },
+  { href: '/admin/legal',         label: '법령&제도',    icon: '§', exact: false, minRole: 'ADMIN'   as const, menuKey: 'legal' as const },
+  { href: '/admin/news',          label: '뉴스 관리',    icon: '📰', exact: false, minRole: 'ADMIN'   as const, menuKey: 'news' as const },
+  { href: '/admin/columns',       label: '칼럼 관리',    icon: '✍️', exact: false, minRole: 'ADMIN'   as const, menuKey: 'columns' as const },
+  { href: '/admin/qna',           label: 'Q&A 관리',    icon: '💬', exact: false, minRole: 'ADMIN'   as const, menuKey: 'qna' as const },
   { href: '/admin/forum-archives', label: '포럼·리스닝콜', icon: '🏛', exact: false, minRole: 'OFFICER' as const },
   { href: '/admin/forum2026',     label: '2026 포럼 신청', icon: '📝', exact: true,  minRole: 'OFFICER' as const },
   { href: '/admin/forum2026/survey', label: '2026 포럼 설문', icon: '📋', exact: false, minRole: 'OFFICER' as const },
-  { href: '/admin/email',         label: '메일 발송',    icon: '✉️', exact: false, minRole: 'ADMIN'   as const },
+  { href: '/admin/email',         label: '메일 발송',    icon: '✉️', exact: false, minRole: 'ADMIN'   as const, menuKey: 'email' as const },
   { href: '/admin/bulk-register', label: '회원 일괄등록', icon: '👤', exact: false, minRole: 'ADMIN'   as const },
-  { href: '/admin/popups',        label: '팝업 관리',    icon: '🪟', exact: false, minRole: 'ADMIN'   as const },
+  { href: '/admin/popups',        label: '팝업 관리',    icon: '🪟', exact: false, minRole: 'ADMIN'   as const, menuKey: 'popups' as const },
   { href: '/admin/stats',         label: '접속 통계',    icon: '📊', exact: false, minRole: 'OFFICER' as const },
 ]
 
 interface Props {
   userRole: UserRole
+  /** 임원에게 개별 부여된 관리자 메뉴 키 (ADMIN은 전부 접근하므로 무시) */
+  grantedMenus?: string[]
 }
 
-export function AdminSidebar({ userRole }: Props) {
+export function AdminSidebar({ userRole, grantedMenus = [] }: Props) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
-  const visibleNav = NAV.filter((item) => hasRole(userRole, item.minRole))
+  const visibleNav = NAV.filter((item) => {
+    if (hasRole(userRole, item.minRole)) return true
+    // 관리자 전용 메뉴 중 이 임원에게 부여된 것
+    return userRole === 'OFFICER' && !!item.menuKey && grantedMenus.includes(item.menuKey)
+  })
 
   const isActive = (item: (typeof NAV)[0]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { resourceSchema } from '@/schemas/resource.schema'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'resources'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
         section: parsed.data.section,
         accessLevel: parsed.data.accessLevel,
         categoryId: parsed.data.categoryId ?? null,
-        uploadedById: session.user.id,
+        uploadedById: session?.user?.id,
       },
     })
     return NextResponse.json({ resource }, { status: 201 })

@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { legalDocumentSchema } from '@/schemas/legal.schema'
 import type { LegalDocumentInput } from '@/schemas/legal.schema'
-
-function isAdmin(role?: string | null) {
-  return role === 'ADMIN'
-}
 
 function mapSections(sections: LegalDocumentInput['sections']) {
   return sections?.map((section, index) => ({
@@ -22,7 +19,7 @@ function mapSections(sections: LegalDocumentInput['sections']) {
 
 export async function GET() {
   const session = await auth()
-  if (!isAdmin(session?.user?.role)) {
+  if (!(await hasAdminMenu(session, 'legal'))) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
   }
 
@@ -37,7 +34,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    if (!isAdmin(session?.user?.role)) {
+    if (!(await hasAdminMenu(session, 'legal'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
 
@@ -61,7 +58,7 @@ export async function POST(request: NextRequest) {
         sourceId: parsed.data.sourceId ?? null,
         isLatest: parsed.data.isLatest,
         accessLevel: parsed.data.accessLevel,
-        createdById: session.user.id,
+        createdById: session?.user?.id,
         ...(parsed.data.sections?.length
           ? { sections: { create: mapSections(parsed.data.sections) } }
           : {}),

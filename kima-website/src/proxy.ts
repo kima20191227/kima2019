@@ -16,8 +16,9 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const userRole = req.auth?.user?.role
 
-  // 회원 관리 · 단체 승인 → ADMIN 전용
-  if (pathname.startsWith('/admin/members') || pathname.startsWith('/admin/organizations')) {
+  // 회원 관리 → ADMIN 전용. 그 외 관리 메뉴는 OFFICER 이상이 들어올 수 있고,
+  // 메뉴별 세부 권한(임원에게 개별 부여)은 각 페이지·API가 DB로 확인한다 (src/lib/adminAccess.ts).
+  if (pathname.startsWith('/admin/members')) {
     if (!hasRole(userRole, 'ADMIN')) {
       return NextResponse.redirect(new URL('/', req.url))
     }

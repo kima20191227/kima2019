@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import type { Metadata } from 'next'
 import type { Prisma } from '@prisma/client'
@@ -22,7 +23,7 @@ export default async function AdminNewsPage({
   searchParams: Promise<{ tab?: string; page?: string; status?: string; sort?: string }>
 }) {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') redirect('/')
+  if (!(await hasAdminMenu(session, 'news'))) redirect('/')
 
   await ensureDefaultNewsCategories()
 

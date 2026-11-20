@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { runNewsCollection } from '@/lib/collectNews'
-
-function isAdmin(role?: string | null) {
-  return role === 'ADMIN'
-}
 
 /**
  * POST /api/admin/collect-now
@@ -13,7 +10,7 @@ function isAdmin(role?: string | null) {
  */
 export async function POST() {
   const session = await auth()
-  if (!isAdmin(session?.user?.role)) {
+  if (!(await hasAdminMenu(session, 'news'))) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
   }
 

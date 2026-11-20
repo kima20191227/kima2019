@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
-
-function isAdmin(role?: string | null) {
-  return role === 'ADMIN'
-}
 
 const patchSchema = z.object({
   isEnabled:          z.boolean().optional(),
@@ -16,7 +13,7 @@ const patchSchema = z.object({
 
 export async function GET() {
   const session = await auth()
-  if (!isAdmin(session?.user?.role)) {
+  if (!(await hasAdminMenu(session, 'news'))) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
   }
 
@@ -34,7 +31,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   const session = await auth()
-  if (!isAdmin(session?.user?.role)) {
+  if (!(await hasAdminMenu(session, 'news'))) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
   }
 

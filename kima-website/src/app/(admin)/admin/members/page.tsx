@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { MemberRoleForm } from '@/components/admin/MemberRoleForm'
+import { MemberMenuAccess } from '@/components/admin/MemberMenuAccess'
 import { MemberSearchInput } from '@/components/admin/MemberSearchInput'
 import { DeleteMemberButton } from '@/components/admin/DeleteMemberButton'
 import { MemberEditButton } from '@/components/admin/MemberEditButton'
@@ -119,7 +120,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
         id: true, name: true, email: true, role: true,
         organization: true, position: true, phone: true,
         address: true, denomination: true, region: true,
-        premiumNote: true, approvedAt: true, expiresAt: true, createdAt: true,
+        premiumNote: true, adminMenus: true, approvedAt: true, expiresAt: true, createdAt: true,
       },
     }),
     prisma.user.count({ where: { role: 'MEMBER', premiumNote: { startsWith: '[신청]' } } }),
@@ -270,6 +271,13 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
                           currentRole={user.role}
                           currentNote={user.premiumNote}
                         />
+                        {role === 'ADMIN' && user.role === 'OFFICER' && (
+                          <MemberMenuAccess
+                            userId={user.id}
+                            userName={user.name ?? user.email}
+                            currentMenus={user.adminMenus}
+                          />
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">

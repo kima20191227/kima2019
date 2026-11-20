@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -19,7 +20,7 @@ const popupSchema = z.object({
 export async function GET() {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'popups'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
     const popups = await prisma.popup.findMany({ orderBy: { createdAt: 'desc' } })
@@ -32,7 +33,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'popups'))) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
     const body = await req.json()

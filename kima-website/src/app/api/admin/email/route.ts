@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 import { z } from 'zod/v4'
@@ -14,7 +15,7 @@ const bodySchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'email'))) {
       return NextResponse.json({ error: '최고 관리자만 전체 메일을 발송할 수 있습니다.' }, { status: 403 })
     }
 
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         totalCount: recipients.length,
         sentCount:  0,
         failedCount: 0,
-        sentBy: session.user.email ?? undefined,
+        sentBy: session?.user.email ?? undefined,
       },
     })
 
@@ -134,7 +135,7 @@ function personalizeHtml(html: string, name: string | null): string {
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') {
+    if (!(await hasAdminMenu(session, 'email'))) {
       return NextResponse.json({ error: '최고 관리자만 접근할 수 있습니다.' }, { status: 403 })
     }
 

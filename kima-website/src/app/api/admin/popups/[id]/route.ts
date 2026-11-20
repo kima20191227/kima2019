@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -18,7 +19,7 @@ const patchSchema = z.object({
 
 async function requireAdmin() {
   const session = await auth()
-  return session?.user?.role === 'ADMIN'
+  return hasAdminMenu(session, 'popups')
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -17,7 +18,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') return adminOnly()
+    if (!(await hasAdminMenu(session, 'columns'))) return adminOnly()
 
     const { id } = await params
     const body = await request.json()
@@ -42,7 +43,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    if (session?.user?.role !== 'ADMIN') return adminOnly()
+    if (!(await hasAdminMenu(session, 'columns'))) return adminOnly()
 
     const { id } = await params
     await prisma.columnPost.delete({ where: { id } })

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { LegalDocumentAdminClient } from '@/components/admin/LegalDocumentAdminClient'
 import type { LegalDocumentAdminItem } from '@/components/admin/LegalDocumentAdminClient'
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default async function AdminLegalPage() {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') redirect('/')
+  if (!(await hasAdminMenu(session, 'legal'))) redirect('/')
 
   const documents = await prisma.legalDocument.findMany({
     orderBy: [{ updatedAt: 'desc' }],

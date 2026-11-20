@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod/v4'
 import { ensureDefaultNewsCategories } from '@/lib/newsCategories'
-
-function isAdmin(role?: string | null) {
-  return role === 'ADMIN'
-}
 
 const patchSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -23,7 +20,7 @@ type Ctx = { params: Promise<{ id: string }> }
 
 export async function PATCH(request: NextRequest, { params }: Ctx) {
   const session = await auth()
-  if (!isAdmin(session?.user?.role)) {
+  if (!(await hasAdminMenu(session, 'news'))) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
   }
   const { id } = await params
@@ -47,7 +44,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
   const session = await auth()
-  if (!isAdmin(session?.user?.role)) {
+  if (!(await hasAdminMenu(session, 'news'))) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
   }
   const { id } = await params

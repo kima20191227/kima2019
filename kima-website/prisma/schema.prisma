@@ -24,6 +24,7 @@ model User {
   approvedAt        DateTime?
   expiresAt         DateTime?
   premiumNote       String?
+  adminMenus        String[]  @default([]) // 임원(OFFICER)에게 개별 부여된 관리자 메뉴 키 (src/lib/adminAccess.ts)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

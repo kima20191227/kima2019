@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth'
+import { hasAdminMenu } from '@/lib/adminAccess'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { DeleteButton } from '@/components/admin/DeleteButton'
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: '칼럼 관리 | KIMA 관리자' }
 
 export default async function AdminColumnsPage() {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') redirect('/')
+  if (!(await hasAdminMenu(session, 'columns'))) redirect('/')
 
   const columns = await prisma.columnPost.findMany({
     select: {
