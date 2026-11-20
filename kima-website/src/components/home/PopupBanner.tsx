@@ -101,8 +101,8 @@ export function PopupBanner({ popups }: { popups: Popup[] }) {
             {/* 이미지 — 고정 높이 컨테이너로 로드 전 높이를 확정하여 CLS 제거.
                 imageWidth 설정 시 내부 래퍼 maxWidth로 축소 표시 의도를 보존(높이는 컨테이너가 확정). */}
             {!popup.youtubeId && popup.imageUrl && (
-              <div className="relative w-full h-[min(50vh,420px)] rounded-t-2xl overflow-hidden">
-                {popup.imageWidth ? (
+              popup.imageWidth ? (
+                <div className="relative w-full h-[min(50vh,420px)] rounded-t-2xl overflow-hidden">
                   <div className="absolute inset-0 mx-auto" style={{ maxWidth: popup.imageWidth }}>
                     <Image
                       src={popup.imageUrl}
@@ -113,17 +113,19 @@ export function PopupBanner({ popups }: { popups: Popup[] }) {
                       className="object-contain"
                     />
                   </div>
-                ) : (
-                  <Image
-                    src={popup.imageUrl}
-                    alt={popup.title}
-                    fill
-                    priority={idx === 0}
-                    sizes="(max-width: 768px) calc(100vw - 2rem), 420px"
-                    className="object-contain"
-                  />
-                )}
-              </div>
+                </div>
+              ) : (
+                // 너비 미지정: 이미지를 카드 너비에 가득 채우고 높이는 원본 비율에 맞춘다(포스터 등).
+                <Image
+                  src={popup.imageUrl}
+                  alt={popup.title}
+                  width={0}
+                  height={0}
+                  priority={idx === 0}
+                  sizes="(max-width: 768px) calc(100vw - 2rem), 420px"
+                  className="w-full h-auto rounded-t-2xl"
+                />
+              )
             )}
 
             {/* 유튜브 */}
