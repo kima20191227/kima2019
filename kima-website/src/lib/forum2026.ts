@@ -18,7 +18,7 @@ export const FORUM_INFO = {
   verseRef: '이사야 43:18',
   dateText: '2026년 12월 8일(화) ~ 12월 10일(목)',
   venueName: '광은기도원',
-  venueAddress: '경기도 평택시 진위면 동천리 152-5',
+  venueAddress: '경기도 평택시 진위면 동천길 247',
   feeText: '5만 원',
   program: ['국가·지역별 발제', '대상별 발제', '조별 토론', '저녁 집회'],
   host: '한국이주민선교연합회(KIMA)',
@@ -50,8 +50,17 @@ export const FORUM_REFUND_TEXT = `포럼 시작 2주 전인 ${FORUM_REFUND_DEADL
 /** 문의·신청 수정·취소 연락처 (신청자에게 안내하는 주소) */
 export const FORUM_CONTACT_EMAIL = 'info@kima2019.org'
 
-/** 오시는 길 — 교통·주차 안내는 추후 공지 */
-export const FORUM_DIRECTIONS_TEXT = '교통·주차 등 오시는 길은 추후 공지합니다.'
+/** 오시는 길 (책자 p.70 기준) */
+export const FORUM_VENUE_PHONE = '031-668-0550~3'
+export const FORUM_DIRECTIONS_TEXT = '오시는 길은 아래 안내를 확인해 주세요.'
+export const FORUM_TRANSIT = {
+  summary: '지하철 1호선 오산역 1번 출구에서 광은기도원 셔틀버스를 이용합니다.',
+  shuttle: '화~목 10:00 / 13:30 / 19:00',
+  shuttleNote: `※ 포럼 기간 운행은 기도원(${FORUM_VENUE_PHONE})에 확인`,
+} as const
+export const FORUM_CAR_ROUTE =
+  '경부고속도로 오산IC → 고가도로 아래를 지나 좌회전, 약 1km 직진 → 언덕 사거리에서 안성·남사 방향으로 좌회전, 약 100m 후 우회전 → 안성·남사 방향 약 700m 직진, 온새미 주유소에서 좌회전 → ‘광은기도원’ 이정표를 따라 진입'
+export const FORUM_CHECKIN_TEXT = '12월 8일(화) 12:00–14:00 (참가비 수납 · 숙소 배정)'
 
 /** 개인정보 보유 기간 (신청 폼 동의 문구) */
 export const FORUM_PRIVACY_RETENTION = '행사 종료 후 1년 이내 파기'

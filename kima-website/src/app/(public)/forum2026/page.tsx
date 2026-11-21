@@ -6,7 +6,11 @@ import { ForumRegisterForm } from '@/components/forum2026/ForumRegisterForm'
 import { VideoEmbed } from '@/components/story/VideoEmbed'
 import {
   FORUM_BANK,
+  FORUM_CAR_ROUTE,
+  FORUM_CHECKIN_TEXT,
   FORUM_CONTACT_EMAIL,
+  FORUM_TRANSIT,
+  FORUM_VENUE_PHONE,
   FORUM_DEADLINE,
   FORUM_DIRECTIONS_TEXT,
   FORUM_FEE_NOTE,
@@ -60,6 +64,7 @@ const MAP_LINKS = [
 
 const PAGE_NAV = [
   { href: '#info', label: '행사 안내' },
+  { href: '#directions', label: '오시는 길' },
   { href: '#video', label: '홍보영상' },
   { href: '#form', label: '신청서' },
   { href: '#payment', label: '입금 안내' },
@@ -98,11 +103,11 @@ export default async function Forum2026Page() {
 
       {/* 페이지 내 이동 */}
       <nav aria-label="페이지 내 이동" className="bg-white border-b border-gray-100">
-        <ul className="max-w-xl mx-auto px-4 flex justify-center text-sm font-medium">
+        <ul className="max-w-xl mx-auto px-2 flex flex-nowrap overflow-x-auto sm:justify-center text-[13px] sm:text-sm font-medium whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PAGE_NAV.map((item, i) => (
-            <li key={item.href} className="flex items-center">
-              {i > 0 && <span className="text-gray-300 px-1" aria-hidden="true">·</span>}
-              <a href={item.href} className="inline-block px-3 py-3 text-[#1B3A6B] hover:text-[#C8922A]">
+            <li key={item.href} className="flex items-center flex-shrink-0">
+              {i > 0 && <span className="text-gray-300" aria-hidden="true">·</span>}
+              <a href={item.href} className="inline-block px-2 sm:px-3 py-3 text-[#1B3A6B] hover:text-[#C8922A]">
                 {item.label}
               </a>
             </li>
@@ -149,6 +154,42 @@ export default async function Forum2026Page() {
               </dd>
             </div>
           </dl>
+        </section>
+
+        <section id="directions" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-bold text-[#1B3A6B]">오시는 길</h2>
+          <p className="mt-2 text-sm text-gray-800">
+            <span className="font-semibold">{FORUM_INFO.venueName}</span>
+            <span className="block text-gray-500">{FORUM_INFO.venueAddress}</span>
+            <span className="block text-gray-500">
+              문의 ·{' '}
+              <a href="tel:0316680550" className="text-[#1B3A6B] underline">{FORUM_VENUE_PHONE}</a>
+            </span>
+          </p>
+
+          <Image
+            src="/images/forum2026-map.png"
+            alt={`${FORUM_INFO.venueName} 위치 지도 — ${FORUM_INFO.venueAddress}`}
+            width={698}
+            height={697}
+            className="mt-4 w-full h-auto rounded-lg border border-gray-200"
+          />
+
+          <h3 className="mt-5 text-sm font-semibold text-[#C8922A]">대중교통</h3>
+          <p className="mt-1 text-sm text-gray-800 leading-relaxed break-keep">{FORUM_TRANSIT.summary}</p>
+          <p className="mt-1 text-sm text-gray-600">셔틀 · {FORUM_TRANSIT.shuttle}</p>
+          <p className="text-xs text-gray-500">{FORUM_TRANSIT.shuttleNote}</p>
+
+          <h3 className="mt-5 text-sm font-semibold text-[#C8922A]">자가용</h3>
+          <p className="mt-1 text-sm text-gray-800 leading-relaxed break-keep">{FORUM_CAR_ROUTE}</p>
+
+          <div className="mt-5 rounded-lg bg-gray-50 border border-gray-200 p-4 text-sm text-gray-700 space-y-1">
+            <p><span className="font-semibold text-[#1B3A6B]">등록</span> · {FORUM_CHECKIN_TEXT}</p>
+            <p>
+              <span className="font-semibold text-[#1B3A6B]">문의</span> ·{' '}
+              <a href={`mailto:${FORUM_CONTACT_EMAIL}`} className="underline break-all">{FORUM_CONTACT_EMAIL}</a>
+            </p>
+          </div>
         </section>
 
         <section id="video" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
