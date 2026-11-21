@@ -191,6 +191,12 @@ function extractUrl(itemXml: string): string {
   )
   if (id) return id[1].trim()
 
+  // 사이트맵 <loc>
+  const loc = itemXml.match(
+    /<loc[^>]*>\s*(?:<!\[CDATA\[)?\s*(https?:\/\/[^\s<\]"]+)/i,
+  )
+  if (loc) return loc[1].trim()
+
   return ''
 }
 
@@ -210,6 +216,16 @@ function parseRSSItems(xml: string): string[] {
   if (results.length === 0) {
     const entryRe = /<entry[^>]*>([\s\S]*?)<\/entry>/gi
     while ((m = entryRe.exec(xml)) !== null) results.push(m[1])
+  }
+
+  // Google News 사이트맵 <url> (RSS·Atom 모두 없는 경우)
+  // 예: 국민일보 https://www.kmib.co.kr/rss/data/sitemap/recentArticlelist.xml
+  //     — 섹션 RSS에 없는 '더미션' 등 전 섹션 기사가 최근 48시간치 포함된다.
+  if (results.length === 0) {
+    const urlRe = /<url>([\s\S]*?)<\/url>/gi
+    while ((m = urlRe.exec(xml)) !== null) {
+      if (/<news:news[\s>]/i.test(m[1])) results.push(m[1])
+    }
   }
 
   return results
@@ -298,13 +314,17 @@ export async function fetchRSSFeed(
     }
 
     const xml = await res.text()
-    const items = parseRSSItems(xml).slice(0, maxItems)
+    // 상한은 키워드 필터 '이후'에 적용한다. 필터 전에 자르면 수백 건짜리
+    // 피드·사이트맵에서 앞쪽 일부만 검사되어 관련 기사가 누락된다.
+    const items = parseRSSItems(xml)
 
     const articles: RawArticle[] = []
 
     for (const item of items) {
-      const title = extractTag(item, 'title')
-      // Atom은 <summary> 또는 <content>
+      if (articles.length >= maxItems) break
+
+      const title = extractTag(item, 'title') || extractTag(item, 'news:title')
+      // Atom은 <summary> 또는 <content>. 사이트맵은 요약이 없다(수집 후 본문에서 보강).
       const summary =
         extractTag(item, 'description') ||
         extractTag(item, 'summary') ||
@@ -313,7 +333,8 @@ export async function fetchRSSFeed(
       const pubDate =
         extractTag(item, 'pubDate') ||
         extractTag(item, 'published') ||
-        extractTag(item, 'updated')
+        extractTag(item, 'updated') ||
+        extractTag(item, 'news:publication_date')
 
       if (!title || !url) continue
 

@@ -64,9 +64,12 @@ function hasTruncatedText(input: string): boolean {
 
 async function enrichArticleSummaries(articles: RawArticle[]): Promise<RawArticle[]> {
   const enriched = [...articles]
+  // 요약이 아예 없는 기사(사이트맵 소스)를 먼저 보강한다.
+  // 요약이 없으면 관련성 판단이 제목만으로 이뤄져 대부분 탈락하기 때문이다.
   const candidates = articles
     .map((article, index) => ({ article, index }))
-    .filter(({ article }) => hasTruncatedText(article.summary))
+    .filter(({ article }) => !article.summary.trim() || hasTruncatedText(article.summary))
+    .sort((a, b) => Number(!!a.article.summary.trim()) - Number(!!b.article.summary.trim()))
     .slice(0, ARTICLE_SUMMARY_ENRICH_LIMIT)
 
   let cursor = 0
@@ -76,7 +79,8 @@ async function enrichArticleSummaries(articles: RawArticle[]): Promise<RawArticl
       while (cursor < candidates.length) {
         const current = candidates[cursor++]
         const preview = await fetchArticleSummaryPreview(current.article.url)
-        if (preview.length > current.article.summary.length && !hasTruncatedText(preview)) {
+        const isEmpty = !current.article.summary.trim()
+        if (preview.length > current.article.summary.length && (isEmpty || !hasTruncatedText(preview))) {
           enriched[current.index] = {
             ...current.article,
             summary: preview,

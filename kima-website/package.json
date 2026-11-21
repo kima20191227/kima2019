@@ -22,6 +22,7 @@
     "news:hide-irrelevant": "tsx scripts/hide-irrelevant-news.ts --apply",
     "news:refresh-summaries": "tsx scripts/refresh-truncated-news-summaries.ts --apply",
     "news:seed-government-sources": "tsx scripts/seed-government-news-sources.ts",
+    "news:seed-kmib-source": "tsx scripts/seed-kmib-news-source.ts",
     "db:studio": "prisma studio",
     "build:cf": "opennextjs-cloudflare build",
     "preview:cf": "opennextjs-cloudflare preview"
