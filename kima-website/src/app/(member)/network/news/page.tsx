@@ -7,6 +7,8 @@ import { NewsCategoryTabs } from '@/components/news/NewsCategoryTabs'
 import { NewsCard } from '@/components/news/NewsCard'
 import type { NewsCardItem } from '@/components/news/NewsCard'
 import { getNewsCategories } from '@/lib/newsCategories'
+import { TodayTopNews } from '@/components/news/TodayTopNews'
+import { MAJOR_OUTLET_DOMAINS, selectTopNews } from '@/lib/majorNewsOutlets'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +21,26 @@ function isMemberOrAbove(role?: string | null) {
 
 const PAGE_SIZE = 12
 const BASE_PATH = '/network/news'
+const TOP_NEWS_LOOKBACK_HOURS = 72
+
+/** 오늘의 주요 뉴스 — 주요 언론사 기사만 골라온다 (언론사 판별은 URL 도메인 기준) */
+async function loadTopNews(now: Date) {
+  const candidates = await prisma.news.findMany({
+    where: {
+      isVisible: true,
+      publishedAt: { gte: new Date(now.getTime() - TOP_NEWS_LOOKBACK_HOURS * 60 * 60 * 1000) },
+      OR: MAJOR_OUTLET_DOMAINS.map((domain) => ({ sourceUrl: { contains: domain } })),
+    },
+    orderBy: { publishedAt: 'desc' },
+    take: 200,
+    select: { id: true, title: true, summary: true, sourceUrl: true, publishedAt: true },
+  }).catch((error: unknown) => {
+    console.error('[network/news] 주요 뉴스 조회 실패:', error)
+    return []
+  })
+
+  return selectTopNews(candidates, { now, fallbackHours: TOP_NEWS_LOOKBACK_HOURS })
+}
 
 export async function generateMetadata({
   searchParams,
@@ -112,12 +134,16 @@ export default async function NetworkNewsPage({
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
   const skip = (page - 1) * PAGE_SIZE
 
+  const now = new Date()
+  const showTopNews = page === 1 && !validCategory
+
   const where = {
     isVisible: true,
     ...(validCategory ? { category: validCategory } : {}),
   }
 
-  const [total, visibleItems] = await Promise.all([
+  const [topNews, total, visibleItems] = await Promise.all([
+    showTopNews ? loadTopNews(now) : Promise.resolve(null),
     prisma.news.count({ where }),
     prisma.news.findMany({
       where,
@@ -174,6 +200,11 @@ export default async function NetworkNewsPage({
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* 오늘의 주요 뉴스 */}
+        {topNews && (
+          <TodayTopNews items={topNews.items} windowHours={topNews.windowHours} now={now} />
+        )}
 
         {/* 카테고리 탭 */}
         <Suspense fallback={<div className="h-10 bg-gray-100 rounded animate-pulse mb-6" />}>

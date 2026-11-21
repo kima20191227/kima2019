@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchRSSFeed } from '@/lib/newsCollector'
+import { fetchRSSFeed, parseDate } from '@/lib/newsCollector'
 
 vi.mock('@/lib/cfEnv', () => ({ cfEnv: vi.fn() }))
 
@@ -85,5 +85,17 @@ describe('fetchRSSFeed — RSS 2.0', () => {
     expect(articles).toHaveLength(1)
     expect(articles[0].summary).toBe('고용허가제 개선')
     expect(articles[0].publishedAt.toISOString()).toBe('2026-11-20T23:52:52.000Z')
+  })
+})
+
+describe('parseDate — 언론사별 비표준 날짜', () => {
+  it.each([
+    ['Sat, 21 Nov 2026 06:54:28 KST', '2026-11-20T21:54:28.000Z'],      // 크리스천투데이
+    ['Sat, 21 11 2026 09:38:22 +0900', '2026-11-21T00:38:22.000Z'],     // CBS노컷뉴스
+    ['20 Nov 2026 23:52:52 GMT', '2026-11-20T23:52:52.000Z'],           // 국민일보 RSS
+    ['2026-11-20T03:00:00+09:00', '2026-11-19T18:00:00.000Z'],          // 사이트맵
+    ['Sat, 21 Nov 2026 10:40:19 +0900', '2026-11-21T01:40:19.000Z'],    // RFC 822
+  ])('%s', (input, expected) => {
+    expect(parseDate(input).toISOString()).toBe(expected)
   })
 })

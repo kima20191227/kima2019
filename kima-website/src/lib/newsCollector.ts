@@ -234,9 +234,22 @@ function parseRSSItems(xml: string): string[] {
 /**
  * 날짜 문자열 → Date (파싱 실패 시 현재 시각)
  */
-function parseDate(s: string): Date {
+export function parseDate(s: string): Date {
   if (!s) return new Date()
-  const d = new Date(s.trim())
+  const normalized = s
+    .trim()
+    // 크리스천투데이: "Sat, 21 Nov 2026 06:54:28 KST" — JS는 KST를 모른다
+    .replace(/\bKST$/i, '+0900')
+    // CBS노컷뉴스: "Sat, 21 11 2026 09:38:22 +0900" — 월이 숫자
+    .replace(
+      /^(?:[A-Za-z]{3},\s*)?(\d{1,2})\s+(\d{1,2})\s+(\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*([+-]\d{4})?$/,
+      (_m, day: string, month: string, year: string, time: string, tz?: string) => {
+        const offset = tz ? `${tz.slice(0, 3)}:${tz.slice(3)}` : '+09:00'
+        const hms = time.length <= 5 ? `${time}:00` : time
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hms.padStart(8, '0')}${offset}`
+      },
+    )
+  const d = new Date(normalized)
   return isNaN(d.getTime()) ? new Date() : d
 }
 
