@@ -18,6 +18,7 @@ import {
   FORUM_MISSIONFUND_URL,
   FORUM_PAYMENT_CONFIRM_TEXT,
   FORUM_PROMO_VIDEO_URL,
+  FORUM_PROMO_VIDEO_URL_2,
   FORUM_REFUND_TEXT,
   isForumRegistrationOpen,
 } from '@/lib/forum2026'
@@ -194,7 +195,10 @@ export default async function Forum2026Page() {
 
         <section id="video" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <h2 className="text-lg font-bold text-[#1B3A6B] mb-4">포럼 홍보영상</h2>
-          <VideoEmbed url={FORUM_PROMO_VIDEO_URL} title={`${FORUM_INFO.title} 홍보영상`} autoPlayLoop />
+          <div className="space-y-6">
+            <VideoEmbed url={FORUM_PROMO_VIDEO_URL} title={`${FORUM_INFO.title} 홍보영상 1`} autoPlayLoop />
+            <VideoEmbed url={FORUM_PROMO_VIDEO_URL_2} title={`${FORUM_INFO.title} 홍보영상 2`} />
+          </div>
         </section>
 
         <section id="form" className="scroll-mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
