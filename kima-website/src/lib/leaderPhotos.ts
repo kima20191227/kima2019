@@ -6,9 +6,11 @@
 const DIR = '/images/leaders'
 
 export const LEADER_PHOTOS: Readonly<Record<string, string>> = {
-  // 직접 받은 사진 (2026 포럼 책자 폴더)
+  // 직접 받은 사진 (2026 포럼 책자 폴더, 이병인·최규정은 2026-11-21 본인 제공)
   남양규: `${DIR}/nam-yang-gyu.jpg`,
   문창선: `${DIR}/mun-chang-seon.jpg`,
+  이병인: `${DIR}/yi-byeong-in.jpg`,
+  최규정: `${DIR}/choe-gyu-jeong.jpg`,
   서기원: `${DIR}/seo-gi-won.jpg`,
   오승재: `${DIR}/o-seung-jae.jpg`,
   정노화: `${DIR}/jeong-no-hwa.jpg`,
